@@ -1,7 +1,9 @@
 from django.urls import path
 
-from ech.users import views
-from ech.users import password_reset_views
+from ech.users.views import (
+    views, 
+    password_reset_views,
+)
 
 app_name = "users"
 

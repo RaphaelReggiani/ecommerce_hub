@@ -2,6 +2,18 @@ class UserDomainError(Exception):
     """Base exception for user domain."""
 
 
+class UserAlreadyExistsError(UserDomainError):
+    pass
+
+
+class EmailTokenInvalidError(UserDomainError):
+    pass
+
+
+class EmailTokenExpiredError(UserDomainError):
+    pass
+
+
 class InvalidRoleAssignment(UserDomainError):
     pass
 
@@ -14,9 +26,13 @@ class EmailNotConfirmedError(UserDomainError):
     pass
 
 
-class TokenExpiredError(UserDomainError):
+class TokenError(UserDomainError):
+    """Base exception for token-related errors."""
+
+
+class TokenExpiredError(TokenError):
     pass
 
 
-class TokenInvalidError(UserDomainError):
+class TokenInvalidError(TokenError):
     pass

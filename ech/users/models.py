@@ -6,7 +6,10 @@ from django.contrib.auth.models import (
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
+from django.utils.crypto import get_random_string
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from ech.users.constants.constants import (
     MAX_LENGTH_NAME,
@@ -24,12 +27,19 @@ from ech.users.constants.constants import (
     LABEL_PROCCESS_STAFF,
     LABEL_SUPPORT_STAFF,
     LABEL_COMMON_USER,
+    LABEL_TOKEN_TYPE_EMAIL_CONFIRMATION,
+    LABEL_TOKEN_TYPE_PASSWORD_RESET,
+    LABEL_TOKEN_TYPE_MAGIC_LOGIN,
+    LABEL_TOKEN_TYPE_INVITATION,
+    LABEL_TOKEN_TYPE_EMAIL_CHANGE,
+    LABEL_TOKEN_TYPE_2FA,
 )
 
 from ech.users.constants.messages import (
     MSG_VALUE_ERROR_INFORM_EMAIL,
     MSG_VALUE_ERROR_INFORM_PASSWORD,
     MSG_VALIDATION_ERROR_STAFF_EMAIL,
+    MSG_VALIDATION_ERROR_EXPIRATION_DATETIME,
 )
 
 
@@ -133,11 +143,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     def clean(self):
+        super().clean()
 
         if self.user_role != self.ROLE_COMMON_USER:
-            if not self.user_email.endswith(CORPORATE_EMAIL_DOMAIN):
-                raise ValidationError(MSG_VALIDATION_ERROR_STAFF_EMAIL)
+            email_domain = self.user_email.split("@")[-1]
+            corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
 
+            if email_domain != corporate_domain:
+                raise ValidationError(MSG_VALIDATION_ERROR_STAFF_EMAIL)
+            
     @property
     def is_superadm(self):
         return self.user_role == self.ROLE_SUPERADM
@@ -168,3 +182,73 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.user_name} ({self.user_email})"
+    
+
+class UserToken(models.Model):
+
+    TYPE_EMAIL_CONFIRMATION = "email_confirmation"
+    TYPE_PASSWORD_RESET = "password_reset"
+    TYPE_MAGIC_LOGIN = "magic_login"
+    TYPE_INVITATION = "invitation"
+    TYPE_EMAIL_CHANGE = "email_change"
+    TYPE_2FA = "two_factor"
+
+    TOKEN_TYPE_CHOICES = [
+        (TYPE_EMAIL_CONFIRMATION, LABEL_TOKEN_TYPE_EMAIL_CONFIRMATION),
+        (TYPE_PASSWORD_RESET, LABEL_TOKEN_TYPE_PASSWORD_RESET),
+        (TYPE_MAGIC_LOGIN, LABEL_TOKEN_TYPE_MAGIC_LOGIN),
+        (TYPE_INVITATION, LABEL_TOKEN_TYPE_INVITATION),
+        (TYPE_EMAIL_CHANGE, LABEL_TOKEN_TYPE_EMAIL_CHANGE),
+        (TYPE_2FA, LABEL_TOKEN_TYPE_2FA),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tokens",
+    )
+
+    token = models.CharField(max_length=128, unique=True)
+
+    token_type = models.CharField(
+        max_length=32,
+        choices=TOKEN_TYPE_CHOICES,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    expires_at = models.DateTimeField()
+
+    used = models.BooleanField(default=False)
+
+    metadata = models.JSONField(blank=True, null=True)
+
+    class Meta:
+        db_table = "user_tokens"
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["token_type"]),
+            models.Index(fields=["user", "token_type"]),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.expires_at <= timezone.now():
+            raise ValidationError(MSG_VALIDATION_ERROR_EXPIRATION_DATETIME)
+
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    def mark_as_used(self):
+        self.used = True
+        self.save(update_fields=["used"])
+
+    @classmethod
+    def create_token(cls, *, user, token_type, hours_valid):
+        return cls.objects.create(
+            user=user,
+            token=get_random_string(48),
+            token_type=token_type,
+            expires_at=timezone.now() + timedelta(hours=hours_valid),
+        )

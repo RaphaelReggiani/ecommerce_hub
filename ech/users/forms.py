@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 
 from ech.users.models import CustomUser
 from ech.users.constants.constants import (
@@ -13,10 +14,10 @@ from ech.users.constants.constants import (
 )
 
 from ech.users.constants.messages import (
-    MSG_VALIDATION_ERROR_OBRIGATORY_FIELDS,
-    MSG_ERROR_USER_ALREADY_EXISTS,
-    MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM,
+    MSG_VALIDATION_FAILED_CREDENTIALS,
+    MSG_VALIDATION_FAILED_AGE,
 )
+
 
 class BaseUserCreationForm(forms.ModelForm):
 
@@ -25,6 +26,7 @@ class BaseUserCreationForm(forms.ModelForm):
         widget=forms.PasswordInput,
         strip=False,
     )
+
     password_confirmation = forms.CharField(
         label=LABEL_PASSWORD_CONFIRMATION,
         widget=forms.PasswordInput,
@@ -44,16 +46,16 @@ class BaseUserCreationForm(forms.ModelForm):
 
         password = cleaned_data.get("password")
         password_confirmation = cleaned_data.get("password_confirmation")
-        email = cleaned_data.get("user_email")
 
-        if not all([password, password_confirmation, email]):
-            raise ValidationError(MSG_VALIDATION_ERROR_OBRIGATORY_FIELDS)
+        if password and password_confirmation:
 
-        if password != password_confirmation:
-            raise ValidationError("Passwords do not match.")
+            if password != password_confirmation:
+                raise ValidationError(MSG_VALIDATION_FAILED_CREDENTIALS)
 
-        if CustomUser.objects.filter(user_email=email).exists():
-            raise ValidationError(MSG_ERROR_USER_ALREADY_EXISTS)
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                raise ValidationError(e.messages)
 
         return cleaned_data
 
@@ -88,7 +90,7 @@ class CommonUserRegistrationForm(BaseUserCreationForm):
         age = self.cleaned_data.get("user_age")
 
         if age < MINIMUM_AGE:
-            raise ValidationError("You must be at least 18 years old.")
+            raise ValidationError(MSG_VALIDATION_FAILED_AGE)
 
         return age
 
@@ -116,36 +118,6 @@ class StaffUserCreationForm(BaseUserCreationForm):
     class Meta(BaseUserCreationForm.Meta):
         fields = BaseUserCreationForm.Meta.fields + ("user_role",)
 
-
-    def __init__(self, *args, **kwargs):
-        self.request_user = kwargs.pop("request_user", None)
-        super().__init__(*args, **kwargs)
-
-        if not self.request_user:
-            raise ValidationError(MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM)
-
-        if not self.request_user.can_create_staff:
-            raise PermissionError(MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM)
-
-        if self.request_user.user_role == CustomUser.ROLE_SUPER_STAFF:
-            self.fields["user_role"].choices = [
-                (CustomUser.ROLE_SUPPORT_STAFF, "Support Staff"),
-                (CustomUser.ROLE_PAYMENT_STAFF, "Payment Staff"),
-                (CustomUser.ROLE_PROCCESS_STAFF, "Process Staff"),
-            ]
-
-    def clean_user_role(self):
-        role = self.cleaned_data.get("user_role")
-
-        if (
-            self.request_user.user_role != CustomUser.ROLE_SUPERADM
-            and role == CustomUser.ROLE_SUPER_STAFF
-        ):
-            raise ValidationError(MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM)
-
-        return role
-
-
     def save(self, commit=True):
         user = super().save(commit=False)
         user.user_role = self.cleaned_data["user_role"]
@@ -154,3 +126,15 @@ class StaffUserCreationForm(BaseUserCreationForm):
             user.save()
 
         return user
+    
+class UserProfileUpdateForm(forms.ModelForm):
+
+    class Meta:
+        model = CustomUser
+        fields = (
+            "user_name",
+            "user_phone",
+            "user_country",
+            "user_state",
+            "user_address",
+        )

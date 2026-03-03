@@ -1,44 +1,31 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
-from django.db import models, transaction
-from django.utils import timezone
-from django.utils.crypto import get_random_string
+from django.db import transaction
 from django.urls import reverse
 
+from ech.users.models import UserToken
 from ech.users.exceptions import (
     TokenExpiredError,
     TokenInvalidError,
 )
 
+from ech.users.constants.constants import (
+    PASSWORD_RESET_EXPIRATION_HOURS,
+)
+
 User = get_user_model()
-
-
-class PasswordResetToken(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="password_reset_tokens",
-    )
-    token = models.CharField(max_length=64, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    used = models.BooleanField(default=False)
-
-    class Meta:
-        db_table = "password_reset_tokens"
-
-    def is_expired(self):
-        expiration_time = self.created_at + timezone.timedelta(hours=2)
-        return timezone.now() > expiration_time
 
 
 class PasswordResetService:
 
     @staticmethod
+    @transaction.atomic
     def request_password_reset(email):
         """
-        Always return success to avoid user enumeration.
+        Always returns success to prevent user enumeration.
         """
+
         try:
             user = User.objects.get(user_email=email)
         except User.DoesNotExist:
@@ -47,29 +34,34 @@ class PasswordResetService:
         if not user.is_active:
             return
 
-        token = get_random_string(48)
-
-        PasswordResetToken.objects.create(
+        UserToken.objects.filter(
             user=user,
-            token=token,
+            token_type=UserToken.TYPE_PASSWORD_RESET,
+        ).delete()
+
+        token_obj = UserToken.create_token(
+            user=user,
+            token_type=UserToken.TYPE_PASSWORD_RESET,
+            hours_valid=PASSWORD_RESET_EXPIRATION_HOURS,
         )
 
-        PasswordResetService._send_reset_email(user, token)
+        PasswordResetService._send_reset_email(user, token_obj.token)
 
     @staticmethod
     @transaction.atomic
     def reset_password(token, new_password):
         try:
-            token_obj = PasswordResetToken.objects.select_related("user").get(
+            token_obj = UserToken.objects.select_related("user").get(
                 token=token,
+                token_type=UserToken.TYPE_PASSWORD_RESET,
                 used=False,
             )
-        except PasswordResetToken.DoesNotExist:
-            raise TokenInvalidError("Invalid token.")
+        except UserToken.DoesNotExist:
+            raise TokenInvalidError()
 
         if token_obj.is_expired():
             token_obj.delete()
-            raise TokenExpiredError("Token expired.")
+            raise TokenExpiredError()
 
         user = token_obj.user
         user.set_password(new_password)
@@ -82,12 +74,14 @@ class PasswordResetService:
 
     @staticmethod
     def _send_reset_email(user, token):
+
         reset_link = (
             settings.SITE_URL
             + reverse("users:password_reset_confirm", kwargs={"token": token})
         )
 
         subject = "Reset your E-commerce Hub password"
+
         message = (
             f"Hello {user.user_name},\n\n"
             f"You requested a password reset.\n\n"

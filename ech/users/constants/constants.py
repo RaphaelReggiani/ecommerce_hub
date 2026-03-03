@@ -5,8 +5,8 @@
 URL_HOME = "home"
 URL_LOGIN = "login"
 URL_LOGOUT = "logout"
-URL_REGISTER = "cadastro"
-URL_USER_PROFILE = "perfil_usuario"
+URL_REGISTER = "register"
+URL_USER_PROFILE = "user_profile"
 URL_SUPER_STAFF = "super_staff"
 URL_PAYMENT_STAFF = "payment_staff"
 URL_PROCCESS_STAFF = "process_staff"
@@ -57,3 +57,21 @@ LABEL_PAYMENT_STAFF = "PaymentStaff"
 LABEL_PROCCESS_STAFF = "ProcessStaff"
 LABEL_SUPPORT_STAFF = "SupportStaff"
 LABEL_COMMON_USER = "CommonUser"
+
+# =========================
+# TOKEN LABELS
+# =========================
+
+LABEL_TOKEN_TYPE_EMAIL_CONFIRMATION = "Email Confirmation"
+LABEL_TOKEN_TYPE_PASSWORD_RESET = "Password Reset"
+LABEL_TOKEN_TYPE_MAGIC_LOGIN = "Magic Login"
+LABEL_TOKEN_TYPE_INVITATION = "Invitation"
+LABEL_TOKEN_TYPE_EMAIL_CHANGE = "Email Change"
+LABEL_TOKEN_TYPE_2FA = "Two Factor Authentication"
+
+# =========================
+# TOKEN EXPIRATION (HOURS)
+# =========================
+
+EMAIL_CONFIRMATION_EXPIRATION_HOURS = 24
+PASSWORD_RESET_EXPIRATION_HOURS = 2
