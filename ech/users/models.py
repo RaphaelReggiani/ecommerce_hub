@@ -142,6 +142,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["user_email"]),
+            models.Index(fields=["user_role"]),
+        ]
+
     def clean(self):
         super().clean()
 

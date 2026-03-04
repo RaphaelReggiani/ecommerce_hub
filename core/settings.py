@@ -1,5 +1,6 @@
 
 from pathlib import Path
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'ech',
     'ech.users.apps.UsersConfig',
-    # 'rest_framework',
+    'rest_framework',
     # 'widget_tweaks',
     # 'api',
     # 'django_extensions',
@@ -101,6 +102,10 @@ SITE_URL = "http://127.0.0.1:8000"
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 DEFAULT_FROM_EMAIL = "no-reply@ecommercehub.com"
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 # DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # from django.contrib.messages import constants
@@ -110,12 +115,22 @@ DEFAULT_FROM_EMAIL = "no-reply@ecommercehub.com"
 #     constants.ERROR: "bg-red-100 text-red-900",
 # }
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": (
-#         "rest_framework.authentication.SessionAuthentication",
-#         "rest_framework_simplejwt.authentication.JWTAuthentication",
-#     ),
-# }
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+         "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.AllowAny",
+    ),
+    "EXCEPTION_HANDLER": "core.exceptions.handlers.custom_exception_handler",
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 AUTH_USER_MODEL = "users.CustomUser"
 

@@ -5,6 +5,10 @@ from django.db import transaction
 from django.urls import reverse
 
 from ech.users.models import UserToken
+from ech.users.selectors import (
+    get_user_by_email,
+    get_valid_token,
+)
 from ech.users.exceptions import (
     TokenExpiredError,
     TokenInvalidError,
@@ -21,17 +25,14 @@ class PasswordResetService:
 
     @staticmethod
     @transaction.atomic
-    def request_password_reset(email):
+    def request_password_reset(email: str):
         """
         Always returns success to prevent user enumeration.
         """
 
-        try:
-            user = User.objects.get(user_email=email)
-        except User.DoesNotExist:
-            return
+        user = get_user_by_email(email)
 
-        if not user.is_active:
+        if not user or not user.is_active:
             return
 
         UserToken.objects.filter(
@@ -45,18 +46,23 @@ class PasswordResetService:
             hours_valid=PASSWORD_RESET_EXPIRATION_HOURS,
         )
 
-        PasswordResetService._send_reset_email(user, token_obj.token)
+        transaction.on_commit(
+            lambda: PasswordResetService._send_reset_email(
+                user,
+                token_obj.token,
+            )
+        )
 
     @staticmethod
     @transaction.atomic
-    def reset_password(token, new_password):
-        try:
-            token_obj = UserToken.objects.select_related("user").get(
-                token=token,
-                token_type=UserToken.TYPE_PASSWORD_RESET,
-                used=False,
-            )
-        except UserToken.DoesNotExist:
+    def reset_password(token: str, new_password: str):
+
+        token_obj = get_valid_token(
+            token=token,
+            token_type=UserToken.TYPE_PASSWORD_RESET,
+        )
+
+        if not token_obj:
             raise TokenInvalidError()
 
         if token_obj.is_expired():
@@ -87,7 +93,7 @@ class PasswordResetService:
             f"You requested a password reset.\n\n"
             f"Click the link below to set a new password:\n"
             f"{reset_link}\n\n"
-            f"This link is valid for 2 hours.\n\n"
+            f"This link is valid for {PASSWORD_RESET_EXPIRATION_HOURS} hours.\n\n"
             f"If you did not request this, please ignore this email.\n\n"
             f"E-commerce Hub Team"
         )

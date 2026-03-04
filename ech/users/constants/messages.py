@@ -67,10 +67,11 @@ MSG_INVALID_ROLE_ASSIGNMENT_PROFILE = "You can't change the profile of this user
 
 MSG_AUTHENTICATION_FAILED_CREDENTIALS = "Invalid credentials."
 MSG_AUTHENTICATION_FAILED_EMAIL_PASSWORD = "E-mail or password invalid."
+MSG_AUTHENTICATION_EMAIL_NOT_CONFIRMED = "E-mail not confirmed."
 MSG_AUTHENTICATION_FAILED_INACTIVE_ACCOUNT = "Inactive account."
 
 # ==============================
-# AUTHENTICATIONFAILED ERRORS
+# HTTP ERRORS
 # ==============================
 
 MSG_ERROR_HTTP404_INVALID_TOKEN = "Invalid token."

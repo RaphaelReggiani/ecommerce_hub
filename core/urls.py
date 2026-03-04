@@ -4,11 +4,29 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
+
+    # =========================
+    # ADMIN
+    # =========================
+
     path("admin/", admin.site.urls),
+
+    # =========================
+    # WEB
+    # =========================
+
     path("", include("ech.urls")),
-    path("users/", include("ech.users.urls", namespace="users")),
+    path("users/", include("ech.users.config.urls", namespace="users")),
     # path("products/", include("ech.products.urls")),
     # path("payment/", include("ech.payment.urls")),
     # path("delivery/", include("ech.delivery.urls")),
-    # path("api/", include("api.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    # =========================
+    # API
+    # =========================
+
+    path("api/v1/users/", include("ech.users.api.urls")),
+] 
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

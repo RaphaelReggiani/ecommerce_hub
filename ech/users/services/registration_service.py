@@ -5,6 +5,7 @@ from django.db import transaction, IntegrityError
 from django.urls import reverse
 
 from ech.users.models import UserToken
+from ech.users.selectors import get_email_confirmation_token
 from ech.users.exceptions import (
     UserAlreadyExistsError,
     EmailTokenInvalidError,
@@ -25,35 +26,50 @@ class UserRegistrationService:
 
     @staticmethod
     @transaction.atomic
-    def register_user(form):
+    def register_user(
+        *,
+        email: str,
+        password: str,
+        user_name: str,
+        role: str = None,
+        **extra_fields,
+    ):
         """
-        Receives a validated form and registers a user.
-        Sends confirmation email.
+        Registers a new user and schedules confirmation email sending.
         """
 
-        user = form.save(commit=False)
-        user.is_active = False
-        user.email_confirmed = False
+        if role is None:
+            role = User.ROLE_COMMON_USER
 
         try:
-            user.save()
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                role=role,
+                user_name=user_name,
+                **extra_fields,
+            )
         except IntegrityError:
             raise UserAlreadyExistsError()
 
+        user.is_active = False
+        user.email_confirmed = False
+        user.save(update_fields=["is_active", "email_confirmed"])
+
         token = UserRegistrationService._generate_email_token(user)
-        UserRegistrationService._send_confirmation_email(user, token)
+
+        transaction.on_commit(
+            lambda: UserRegistrationService._send_confirmation_email(user, token)
+        )
 
         return user
 
     @staticmethod
-    def confirm_email(token):
+    def confirm_email(token: str):
 
-        try:
-            token_obj = UserToken.objects.select_related("user").get(
-                token=token,
-                token_type=UserToken.TYPE_EMAIL_CONFIRMATION,
-            )
-        except UserToken.DoesNotExist:
+        token_obj = get_email_confirmation_token(token)
+
+        if not token_obj:
             raise EmailTokenInvalidError()
 
         if token_obj.is_expired():
@@ -99,7 +115,7 @@ class UserRegistrationService:
             f"Hello {user.user_name},\n\n"
             f"Please confirm your account by clicking the link below:\n"
             f"{confirmation_link}\n\n"
-            f"This link is valid for 24 hours.\n\n"
+            f"This link is valid for {EMAIL_CONFIRMATION_EXPIRATION_HOURS} hours.\n\n"
             f"E-commerce Hub Team"
         )
 
