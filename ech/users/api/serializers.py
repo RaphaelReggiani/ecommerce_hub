@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from ech.users.models import CustomUser
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from ech.users.constants.constants import (
     MAX_LENGTH_NAME,
@@ -7,6 +9,7 @@ from ech.users.constants.constants import (
 )
 
 from ech.users.constants.messages import (
+    MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN,
     MSG_AUTHENTICATION_FAILED_CREDENTIALS,
     MSG_AUTHENTICATION_FAILED_INACTIVE_ACCOUNT,
     MSG_AUTHENTICATION_EMAIL_NOT_CONFIRMED,
@@ -26,9 +29,9 @@ class UserRegisterInputSerializer(serializers.Serializer):
 
 class UserOutputSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    email = serializers.EmailField()
+    email = serializers.EmailField(source="user_email")
     user_name = serializers.CharField()
-    role = serializers.CharField()
+    role = serializers.CharField(source="user_role")
     is_active = serializers.BooleanField()
     email_confirmed = serializers.BooleanField()
 
@@ -53,3 +56,25 @@ class UserLoginInputSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+    
+
+class UserLogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        self.token = attrs["refresh"]
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            token = RefreshToken(self.token)
+            token.blacklist()
+        except Exception:
+            raise serializers.ValidationError(MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN)
+    
+
+class UserProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomUser
+        fields = ["user_email", "user_name"]

@@ -25,7 +25,7 @@ urlpatterns = [
     # API
     # =========================
 
-    path("api/v1/users/", include("ech.users.api.urls")),
+    path("api/v1/users/", include(("ech.users.api.urls", "users-api"), namespace="users-api")),
 ] 
 
 if settings.DEBUG:
