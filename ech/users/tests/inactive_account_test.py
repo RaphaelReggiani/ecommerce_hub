@@ -23,6 +23,10 @@ class InactiveAccountTestCase(TestCase):
 
     @patch("ech.users.services.password_reset_service.send_mail")
     def test_inactive_user_cannot_request_password_reset(self, mock_send_mail):
+        """
+        Inactive users must not be able to request password reset.
+        """
+
         PasswordResetService.request_password_reset(
             self.inactive_user.user_email
         )
@@ -32,6 +36,10 @@ class InactiveAccountTestCase(TestCase):
 
     @patch("ech.users.services.password_reset_service.send_mail")
     def test_non_existent_user_request_does_nothing(self, mock_send_mail):
+        """
+        Password reset request for non-existent user must do nothing.
+        """
+        
         PasswordResetService.request_password_reset(
             "nonexistent@test.com"
         )

@@ -11,6 +11,10 @@ class UserRegisterApiTestCase(APITestCase):
         self.url = "/api/v1/users/register/"
 
     def test_register_user_success(self):
+        """
+        Valid user registration must create user and return 201 response.
+        """
+
         data = {
             "email": "newuser@test.com",
             "password": "StrongPassword123",
@@ -33,6 +37,10 @@ class UserRegisterApiTestCase(APITestCase):
         )
 
     def test_register_user_with_invalid_email_returns_400(self):
+        """
+        Invalid email format must return 400 response.
+        """
+
         data = {
             "email": "invalid-email",
             "password": "StrongPassword123",
@@ -48,6 +56,10 @@ class UserRegisterApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_register_user_with_short_password_returns_400(self):
+        """
+        Password not meeting validation rules must return 400 response.
+        """
+        
         data = {
             "email": "newuser@test.com",
             "password": "123",

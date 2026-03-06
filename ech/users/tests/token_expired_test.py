@@ -14,6 +14,9 @@ User = get_user_model()
 class TestEmailTokenExpired:
 
     def test_expired_email_confirmation_token(self):
+        """
+        Expired email confirmation token must raise error and not activate the user.
+        """
 
         user = User.objects.create_user(
             email="expired@test.com",

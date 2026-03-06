@@ -14,8 +14,8 @@ from ech.users.constants.constants import (
 )
 
 from ech.users.constants.messages import (
-    MSG_VALIDATION_FAILED_CREDENTIALS,
-    MSG_VALIDATION_FAILED_AGE,
+    MSG_VALIDATION_ERROR_FAILED_CREDENTIALS,
+    MSG_VALIDATION_ERROR_FAILED_AGE,
 )
 
 
@@ -50,7 +50,7 @@ class BaseUserCreationForm(forms.ModelForm):
         if password and password_confirmation:
 
             if password != password_confirmation:
-                raise ValidationError(MSG_VALIDATION_FAILED_CREDENTIALS)
+                raise ValidationError(MSG_VALIDATION_ERROR_FAILED_CREDENTIALS)
 
             try:
                 validate_password(password)
@@ -90,7 +90,7 @@ class CommonUserRegistrationForm(BaseUserCreationForm):
         age = self.cleaned_data.get("user_age")
 
         if age < MINIMUM_AGE:
-            raise ValidationError(MSG_VALIDATION_FAILED_AGE)
+            raise ValidationError(MSG_VALIDATION_ERROR_FAILED_AGE)
 
         return age
 

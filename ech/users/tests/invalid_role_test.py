@@ -2,7 +2,9 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
-from ech.users.constants.constants import CORPORATE_EMAIL_DOMAIN
+from ech.users.constants.constants import (
+    CORPORATE_EMAIL_DOMAIN,
+)
 from ech.users.constants.messages import (
     MSG_VALIDATION_ERROR_STAFF_EMAIL,
 )
@@ -18,6 +20,10 @@ class InvalidRoleTestCase(TestCase):
         self.corporate_email = f"user{CORPORATE_EMAIL_DOMAIN}"
 
     def test_invalid_role_choice_raises_validation_error(self):
+        """
+        Invalid user role choice must raise ValidationError.
+        """
+        
         user = User(
             user_email=self.common_email,
             user_name="Invalid Role User",
@@ -29,6 +35,10 @@ class InvalidRoleTestCase(TestCase):
             user.full_clean()
 
     def test_super_staff_with_non_corporate_email_raises_error(self):
+        """
+        Super staff role must require a corporate email domain.
+        """
+
         user = User(
             user_email="staff@gmail.com",
             user_name="Super Staff",
@@ -43,6 +53,10 @@ class InvalidRoleTestCase(TestCase):
             user.full_clean()
 
     def test_superadm_with_non_corporate_email_raises_error(self):
+        """
+        Super admin role must require a corporate email domain.
+        """
+
         user = User(
             user_email="admin@gmail.com",
             user_name="Super Admin",
@@ -57,6 +71,10 @@ class InvalidRoleTestCase(TestCase):
             user.full_clean()
 
     def test_super_staff_with_corporate_email_is_valid(self):
+        """
+        Super staff with corporate email must pass validation.
+        """
+        
         user = User(
             user_email=self.corporate_email,
             user_name="Super Staff",

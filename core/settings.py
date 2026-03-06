@@ -168,3 +168,6 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 # EMAIL_HOST_USER = "ech@ech.com"
 # EMAIL_HOST_PASSWORD = "APP_PASSWORD"
+
+
+FRONTEND_URL = "http://127.0.0.1:8000/"

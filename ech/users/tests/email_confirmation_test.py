@@ -14,6 +14,9 @@ User = get_user_model()
 class TestEmailConfirmationFlow:
 
     def test_successful_email_confirmation(self):
+        """
+        Valid email confirmation token must activate and confirm the user.
+        """
 
         user = User.objects.create_user(
             email="confirm@test.com",
@@ -45,6 +48,9 @@ class TestEmailConfirmationFlow:
         ).exists()
 
     def test_token_cannot_be_reused(self):
+        """
+        Email confirmation token must not be reusable after successful confirmation.
+        """
 
         user = User.objects.create_user(
             email="reuse@test.com",

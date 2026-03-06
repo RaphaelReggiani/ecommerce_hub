@@ -29,6 +29,10 @@ class ConfirmEmailApiTestCase(APITestCase):
         self.url = f"/api/v1/users/confirm-email/{self.token}/"
 
     def test_confirm_email_success(self):
+        """
+        Valid email confirmation token must activate and confirm the user.
+        """
+
         response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -39,6 +43,10 @@ class ConfirmEmailApiTestCase(APITestCase):
         self.assertTrue(self.user.is_active)
 
     def test_confirm_email_invalid_token(self):
+        """
+        Invalid confirmation token must return 400 response.
+        """
+        
         url = "/api/v1/users/confirm-email/invalidtoken/"
 
         response = self.client.post(url)

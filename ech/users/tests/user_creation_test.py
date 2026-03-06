@@ -24,6 +24,10 @@ class UserCreationTestCase(TestCase):
         self.corporate_email = f"user{CORPORATE_EMAIL_DOMAIN}"
 
     def test_create_user_without_email_raises_error(self):
+        """
+        Creating a user without email must raise ValueError.
+        """
+
         with self.assertRaisesMessage(ValueError, MSG_VALUE_ERROR_INFORM_EMAIL):
             User.objects.create_user(
                 email=None,
@@ -32,6 +36,10 @@ class UserCreationTestCase(TestCase):
             )
 
     def test_create_user_without_password_raises_error(self):
+        """
+        Creating a user without password must raise ValueError.
+        """
+
         with self.assertRaisesMessage(ValueError, MSG_VALUE_ERROR_INFORM_PASSWORD):
             User.objects.create_user(
                 email=self.common_email,
@@ -40,6 +48,10 @@ class UserCreationTestCase(TestCase):
             )
 
     def test_create_user_default_role_is_common_user(self):
+        """
+        User created without role must default to common user.
+        """
+
         user = User.objects.create_user(
             email=self.common_email,
             password=self.valid_password,
@@ -51,6 +63,10 @@ class UserCreationTestCase(TestCase):
         self.assertFalse(user.is_superuser)
 
     def test_email_is_saved_in_lowercase(self):
+        """
+        Email must be normalized and saved in lowercase.
+        """
+
         user = User.objects.create_user(
             email="USER@TEST.COM",
             password=self.valid_password,
@@ -60,6 +76,10 @@ class UserCreationTestCase(TestCase):
         self.assertEqual(user.user_email, "user@test.com")
 
     def test_password_is_hashed(self):
+        """
+        Password must be stored hashed and not in plain text.
+        """
+
         user = User.objects.create_user(
             email=self.common_email,
             password=self.valid_password,
@@ -70,6 +90,10 @@ class UserCreationTestCase(TestCase):
         self.assertTrue(user.check_password(self.valid_password))
 
     def test_create_superuser_sets_proper_flags(self):
+        """
+        Creating a superuser must set admin role and permission flags.
+        """
+
         user = User.objects.create_superuser(
             email=self.corporate_email,
             password=self.valid_password,
@@ -83,6 +107,10 @@ class UserCreationTestCase(TestCase):
         self.assertTrue(user.email_confirmed)
 
     def test_super_staff_sets_staff_true_and_not_superuser(self):
+        """
+        Super staff role must set staff permission but not superuser.
+        """
+
         user = User.objects.create_user(
             email=self.corporate_email,
             password=self.valid_password,
@@ -94,6 +122,10 @@ class UserCreationTestCase(TestCase):
         self.assertFalse(user.is_superuser)
 
     def test_common_user_is_not_staff_nor_superuser(self):
+        """
+        Common user role must not grant staff or superuser permissions.
+        """
+
         user = User.objects.create_user(
             email=self.common_email,
             password=self.valid_password,
@@ -105,6 +137,10 @@ class UserCreationTestCase(TestCase):
         self.assertFalse(user.is_superuser)
 
     def test_staff_user_with_non_corporate_email_raises_validation_error(self):
+        """
+        Staff users must use a corporate email domain.
+        """
+
         with self.assertRaisesMessage(
             ValidationError,
             MSG_VALIDATION_ERROR_STAFF_EMAIL,
@@ -118,6 +154,10 @@ class UserCreationTestCase(TestCase):
             user.full_clean()
 
     def test_user_below_minimum_age_raises_validation_error(self):
+        """
+        Users below the minimum allowed age must raise validation error.
+        """
+        
         with self.assertRaises(ValidationError):
             user = User(
                 user_email=self.common_email,

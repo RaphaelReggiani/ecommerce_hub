@@ -21,6 +21,10 @@ class UserLoginApiTestCase(APITestCase):
         self.url = "/api/v1/users/login/"
 
     def test_login_success_returns_tokens(self):
+        """
+        Valid credentials must return access and refresh tokens.
+        """
+
         response = self.client.post(
             self.url,
             {
@@ -35,6 +39,10 @@ class UserLoginApiTestCase(APITestCase):
         self.assertIn("refresh", response.data)
 
     def test_login_with_wrong_password_returns_400(self):
+        """
+        Wrong password must return 400 response.
+        """
+
         response = self.client.post(
             self.url,
             {
@@ -47,6 +55,10 @@ class UserLoginApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_login_with_unconfirmed_email_returns_400(self):
+        """
+        Users with unconfirmed email must not be able to login.
+        """
+        
         self.user.email_confirmed = False
         self.user.save()
 

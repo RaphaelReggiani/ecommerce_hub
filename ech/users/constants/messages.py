@@ -11,6 +11,14 @@ MSG_SUCCESFULL_PROFILE_UPDATE = "Profile updated."
 MSG_SUCCESFULL_USER_CREATED = "User created successfully."
 
 # =========================
+# RESPONSES SUCCESS
+# =========================
+
+MSG_RESPONSE_SUCCESFULL_RESET_LINK_SENT = "If the email exists, a reset link has been sent."
+MSG_RESPONSE_SUCCESFULL_PASSWORD_RESET_EMAIL_SENT = "Password reset email sent."
+MSG_RESPONSE_SUCCESFULL_PASSWORD_RESET = "Password reset successful"
+
+# =========================
 # ERRORS
 # =========================
 
@@ -40,19 +48,20 @@ MSG_VALUE_ERROR_SUPERUSER_IS_SUPERUSER = "Superuser needs is_superuser=True."
 # =========================
 
 
-MSG_VALIDATION_FAILED_CREDENTIALS = "Passwords do not match."
-MSG_VALIDATION_FAILED_AGE = "You must be at least 18 years old."
+MSG_VALIDATION_ERROR_FAILED_CREDENTIALS = "Passwords do not match."
+MSG_VALIDATION_ERROR_FAILED_AGE = "You must be at least 18 years old."
 MSG_VALIDATION_ERROR_EXPIRATION_DATETIME = "Expiration must be set to a future datetime."
 MSG_VALIDATION_ERROR_STAFF_EMAIL = "Staff users must use a corporate email."
 MSG_VALIDATION_ERROR_OBRIGATORY_FIELDS = "All the fields must be filled."
+MSG_VALIDATION_ERROR_INVALID_RESET_LINK = "Invalid reset link"
+MSG_VALIDATION_ERROR_UID = "uid, token and new_password are required"
+MSG_VALIDATION_ERROR_EMAIL_REQUIRED = "Email is required"
 
 # ==============================
 # INVALIDROLEASSIGNMENT ERRORS
 # ==============================
 
-MSG_INVALID_ROLE_ASSIGNMENT_SUPPORT_STAFF = "You can't create another user."
-MSG_INVALID_ROLE_ASSIGNMENT_PAYMENT_STAFF = "You can't create another user."
-MSG_INVALID_ROLE_ASSIGNMENT_PROCCESS_STAFF = "You can't create another user."
+MSG_INVALID_ROLE_ASSIGNMENT_STAFF = "You can't create another user."
 MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM = "You don't have permission to create this type of user."
 
 # ==============================
@@ -62,7 +71,7 @@ MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM = "You don't have permission to create 
 MSG_INVALID_ROLE_ASSIGNMENT_PROFILE = "You can't change the profile of this user."
 
 # ==============================
-# AUTHENTICATIONFAILED ERRORS
+# AUTHENTICATION FAILED
 # ==============================
 
 MSG_AUTHENTICATION_FAILED_CREDENTIALS = "Invalid credentials."
