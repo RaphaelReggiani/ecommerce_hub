@@ -40,8 +40,13 @@ urlpatterns = [
     ),
 
     # =========================
-    # STAFF DASHBOARDS
+    # DASHBOARDS
     # =========================
+    path(
+        "dashboard/customer/",
+        views.customer_dashboard,
+        name="customer_dashboard",
+    ),
     path(
         "dashboard/support/",
         views.support_staff_dashboard,
@@ -53,14 +58,14 @@ urlpatterns = [
         name="payment_staff_dashboard",
     ),
     path(
-        "dashboard/process/",
-        views.proccess_staff_dashboard,
-        name="proccess_staff_dashboard",
+        "dashboard/operations/",
+        views.operations_staff_dashboard,
+        name="operations_staff_dashboard",
     ),
     path(
-        "dashboard/super-staff/",
-        views.super_staff_dashboard,
-        name="super_staff_dashboard",
+        "dashboard/adm/",
+        views.adm_dashboard,
+        name="adm_dashboard",
     ),
 
     # =========================

@@ -21,12 +21,12 @@ from ech.users.constants.constants import (
     MAX_LENGTH_ADDRESS,
     MAX_LENGTH_COUNTRY,
     MAX_LENGTH_STATE,
-    LABEL_SUPERADM,
-    LABEL_SUPER_STAFF,
+    LABEL_SUPERADMIN,
+    LABEL_ADMIN,
     LABEL_PAYMENT_STAFF,
-    LABEL_PROCCESS_STAFF,
+    LABEL_OPERATIONS_STAFF,
     LABEL_SUPPORT_STAFF,
-    LABEL_COMMON_USER,
+    LABEL_CUSTOMER_USER,
     LABEL_TOKEN_TYPE_EMAIL_CONFIRMATION,
     LABEL_TOKEN_TYPE_PASSWORD_RESET,
     LABEL_TOKEN_TYPE_MAGIC_LOGIN,
@@ -55,7 +55,7 @@ class CustomUserManager(BaseUserManager):
         email = self.normalize_email(email).lower()
 
         if role is None:
-            role = CustomUser.ROLE_COMMON_USER
+            role = CustomUser.ROLE_CUSTOMER_USER
 
         user = self.model(
             user_email=email,
@@ -73,7 +73,7 @@ class CustomUserManager(BaseUserManager):
         user = self.create_user(
             email=email,
             password=password,
-            role=CustomUser.ROLE_SUPERADM,
+            role=CustomUser.ROLE_SUPERADMIN,
             **extra_fields,
         )
         user.is_staff = True
@@ -90,20 +90,20 @@ class CustomUserManager(BaseUserManager):
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
 
-    ROLE_SUPERADM = "superadm"
-    ROLE_SUPER_STAFF = "super_staff"
+    ROLE_SUPERADMIN = "superadmin"
+    ROLE_ADMIN = "admin"
     ROLE_PAYMENT_STAFF = "payment_staff"
-    ROLE_PROCCESS_STAFF = "proccess_staff"
+    ROLE_OPERATIONS_STAFF = "operations_staff"
     ROLE_SUPPORT_STAFF = "support_staff"
-    ROLE_COMMON_USER = "common_user"
+    ROLE_CUSTOMER_USER = "customer_user"
 
     ROLE_CHOICES = [
-        (ROLE_COMMON_USER, LABEL_COMMON_USER),
+        (ROLE_CUSTOMER_USER, LABEL_CUSTOMER_USER),
         (ROLE_SUPPORT_STAFF, LABEL_SUPPORT_STAFF),
-        (ROLE_PROCCESS_STAFF, LABEL_PROCCESS_STAFF),
+        (ROLE_OPERATIONS_STAFF, LABEL_OPERATIONS_STAFF),
         (ROLE_PAYMENT_STAFF, LABEL_PAYMENT_STAFF),
-        (ROLE_SUPER_STAFF, LABEL_SUPER_STAFF),
-        (ROLE_SUPERADM, LABEL_SUPERADM),
+        (ROLE_ADMIN, LABEL_ADMIN),
+        (ROLE_SUPERADMIN, LABEL_SUPERADMIN),
     ]
 
 
@@ -112,7 +112,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     user_role = models.CharField(
         max_length=MAX_LENGTH_ROLE,
         choices=ROLE_CHOICES,
-        default=ROLE_COMMON_USER,
+        default=ROLE_CUSTOMER_USER,
         db_index=True,
     )
 
@@ -151,7 +151,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def clean(self):
         super().clean()
 
-        if self.user_role != self.ROLE_COMMON_USER:
+        if self.user_role != self.ROLE_CUSTOMER_USER:
             email_domain = self.user_email.split("@")[-1]
             corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
 
@@ -159,14 +159,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
                 raise ValidationError(MSG_VALIDATION_ERROR_STAFF_EMAIL)
             
     @property
-    def is_superadm(self):
-        return self.user_role == self.ROLE_SUPERADM
+    def is_superadmin(self):
+        return self.user_role == self.ROLE_SUPERADMIN
 
     @property
     def can_create_staff(self):
         return self.user_role in {
-            self.ROLE_SUPERADM,
-            self.ROLE_SUPER_STAFF,
+            self.ROLE_SUPERADMIN,
+            self.ROLE_ADMIN,
         }
 
     def save(self, *args, **kwargs):
@@ -174,10 +174,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if self.user_email:
             self.user_email = self.user_email.lower()
 
-        if self.user_role == self.ROLE_SUPERADM:
+        if self.user_role == self.ROLE_SUPERADMIN:
             self.is_staff = True
             self.is_superuser = True
-        elif self.user_role == self.ROLE_SUPER_STAFF:
+        elif self.user_role == self.ROLE_ADMIN:
             self.is_staff = True
             self.is_superuser = False
         else:

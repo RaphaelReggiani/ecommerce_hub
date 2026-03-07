@@ -39,7 +39,7 @@ class UserRegistrationService:
         """
 
         if role is None:
-            role = User.ROLE_COMMON_USER
+            role = User.ROLE_CUSTOMER_USER
 
         try:
             user = User.objects.create_user(

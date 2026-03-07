@@ -71,7 +71,7 @@ class BaseUserCreationForm(forms.ModelForm):
         return user
 
 
-class CommonUserRegistrationForm(BaseUserCreationForm):
+class CustomerUserRegistrationForm(BaseUserCreationForm):
 
     user_age = forms.IntegerField(label=LABEL_AGE)
     user_country = forms.CharField(label=LABEL_COUNTRY)
@@ -96,7 +96,7 @@ class CommonUserRegistrationForm(BaseUserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.user_role = CustomUser.ROLE_COMMON_USER
+        user.user_role = CustomUser.ROLE_CUSTOMER_USER
 
         if commit:
             user.save()
@@ -110,8 +110,8 @@ class StaffUserCreationForm(BaseUserCreationForm):
         choices=[
             (CustomUser.ROLE_SUPPORT_STAFF, "Support Staff"),
             (CustomUser.ROLE_PAYMENT_STAFF, "Payment Staff"),
-            (CustomUser.ROLE_PROCCESS_STAFF, "Process Staff"),
-            (CustomUser.ROLE_SUPER_STAFF, "Super Staff"),
+            (CustomUser.ROLE_OPERATIONS_STAFF, "Operations Staff"),
+            (CustomUser.ROLE_ADMIN, "ADMIN"),
         ]
     )
 

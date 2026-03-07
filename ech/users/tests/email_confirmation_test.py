@@ -1,6 +1,4 @@
 import pytest
-from django.utils import timezone
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from ech.users.models import UserToken

@@ -37,11 +37,11 @@ MSG_VALUE_ERROR_INFORM_EMAIL = "Inform an email."
 MSG_VALUE_ERROR_INFORM_PASSWORD = "Inform a password."
 MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN = "Invalid or expired token."
 MSG_VALUE_ERROR_TOKEN_EXPIRED = "Token expired."
-MSG_VALUE_ERROR_SUPERUSER_IS_SUPPORT_STAFF = "Superuser needs is_support_staff=True."
-MSG_VALUE_ERROR_SUPERUSER_IS_PROCCESS_STAFF = "Superuser needs is_proccess_staff=True."
-MSG_VALUE_ERROR_SUPERUSER_IS_PAYMENT_STAFF = "Superuser needs is_payment_staff=True."
-MSG_VALUE_ERROR_SUPERUSER_IS_SUPER_STAFF = "Superuser needs is_super_staff=True."
-MSG_VALUE_ERROR_SUPERUSER_IS_SUPERUSER = "Superuser needs is_superuser=True."
+MSG_VALUE_ERROR_USER_IS_SUPPORT_STAFF = "User needs is_support_staff=True."
+MSG_VALUE_ERROR_USER_IS_OPERATIONS_STAFF = "User needs is_operations_staff=True."
+MSG_VALUE_ERROR_USER_IS_PAYMENT_STAFF = "User needs is_payment_staff=True."
+MSG_VALUE_ERROR_USER_IS_ADMIN = "User needs is_admin=True."
+MSG_VALUE_ERROR_USER_IS_SUPERADMIN = "User needs is_superuser=True."
 
 # =========================
 # VALIDATION ERRORS
@@ -62,7 +62,7 @@ MSG_VALIDATION_ERROR_EMAIL_REQUIRED = "Email is required"
 # ==============================
 
 MSG_INVALID_ROLE_ASSIGNMENT_STAFF = "You can't create another user."
-MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM = "You don't have permission to create this type of user."
+MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADMIN = "You don't have permission to create this type of user."
 
 # ==============================
 # UNAUTHORIZEDROLECHANGE ERRORS

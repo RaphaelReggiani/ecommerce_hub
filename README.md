@@ -228,9 +228,12 @@ Planned modules:
 
 * Users module ✔
 * Products module (next step)
-* Cart system
 * Orders system
 * Payment integration
+* Shipping system
+* Reviews system
+* Notifications system
+* Analytics system
 * Admin dashboard
 
 ---

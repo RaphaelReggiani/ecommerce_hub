@@ -6,10 +6,10 @@ URL_HOME = "home"
 URL_LOGIN = "login"
 URL_LOGOUT = "logout"
 URL_REGISTER = "register"
-URL_USER_PROFILE = "user_profile"
-URL_SUPER_STAFF = "super_staff"
+URL_CUSTOMER_PROFILE = "customer_profile"
+URL_ADMIN = "admin"
 URL_PAYMENT_STAFF = "payment_staff"
-URL_PROCCESS_STAFF = "process_staff"
+URL_OPERATIONS_STAFF = "operations_staff"
 URL_SUPPORT_STAFF = "support_staff"
 URL_LOGIN_REQUIRED = "login_required"
 URL_PW_RESET = "pw_reset"
@@ -53,12 +53,12 @@ LABEL_PROFILE_PHOTO = "Photo"
 # USER LABELS
 # =========================
 
-LABEL_SUPERADM = "SuperADM"
-LABEL_SUPER_STAFF = "SuperStaff"
+LABEL_SUPERADMIN = "SuperADMIN"
+LABEL_ADMIN = "ADMIN"
 LABEL_PAYMENT_STAFF = "PaymentStaff"
-LABEL_PROCCESS_STAFF = "ProcessStaff"
+LABEL_OPERATIONS_STAFF = "OperationsStaff"
 LABEL_SUPPORT_STAFF = "SupportStaff"
-LABEL_COMMON_USER = "CommonUser"
+LABEL_CUSTOMER_USER = "CustomerUser"
 
 # =========================
 # TOKEN LABELS

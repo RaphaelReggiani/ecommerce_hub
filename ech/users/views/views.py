@@ -14,7 +14,7 @@ from ech.users.exceptions import (
 from ech.users.constants.constants import (
     URL_HOME,
     URL_LOGIN,
-    URL_USER_PROFILE,
+    URL_CUSTOMER_PROFILE,
 )
 
 from ech.users.constants.messages import (
@@ -25,13 +25,13 @@ from ech.users.constants.messages import (
     MSG_SUCCESFULL_USER_CREATED,
     MSG_AUTHENTICATION_FAILED_EMAIL_PASSWORD,
     MSG_AUTHENTICATION_FAILED_INACTIVE_ACCOUNT,
-    MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM,
+    MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADMIN,
     MSG_ERROR_HTTP404_INVALID_TOKEN,
     MSG_ERROR_HTTP404_EXPIRED_TOKEN,
 )
 
 from ech.users.forms import (
-    CommonUserRegistrationForm,
+    CustomerUserRegistrationForm,
     StaffUserCreationForm,
     UserProfileUpdateForm,
 )
@@ -77,14 +77,14 @@ def logout_view(request):
 @require_http_methods(["GET", "POST"])
 def register_view(request):
     if request.method == "POST":
-        form = CommonUserRegistrationForm(request.POST)
+        form = CustomerUserRegistrationForm(request.POST)
 
         if form.is_valid():
             UserRegistrationService.register_user(form)
             messages.success(request, MSG_SUCCESFULL_REGISTRATION)
             return redirect(URL_LOGIN)
     else:
-        form = CommonUserRegistrationForm()
+        form = CustomerUserRegistrationForm()
 
     return render(request, "users/register.html", {"form": form})
 
@@ -112,7 +112,7 @@ def user_profile_view(request):
         if form.is_valid():
             form.save()
             messages.success(request, MSG_SUCCESFULL_PROFILE_UPDATE)
-            return redirect(URL_USER_PROFILE)
+            return redirect(URL_CUSTOMER_PROFILE)
 
     else:
         form = UserProfileUpdateForm(instance=request.user)
@@ -122,7 +122,7 @@ def user_profile_view(request):
 
 @require_http_methods(["GET", "POST"])
 @login_required(login_url=URL_LOGIN)
-@role_required(CustomUser.ROLE_SUPER_STAFF)
+@role_required(CustomUser.ROLE_ADMIN)
 def create_staff_user_view(request):
 
     if request.method == "POST":
@@ -132,8 +132,8 @@ def create_staff_user_view(request):
 
             selected_role = form.cleaned_data["user_role"]
 
-            if selected_role == CustomUser.ROLE_SUPER_STAFF:
-                raise PermissionDenied(MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADM)
+            if selected_role == CustomUser.ROLE_ADMIN:
+                raise PermissionDenied(MSG_INVALID_ROLE_ASSIGNMENT_NOT_SUPERADMIN)
 
             UserRegistrationService.register_user(form)
             messages.success(request, MSG_SUCCESFULL_USER_CREATED)
@@ -150,6 +150,12 @@ def create_staff_user_view(request):
 
 
 @login_required(login_url=URL_LOGIN)
+@role_required(CustomUser.ROLE_CUSTOMER_USER)
+def customer_dashboard(request):
+    return render(request, "users/customer.html")
+
+
+@login_required(login_url=URL_LOGIN)
 @role_required(CustomUser.ROLE_SUPPORT_STAFF)
 def support_staff_dashboard(request):
     return render(request, "users/support_staff.html")
@@ -162,12 +168,12 @@ def payment_staff_dashboard(request):
 
 
 @login_required(login_url=URL_LOGIN)
-@role_required(CustomUser.ROLE_PROCCESS_STAFF)
-def proccess_staff_dashboard(request):
-    return render(request, "users/proccess_staff.html")
+@role_required(CustomUser.ROLE_OPERATIONS_STAFF)
+def operations_staff_dashboard(request):
+    return render(request, "users/operations_staff.html")
 
 
 @login_required(login_url=URL_LOGIN)
-@role_required(CustomUser.ROLE_SUPER_STAFF)
-def super_staff_dashboard(request):
-    return render(request, "users/super_staff.html")
+@role_required(CustomUser.ROLE_ADMIN)
+def adm_dashboard(request):
+    return render(request, "users/adm.html")
