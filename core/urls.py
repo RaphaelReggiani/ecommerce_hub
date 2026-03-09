@@ -15,8 +15,8 @@ urlpatterns = [
     # WEB
     # =========================
 
-    path("", include("ech.urls")),
-    path("users/", include("ech.users.config.urls", namespace="users")),
+    path("", include("ech_web.urls")),
+    # path("users/", include("ech_web.users.config.urls", namespace="users")),
     # path("products/", include("ech.products.urls")),
     # path("payment/", include("ech.payment.urls")),
     # path("delivery/", include("ech.delivery.urls")),
@@ -26,6 +26,7 @@ urlpatterns = [
     # =========================
 
     path("api/v1/users/", include(("ech.users.api.urls", "users-api"), namespace="users-api")),
+    path("api/v1/products/", include("ech.products.api.urls")),
 ] 
 
 if settings.DEBUG:

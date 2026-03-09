@@ -30,7 +30,7 @@ from ech.users.constants.messages import (
     MSG_ERROR_HTTP404_EXPIRED_TOKEN,
 )
 
-from ech.users.forms import (
+from ech_web.users.forms.forms import (
     CustomerUserRegistrationForm,
     StaffUserCreationForm,
     UserProfileUpdateForm,
