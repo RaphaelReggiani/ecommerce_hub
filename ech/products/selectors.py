@@ -112,7 +112,7 @@ def get_available_products():
         Product.objects
         .filter(
             is_active=True,
-            inventory__gt=0
+            inventory_record__quantity__gt=0,
         )
         .select_related("sold_by")
         .prefetch_related("images")

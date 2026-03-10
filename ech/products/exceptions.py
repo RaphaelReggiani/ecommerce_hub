@@ -9,6 +9,7 @@ from ech.products.constants.messages import (
     MSG_PRODUCT_UPDATE_PERMISSION_DENIED,
     MSG_PRODUCT_INACTIVE,
     MSG_PRODUCT_MIN_IMAGES_REQUIRED,
+    MSG_PRODUCT_MAX_IMAGES_REQUIRED,
     MSG_PRODUCT_INVALID_TYPE,
     MSG_PRODUCT_INVALID_PRICE,
     MSG_PRODUCT_DISCOUNT_INVALID,
@@ -95,4 +96,15 @@ class ProductMinimumImagesError(ValidationError):
     """
     def __init__(self, min_images):
         message = MSG_PRODUCT_MIN_IMAGES_REQUIRED.format(min_images=min_images)
+        super().__init__(message)
+
+
+class ProductMaximumImagesError(Exception):
+    """
+    Raised when the maximum number of product images is exceeded.
+    """
+
+    def __init__(self, max_images):
+        self.max_images = max_images
+        message = MSG_PRODUCT_MAX_IMAGES_REQUIRED.format(max_images=max_images)
         super().__init__(message)

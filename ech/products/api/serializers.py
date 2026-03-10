@@ -11,6 +11,10 @@ from ech.products.services.product_image_service import (
     add_product_image,
 )
 
+from ech.products.services.product_update_service import (
+    update_product,
+)
+
 from ech.products.constants.messages import (
     MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER,
 )
@@ -63,7 +67,7 @@ class ProductCreateSerializer(serializers.Serializer):
         price = attrs.get("price")
         discount = attrs.get("discount_price")
 
-        if discount is not None and discount >= price:
+        if price is not None and discount is not None and discount >= price:
             raise serializers.ValidationError(MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER)
 
         return attrs
@@ -75,9 +79,6 @@ class ProductImageUploadSerializer(serializers.Serializer):
     """
 
     image = serializers.ImageField()
-    order = serializers.IntegerField(
-        min_value=1
-    )
 
     def create(self, validated_data):
         """
@@ -86,12 +87,14 @@ class ProductImageUploadSerializer(serializers.Serializer):
 
         product = self.context["product"]
 
-        product_images = add_product_image(
-            product=product,
-            **validated_data
+        image = validated_data["image"]
+
+        images = add_product_image(
+            product_id=product.id,
+            images=[image],
         )
 
-        return product_images
+        return images[0]
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -147,3 +150,79 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "images",
             "created_at",
         ]
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    """
+    Serializer used for product listing.
+    Optimized to return only essential fields.
+    """
+
+    main_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "name",
+            "brand",
+            "price",
+            "discount_price",
+            "main_image",
+        ]
+
+    def get_main_image(self, obj):
+
+        images = getattr(obj, "images", None)
+
+        if not images:
+            return None
+
+        image = sorted(images.all(), key=lambda i: i.order)[0] if images.all() else None
+
+        if image:
+            return image.image.url
+
+        return None
+
+class ProductUpdateSerializer(serializers.Serializer):
+    """
+    Serializer used to update a product.
+    """
+
+    name = serializers.CharField(max_length=255, required=False)
+    brand = serializers.CharField(max_length=120, required=False)
+    description = serializers.CharField(required=False)
+    technical_information = serializers.CharField(required=False)
+
+    price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False
+    )
+
+    discount_price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True
+    )
+
+    def validate(self, attrs):
+
+        price = attrs.get("price")
+        discount = attrs.get("discount_price")
+
+        if price is not None and discount is not None and discount >= price:
+            raise serializers.ValidationError(
+                MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER
+            )
+
+        return attrs
+
+    def update(self, instance, validated_data):
+
+        return update_product(
+            product_id=instance.id,
+            **validated_data
+        )

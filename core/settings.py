@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
     # 'widget_tweaks',
     # 'api',
     # 'django_extensions',
@@ -140,7 +141,13 @@ REST_FRAMEWORK = {
         "anon": "100/day",
         "user": "1000/day",
         "login": "5/min"
-    }
+    },
+
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ]
 }
 
 SIMPLE_JWT = {
@@ -150,6 +157,16 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": "redis://127.0.0.1:6379/1",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#         }
+#     }
+# }
 
 # LOGIN_URL = "/login/"
 # LOGIN_REDIRECT_URL = "/home/"

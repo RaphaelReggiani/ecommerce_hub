@@ -1,9 +1,11 @@
 from django.db import transaction
+from django.db.models import Max
 
 from ech.products.models import ProductImage
 from ech.products.selectors import get_product_by_id
 from ech.products.exceptions import (
     ProductNotFoundError,
+    ProductMaximumImagesError
 )
 
 from ech.products.constants.constants import (
@@ -14,19 +16,14 @@ from ech.products.constants.constants import (
 @transaction.atomic
 def add_product_image(*, product_id, images):
     """
-    Adds images to a product.
+    Adds one or multiple images to a product.
 
-    Images are uploaded via:
-    POST /products/{id}/images/
-
-    Parameters
-    ----------
-    product_id : int
-    images : list[File]
-
-    Returns
-    -------
-    list[ProductImage]
+    This service ensures:
+    - Product existence validation
+    - Maximum image limit enforcement
+    - Automatic sequential ordering
+    - Atomic database operation
+    - Efficient bulk insert
     """
 
     product = get_product_by_id(product_id)
@@ -34,25 +31,47 @@ def add_product_image(*, product_id, images):
     if not product:
         raise ProductNotFoundError()
 
-    existing_images_count = product.images.count()
+    images_count = len(images)
 
-    new_images = []
+    if images_count == 0:
+        return []
+    existing_images_count = ProductImage.objects.filter(
+        product_id=product_id
+    ).count()
 
-    current_order = existing_images_count + 1
+    total_after_upload = existing_images_count + images_count
 
-    for image in images:
-
-        product_image = ProductImage.objects.create(
-            product=product,
-            image=image,
-            order=current_order
+    if total_after_upload > ProductImageRules.MAX_IMAGES_ALLOWED:
+        raise ProductMaximumImagesError(
+            ProductImageRules.MAX_IMAGES_ALLOWED
         )
 
-        new_images.append(product_image)
+    last_order = (
+        ProductImage.objects
+        .filter(product_id=product_id)
+        .aggregate(max_order=Max("order"))
+        .get("max_order")
+    )
 
-        current_order += 1
+    next_order = (last_order or 0) + 1
 
-    return new_images
+    product_images_to_create = []
+
+    for index, image in enumerate(images):
+
+        product_images_to_create.append(
+            ProductImage(
+                product=product,
+                image=image,
+                order=next_order + index,
+            )
+        )
+
+    created_images = ProductImage.objects.bulk_create(
+        product_images_to_create
+    )
+
+    return created_images
 
 
 def validate_product_minimum_images(product):
