@@ -13,9 +13,6 @@ from ech.users.models import (
     CustomUser,
 )
 
-from ech.products.constants.constants import (
-    ProductType,
-)
 from ech.products.exceptions import ProductOutOfStockError
 from ech.users.constants.constants import (
     CORPORATE_EMAIL_DOMAIN,
@@ -38,7 +35,7 @@ class ProductInventoryServiceTestCase(TestCase):
 
         self.product = Product.objects.create(
             name="Gaming Mouse",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Logitech",
             sold_by=self.user,
             description="Gaming mouse",

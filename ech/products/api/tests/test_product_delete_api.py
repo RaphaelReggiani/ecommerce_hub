@@ -7,7 +7,6 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from ech.products.models import Product
-from ech.products.constants.constants import ProductType
 
 from ech.users.constants.constants import (
     CORPORATE_EMAIL_DOMAIN,
@@ -39,7 +38,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.product = Product.objects.create(
             name="Gaming Monitor",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="LG",
             sold_by=self.manager,
             description="Monitor",

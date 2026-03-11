@@ -5,9 +5,6 @@ from ech.products.models import (
     ProductInventory,
 )
 
-from ech.products.constants.constants import (
-    ProductType,
-)
 from ech.products.exceptions import (
     ProductCreationPermissionDeniedError,
     InvalidProductTypeError,
@@ -86,7 +83,7 @@ def _validate_product_type(product_type):
     Validates if the product type is valid.
     """
 
-    valid_types = {choice[0] for choice in ProductType.CHOICES}
+    valid_types = {choice[0] for choice in Product.PRODUCT_CHOICES}
 
     if product_type not in valid_types:
         raise InvalidProductTypeError()

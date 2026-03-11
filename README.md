@@ -227,7 +227,7 @@ python manage.py runserver
 Planned modules:
 
 * Users module ✔
-* Products module (next step)
+* Products module (Actual step)
 * Orders system
 * Payment integration
 * Shipping system

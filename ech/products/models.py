@@ -6,7 +6,18 @@ from django.core.validators import (
     FileExtensionValidator,
 )
 
-from ech.products.constants.constants import ProductType
+from ech.products.constants.constants import (
+    LABEL_PHONE,
+    LABEL_EARPHONE,
+    LABEL_HEADSET,
+    LABEL_MOUSE,
+    LABEL_KEYBOARD,
+    LABEL_MICROPHONE,
+    LABEL_EVENT_PRODUCT_CREATED,
+    LABEL_EVENT_PRODUCT_UPDATED,
+    LABEL_EVENT_PRODUCT_DELETED,
+    LABEL_EVENT_PRODUCT_IMAGE_UPLOADED,
+)
 from ech.products.constants.storage import (
     PRODUCT_IMAGES_UPLOAD_PATH,
 )
@@ -19,8 +30,26 @@ from ech.products.constants.inventory import (
 class Product(models.Model):
     """
     Main product model.
-    Stores the core product information used across the application.
+    Stores the core product information used across the application.[
     """
+
+    PHONE = "PHONE"
+    EARPHONE = "EARPHONE"
+    HEADSET = "HEADSET"
+    MOUSE = "MOUSE"
+    KEYBOARD = "KEYBOARD"
+    MICROPHONE = "MICROPHONE"
+
+    PRODUCT_CHOICES = [
+        (PHONE, LABEL_PHONE),
+        (EARPHONE, LABEL_EARPHONE),
+        (HEADSET, LABEL_HEADSET),
+        (MOUSE, LABEL_MOUSE),
+        (KEYBOARD, LABEL_KEYBOARD),
+        (MICROPHONE, LABEL_MICROPHONE),
+    ]
+
+
 
     id = models.UUIDField(
         primary_key=True,
@@ -34,7 +63,7 @@ class Product(models.Model):
 
     product_type = models.CharField(
         max_length=20,
-        choices=ProductType.CHOICES,
+        choices=PRODUCT_CHOICES,
         db_index=True
     )
 
@@ -202,3 +231,71 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - Image {self.order}"
+    
+
+class ProductEventLog(models.Model):
+    """
+    Stores audit events related to product lifecycle.
+    Useful for debugging, compliance and operational monitoring.
+    """
+
+    EVENT_PRODUCT_CREATED = "product_created"
+    EVENT_PRODUCT_UPDATED = "product_updated"
+    EVENT_PRODUCT_DELETED = "product_deleted"
+    EVENT_PRODUCT_IMAGE_UPLOADED = "product_image_uploaded"
+
+    EVENT_CHOICES = [
+        (EVENT_PRODUCT_CREATED, LABEL_EVENT_PRODUCT_CREATED),
+        (EVENT_PRODUCT_UPDATED, LABEL_EVENT_PRODUCT_UPDATED),
+        (EVENT_PRODUCT_DELETED, LABEL_EVENT_PRODUCT_DELETED),
+        (EVENT_PRODUCT_IMAGE_UPLOADED, LABEL_EVENT_PRODUCT_IMAGE_UPLOADED),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="event_logs"
+    )
+
+    event_type = models.CharField(
+        max_length=40,
+        choices=EVENT_CHOICES,
+        db_index=True
+    )
+
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="product_events"
+    )
+
+    metadata = models.JSONField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+        indexes = [
+            models.Index(
+                fields=["product", "created_at"],
+                name="prod_evt_prod_created_idx"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.product_id} - {self.event_type}"

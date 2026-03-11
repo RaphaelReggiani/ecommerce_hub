@@ -7,9 +7,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from ech.products.models import Product
-from ech.products.constants.constants import (
-    ProductType,
-)
+
 from ech.users.constants.constants import (
     CORPORATE_EMAIL_DOMAIN,
 )
@@ -35,7 +33,7 @@ class ProductListAPITestCase(APITestCase):
 
         Product.objects.create(
             name="Keyboard",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Razer",
             sold_by=self.user,
             description="Keyboard",
@@ -46,7 +44,7 @@ class ProductListAPITestCase(APITestCase):
 
         Product.objects.create(
             name="Inactive Product",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Test",
             sold_by=self.user,
             description="Test",
@@ -90,7 +88,7 @@ class ProductListAPITestCase(APITestCase):
         for i in range(30):
             Product.objects.create(
                 name=f"Product {i}",
-                product_type=ProductType.CHOICES[0][0],
+                product_type=Product.PRODUCT_CHOICES[0][0],
                 brand="Test",
                 sold_by=self.user,
                 description="Test",

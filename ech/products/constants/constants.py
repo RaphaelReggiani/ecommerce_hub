@@ -1,52 +1,20 @@
-"""
-Product related constants used across the products app.
-"""
-
-class ProductType:
-    """
-    Product type choices used in the Product model.
-    """
-
-    PHONE = "PHONE"
-    EARPHONE = "EARPHONE"
-    HEADSET = "HEADSET"
-    MOUSE = "MOUSE"
-    KEYBOARD = "KEYBOARD"
-    MICROPHONE = "MICROPHONE"
-
-    CHOICES = [
-        (PHONE, "Phone"),
-        (EARPHONE, "Earphone"),
-        (HEADSET, "Headset"),
-        (MOUSE, "Mouse"),
-        (KEYBOARD, "Keyboard"),
-        (MICROPHONE, "Microphone"),
-    ]
+# =========================
+# PRODUCTS MODELS LABELS
+# =========================
 
 
-class ProductImageRules:
-    """
-    Business rules related to product images.
-    """
+LABEL_PHONE = "Phone"
+LABEL_EARPHONE = "Earphone"
+LABEL_HEADSET = "Headset"
+LABEL_MOUSE = "Mouse"
+LABEL_KEYBOARD = "Keyboard"
+LABEL_MICROPHONE = "Microphone"
 
-    MIN_IMAGES_REQUIRED = 3
-    MAX_IMAGES_ALLOWED = 10
+# =========================
+# EVENTS MODELS LABELS
+# =========================
 
-
-class ProductInventoryRules:
-    """
-    Business rules related to inventory control.
-    """
-
-    MIN_INVENTORY_ALLOWED = 0
-
-
-class ProductOrdering:
-    """
-    Default ordering rules used in selectors.
-    """
-
-    NEWEST = "-created_at"
-    PRICE_ASC = "price"
-    PRICE_DESC = "-price"
-
+LABEL_EVENT_PRODUCT_CREATED = "Product Created"
+LABEL_EVENT_PRODUCT_UPDATED = "Product Updated"
+LABEL_EVENT_PRODUCT_DELETED = "Product Deleted"
+LABEL_EVENT_PRODUCT_IMAGE_UPLOADED = "Product Image Uploaded"

@@ -122,6 +122,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     )
 
     inventory = serializers.IntegerField(
+        source="inventory_record.quantity", 
         read_only=True
     )
 

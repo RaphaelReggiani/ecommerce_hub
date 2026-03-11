@@ -6,7 +6,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from ech.products.models import Product
+from ech.products.models import (
+    Product,
+    ProductEventLog,
+)
 from ech.products.api.serializers import ProductListSerializer
 from ech.products.api.pagination import DefaultPagination
 from ech.products.filters import ProductFilter
@@ -33,6 +36,16 @@ from ech.products.services.product_delete_service import (
     delete_product,
 )
 
+from ech.products.infrastructure.cache import (
+    get_product_from_cache,
+    set_product_cache,
+    invalidate_product_cache,
+)
+
+from ech.products.services.product_event_service import (
+    log_product_event,
+)
+
 
 class ProductCreateAPIView(APIView):
     """
@@ -52,6 +65,12 @@ class ProductCreateAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         product = serializer.save()
+
+        log_product_event(
+            product=product,
+            event_type=ProductEventLog.EVENT_PRODUCT_CREATED,
+            user=request.user,
+        )
 
         output_serializer = ProductDetailSerializer(product)
 
@@ -108,13 +127,18 @@ class ProductDetailAPIView(APIView):
 
     def get(self, request, product_id):
 
-        product = get_object_or_404(
-            Product.objects
-            .filter(is_active=True)
-            .select_related("inventory_record")
-            .prefetch_related("images"),
-            id=product_id,
-        )
+        product = get_product_from_cache(product_id)
+
+        if not product:
+            product = get_object_or_404(
+                Product.objects
+                .filter(is_active=True)
+                .select_related("inventory_record")
+                .prefetch_related("images"),
+                id=product_id,
+            )
+
+            set_product_cache(product)
 
         serializer = ProductDetailSerializer(product)
 
@@ -142,6 +166,15 @@ class ProductImageUploadAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         image = serializer.save()
+
+        invalidate_product_cache(product.id)
+
+        log_product_event(
+            product=product,
+            event_type=ProductEventLog.EVENT_PRODUCT_IMAGE_UPLOADED,
+            user=request.user,
+            metadata={"image_id": image.id, "order": image.order},
+        )
 
         return Response(
             {
@@ -173,8 +206,17 @@ class ProductUpdateAPIView(APIView):
         )
 
         serializer.is_valid(raise_exception=True)
+        
 
         product = serializer.save()
+
+        invalidate_product_cache(product.id)
+
+        log_product_event(
+            product=product,
+            event_type=ProductEventLog.EVENT_PRODUCT_UPDATED,
+            user=request.user,
+        )
 
         output_serializer = ProductDetailSerializer(product)
 
@@ -195,5 +237,13 @@ class ProductDeleteAPIView(APIView):
         self.check_object_permissions(request, product)
 
         delete_product(product_id=product.id)
+
+        invalidate_product_cache(product.id)
+
+        log_product_event(
+            product=product,
+            event_type=ProductEventLog.EVENT_PRODUCT_DELETED,
+            user=request.user,
+        )
 
         return Response(status=status.HTTP_204_NO_CONTENT)

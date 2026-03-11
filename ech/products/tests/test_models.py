@@ -12,9 +12,6 @@ from ech.products.models import (
     ProductImage,
 )
 
-from ech.products.constants.constants import (
-    ProductType,
-)
 from ech.products.constants.inventory import (
     DEFAULT_PRODUCT_INVENTORY,
 )
@@ -34,7 +31,7 @@ class ProductModelTestCase(TestCase):
 
         self.product = Product.objects.create(
             name="Gaming Mouse",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Logitech",
             sold_by=self.user,
             description="High precision gaming mouse",
@@ -122,7 +119,7 @@ class ProductInventoryModelTestCase(TestCase):
 
         self.product = Product.objects.create(
             name="Keyboard",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Corsair",
             sold_by=self.user,
             description="Mechanical keyboard",
@@ -175,7 +172,7 @@ class ProductImageModelTestCase(TestCase):
 
         self.product = Product.objects.create(
             name="Monitor",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Dell",
             sold_by=self.user,
             description="4K Monitor",

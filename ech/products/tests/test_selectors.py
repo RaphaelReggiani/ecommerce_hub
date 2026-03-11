@@ -18,8 +18,6 @@ from ech.products.selectors import (
     get_available_products,
 )
 
-from ech.products.constants.constants import ProductType
-
 
 User = get_user_model()
 
@@ -35,7 +33,7 @@ class ProductSelectorsTestCase(TestCase):
 
         self.product_active = Product.objects.create(
             name="Gaming Mouse",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Logitech",
             sold_by=self.user,
             description="Gaming mouse",
@@ -46,7 +44,7 @@ class ProductSelectorsTestCase(TestCase):
 
         self.product_inactive = Product.objects.create(
             name="Old Mouse",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Generic",
             sold_by=self.user,
             description="Old model",
@@ -57,7 +55,7 @@ class ProductSelectorsTestCase(TestCase):
 
         self.product_discount = Product.objects.create(
             name="Gaming Keyboard",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Corsair",
             sold_by=self.user,
             description="Mechanical keyboard",

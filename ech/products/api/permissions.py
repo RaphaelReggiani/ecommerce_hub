@@ -1,5 +1,4 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from ech.users.models import CustomUser
 
 from ech.products.constants.messages import (
     MSG_NOT_HAVE_PERMISSION_TO_MANAGE_PRODUCTS,

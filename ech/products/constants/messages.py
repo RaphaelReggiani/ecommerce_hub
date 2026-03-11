@@ -32,3 +32,9 @@ MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER = "Discount price must be lower than pric
 # =============================
 
 MSG_ERROR_INSUFFICIENT_STOCK = "Insufficient stock"
+
+# =============================
+# SERVICES STOCK ERROR
+# =============================
+
+MSG_ERROR_STOCK_NOT_ENOUGH_STOCK_AVAILABLE = "Not enough stock available."

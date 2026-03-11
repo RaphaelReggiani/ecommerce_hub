@@ -8,7 +8,7 @@ from ech.products.exceptions import (
     ProductMaximumImagesError
 )
 
-from ech.products.constants.constants import (
+from ech.products.constants.rules import (
     ProductImageRules,
 )
 

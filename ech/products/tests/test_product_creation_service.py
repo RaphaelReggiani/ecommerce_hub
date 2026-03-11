@@ -13,7 +13,6 @@ from ech.products.models import (
 )
 from ech.products.services.product_creation_service import create_product
 
-from ech.products.constants.constants import ProductType
 from ech.products.constants.roles_management import (
     ALLOWED_OPERATION_ROLES,
 )
@@ -52,7 +51,7 @@ class ProductCreationServiceTestCase(TestCase):
         self.valid_data = dict(
             user=self.user,
             name="Gaming Mouse",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Logitech",
             description="High precision mouse",
             technical_information="16000 DPI sensor",

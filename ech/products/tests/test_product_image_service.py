@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+
 from ech.users.models import (
     CustomUser,
 )
@@ -16,13 +17,13 @@ from ech.products.services.product_image_service import (
     validate_product_minimum_images,
 )
 
-from ech.products.constants.constants import (
-    ProductType, 
+from ech.products.constants.rules import (
     ProductImageRules,
 )
 from ech.products.exceptions import (
     ProductNotFoundError,
     ProductMinimumImagesError,
+    ProductMaximumImagesError,
 )
 
 from ech.users.constants.constants import (
@@ -46,7 +47,7 @@ class ProductImageServiceTestCase(TestCase):
 
         self.product = Product.objects.create(
             name="Gaming Keyboard",
-            product_type=ProductType.CHOICES[0][0],
+            product_type=Product.PRODUCT_CHOICES[0][0],
             brand="Razer",
             sold_by=self.user,
             description="Mechanical keyboard",
@@ -201,9 +202,6 @@ class ProductImageServiceTestCase(TestCase):
         """
         Should raise error when exceeding maximum images allowed.
         """
-
-        from ech.products.constants.constants import ProductImageRules
-        from ech.products.exceptions import ProductMaximumImagesError
 
         max_images = ProductImageRules.MAX_IMAGES_ALLOWED
 
