@@ -6,7 +6,7 @@ from ech.products.constants.messages import (
 )
 
 from ech.products.constants.roles_management import (
-    ALLOWED_OPERATION_ROLES,
+    ALLOWED_PRODUCTS_ROLES,
 )
 
 
@@ -32,7 +32,7 @@ class IsOperationsAdminOrSuperAdmin(BaseRolePermission):
     """
 
     message = MSG_NOT_HAVE_PERMISSION_TO_MANAGE_PRODUCTS
-    allowed_roles = ALLOWED_OPERATION_ROLES
+    allowed_roles = ALLOWED_PRODUCTS_ROLES
 
     def has_permission(self, request, view):
         return self.is_allowed(request.user)
@@ -44,7 +44,7 @@ class IsPublicOrProductManager(BaseRolePermission):
     while restricting write operations to product managers.
     """
 
-    allowed_roles = ALLOWED_OPERATION_ROLES
+    allowed_roles = ALLOWED_PRODUCTS_ROLES
 
     def has_permission(self, request, view):
 
@@ -61,7 +61,7 @@ class IsProductOwnerOrManager(BaseRolePermission):
     """
 
     message = MSG_NOT_HAVE_PERMISSION_TO_MODIFY_PRODUCTS
-    allowed_roles = ALLOWED_OPERATION_ROLES
+    allowed_roles = ALLOWED_PRODUCTS_ROLES
 
     def has_object_permission(self, request, view, obj):
 

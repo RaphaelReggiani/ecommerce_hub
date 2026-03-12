@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.core.cache import cache
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -20,6 +21,8 @@ User = get_user_model()
 
 
 class ProductListAPITestCase(APITestCase):
+
+    cache.clear()
 
     def setUp(self):
 
@@ -61,11 +64,14 @@ class ProductListAPITestCase(APITestCase):
 
         response = self.client.get(url)
 
+        print(response.data)
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         products = response.data["results"]
 
         self.assertEqual(len(products), 1)
+
 
     def test_product_list_requires_authentication(self):
         """

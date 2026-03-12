@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 
 from ech.products.models import (
@@ -40,12 +41,18 @@ from ech.products.infrastructure.cache import (
     get_product_from_cache,
     set_product_cache,
     invalidate_product_cache,
+    get_product_list_cache,
+    set_product_list_cache,
+    build_product_list_cache_key,
 )
 
 from ech.products.services.product_event_service import (
     log_product_event,
 )
 
+from ech.products.constants.cache import (
+    RUNNING_TESTS_FOR_CACHE,
+)
 
 class ProductCreateAPIView(APIView):
     """
@@ -116,7 +123,25 @@ class ProductListAPIView(ListAPIView):
             .select_related("sold_by")
             .prefetch_related("images")
         )
+    
+    def get(self, request, *args, **kwargs):
 
+        if RUNNING_TESTS_FOR_CACHE:
+            return self.list(request, *args, **kwargs)
+
+        cache_key = build_product_list_cache_key(request)
+
+        cached_response = get_product_list_cache(cache_key)
+
+        if cached_response is not None:
+            return Response(cached_response)
+
+        response = self.list(request, *args, **kwargs)
+
+        set_product_list_cache(cache_key, response.data)
+
+        return response
+    
 
 class ProductDetailAPIView(APIView):
     """

@@ -1,6 +1,8 @@
 
 from pathlib import Path
 from datetime import timedelta
+import sys
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,6 +26,7 @@ INSTALLED_APPS = [
     'ech_web',
     'ech.users.apps.UsersConfig',
     'ech.products.apps.ProductsConfig',
+    'ech.orders.apps.OrdersConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
@@ -157,6 +160,13 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+if "pytest" in sys.modules:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+        }
+    }
 
 # CACHES = {
 #     "default": {

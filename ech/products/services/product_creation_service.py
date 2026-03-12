@@ -14,7 +14,7 @@ from ech.products.exceptions import (
 )
 
 from ech.products.constants.roles_management import (
-    ALLOWED_OPERATION_ROLES,
+    ALLOWED_PRODUCTS_ROLES,
 )
 
 
@@ -74,7 +74,7 @@ def _validate_user_permission(user):
     Validates if the user has permission to create products.
     """
 
-    if user.user_role not in ALLOWED_OPERATION_ROLES:
+    if user.user_role not in ALLOWED_PRODUCTS_ROLES:
         raise ProductCreationPermissionDeniedError()
 
 
