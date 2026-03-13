@@ -31,7 +31,8 @@ class ProductListAPITestCase(APITestCase):
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
-            
+            is_active=True,
+            email_confirmed=True,
         )
 
         Product.objects.create(

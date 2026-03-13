@@ -38,6 +38,16 @@ from ech.users.constants.messages import (
     MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN,
 )
 
+from ech.users.logs.security_events import (
+    log_login_success,
+    log_login_failed,
+    log_user_registered,
+    log_email_confirmed,
+    log_password_changed,
+    log_token_invalid,
+    log_password_reset_requested,
+)
+
 
 class UserRegisterApi(APIView):
 
@@ -52,6 +62,8 @@ class UserRegisterApi(APIView):
             user_name=serializer.validated_data["user_name"],
         )
 
+        log_user_registered(request, user)
+
         output = UserOutputSerializer(user)
 
         return Response(
@@ -64,7 +76,13 @@ class ConfirmEmailApi(APIView):
 
     def post(self, request, token):
 
-        user = UserRegistrationService.confirm_email(token)
+        try:
+            user = UserRegistrationService.confirm_email(token)
+        except Exception:
+            log_token_invalid(request, "email_confirmation")
+            raise
+
+        log_email_confirmed(request, user)
 
         output = UserOutputSerializer(user)
 
@@ -81,9 +99,18 @@ class UserLoginApi(APIView):
     def post(self, request):
 
         serializer = UserLoginInputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            email = request.data.get("email")
+            log_login_failed(request, email)
+            raise ValidationError(serializer.errors)
 
         user = serializer.validated_data["user"]
+        log_login_success(request, user)
+
+        user = serializer.validated_data["user"]
+
+        log_login_success(request, user)
 
         refresh = RefreshToken.for_user(user)
 
@@ -134,6 +161,7 @@ class PasswordResetRequestApi(APIView):
 
         try:
             user = CustomUser.objects.get(user_email=email)
+            log_password_reset_requested(request, user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             reset_link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
@@ -171,9 +199,11 @@ class PasswordResetConfirmApi(APIView):
             uid = force_str(urlsafe_base64_decode(uid))
             user = CustomUser.objects.get(pk=uid)
         except Exception:
+            log_token_invalid(request, "password_reset_uid")
             raise ValidationError(MSG_VALIDATION_ERROR_INVALID_RESET_LINK)
 
         if not default_token_generator.check_token(user, token):
+            log_token_invalid(request, "password_reset_token")
             raise ValidationError(MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN)
 
         try:
@@ -183,6 +213,8 @@ class PasswordResetConfirmApi(APIView):
 
         user.set_password(new_password)
         user.save()
+
+        log_password_changed(request, user)
 
         return Response(
             {"detail": MSG_RESPONSE_SUCCESFULL_PASSWORD_RESET},

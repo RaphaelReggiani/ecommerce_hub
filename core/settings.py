@@ -14,7 +14,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -114,6 +113,32 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "simple": {
+            "format": "%(levelname)s %(name)s %(message)s",
+        },
+    },
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+    },
+
+    "loggers": {
+        "ech.users.security": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
 # DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # from django.contrib.messages import constants
@@ -164,9 +189,12 @@ AUTH_USER_MODEL = "users.CustomUser"
 if "pytest" in sys.modules:
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache"
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "test-cache",
         }
     }
+
+RUNNING_TESTS = "pytest" in sys.modules
 
 # CACHES = {
 #     "default": {

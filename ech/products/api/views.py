@@ -50,9 +50,6 @@ from ech.products.services.product_event_service import (
     log_product_event,
 )
 
-from ech.products.constants.cache import (
-    RUNNING_TESTS_FOR_CACHE,
-)
 
 class ProductCreateAPIView(APIView):
     """
@@ -126,7 +123,7 @@ class ProductListAPIView(ListAPIView):
     
     def get(self, request, *args, **kwargs):
 
-        if RUNNING_TESTS_FOR_CACHE:
+        if getattr(settings, "RUNNING_TESTS", False):
             return self.list(request, *args, **kwargs)
 
         cache_key = build_product_list_cache_key(request)

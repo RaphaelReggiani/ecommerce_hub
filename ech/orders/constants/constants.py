@@ -2,33 +2,33 @@
 # ORDERS STATUS
 # =========================
 
-ORDER_STATUS_PENDING = "Pending Order"
-ORDER_STATUS_CONFIRMED = "Confirmed Order"
-ORDER_STATUS_PROCESSING = "Processing Order"
-ORDER_STATUS_SHIPPED = "Shipped Order"
-ORDER_STATUS_DELIVERED = "Delivered Order"
-ORDER_STATUS_CANCELLED = "Cancelled Order"
-ORDER_STATUS_REFUNDED = "Refunded Order"
+LABEL_ORDER_STATUS_PENDING = "Pending Order"
+LABEL_ORDER_STATUS_CONFIRMED = "Confirmed Order"
+LABEL_ORDER_STATUS_PROCESSING = "Processing Order"
+LABEL_ORDER_STATUS_SHIPPED = "Shipped Order"
+LABEL_ORDER_STATUS_DELIVERED = "Delivered Order"
+LABEL_ORDER_STATUS_CANCELLED = "Cancelled Order"
+LABEL_ORDER_STATUS_REFUNDED = "Refunded Order"
 
 # =========================
 # PAYMENT STATUS
 # =========================
 
-PAYMENT_PENDING = "Pending Payment"
-PAYMENT_AUTHORIZED = "Authorized Payment"
-PAYMENT_CAPTURED = "Captured Payment"
-PAYMENT_FAILED = "Failed Payment"
-PAYMENT_REFUNDED = "Refunded Payment"
+LABEL_PAYMENT_PENDING = "Pending Payment"
+LABEL_PAYMENT_AUTHORIZED = "Authorized Payment"
+LABEL_PAYMENT_CAPTURED = "Captured Payment"
+LABEL_PAYMENT_FAILED = "Failed Payment"
+LABEL_PAYMENT_REFUNDED = "Refunded Payment"
 
 # =========================
 # SHIPPING STATUS
 # =========================
 
-SHIPPING_PENDING = "Shipping Pending"
-SHIPPING_PREPARING = "Shipping Preparing"
-SHIPPING_SHIPPED = "Shipped"
-SHIPPING_IN_TRANSIT = "Shipping in Transit"
-SHIPPING_DELIVERED = "Shipping Delivered"
+LABEL_SHIPPING_PENDING = "Shipping Pending"
+LABEL_SHIPPING_PREPARING = "Shipping Preparing"
+LABEL_SHIPPING_SHIPPED = "Shipped"
+LABEL_SHIPPING_IN_TRANSIT = "Shipping in Transit"
+LABEL_SHIPPING_DELIVERED = "Shipping Delivered"
 
 # =========================
 # EVENTS MODELS LABELS

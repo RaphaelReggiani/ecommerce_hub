@@ -14,7 +14,7 @@ from ech.products.models import (
 from ech.products.services.product_creation_service import create_product
 
 from ech.products.constants.roles_management import (
-    ALLOWED_OPERATION_ROLES,
+    ALLOWED_PRODUCTS_ROLES,
 )
 from ech.users.constants.constants import (
     CORPORATE_EMAIL_DOMAIN,
@@ -39,7 +39,7 @@ class ProductCreationServiceTestCase(TestCase):
         Creates a valid operations user to run the tests.
         """
 
-        self.allowed_role = list(ALLOWED_OPERATION_ROLES)[0]
+        self.allowed_role = list(ALLOWED_PRODUCTS_ROLES)[0]
 
         self.user = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
