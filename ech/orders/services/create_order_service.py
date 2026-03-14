@@ -3,12 +3,24 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
+from django.db.models import F
+
+from ech.products.models import ProductInventory
+
 from ech.orders.models import (
     Order,
     OrderItem,
     OrderTotals,
     OrderLifecycle,
     OrderEvent,
+    OrderAddress,
+)
+
+from ech.orders.exceptions import (
+    EmptyOrderError,
+    ProductNotAvailableError,
+    InsufficientInventoryError,
+    InvalidOrderAddressError,
 )
 
 from ech.products.selectors import get_active_product_by_id
@@ -27,7 +39,7 @@ class CreateOrderService:
     - Register order event
     """
 
-    def __init__(self, *, customer, items, idempotency_key=None):
+    def __init__(self, *, customer, items, address, idempotency_key=None):
         """
         Parameters
         ----------
@@ -40,7 +52,7 @@ class CreateOrderService:
 
             [
                 {
-                    "product_id": int,
+                    "product_id": UUID,
                     "quantity": int
                 }
             ]
@@ -48,6 +60,7 @@ class CreateOrderService:
 
         self.customer = customer
         self.items = items
+        self.address = address
         self.idempotency_key = idempotency_key
 
         self.order = None
@@ -59,6 +72,9 @@ class CreateOrderService:
         """
         Creates the order and all related records.
         """
+
+        if not self.items:
+            raise EmptyOrderError()
 
         if self.idempotency_key:
 
@@ -76,6 +92,8 @@ class CreateOrderService:
             self._create_items()
 
             self._create_totals()
+
+            self._create_address()
 
             self._create_lifecycle()
 
@@ -100,9 +118,19 @@ class CreateOrderService:
             product = get_active_product_by_id(item["product_id"])
 
             if not product:
-                raise ValueError("Product not available")
+                raise ProductNotAvailableError()
 
             quantity = int(item["quantity"])
+
+            inventory = (
+                ProductInventory.objects
+                .select_for_update()
+                .filter(product=product)
+                .first()
+            )
+
+            if not inventory or inventory.quantity < quantity:
+                raise InsufficientInventoryError()
 
             unit_price = product.price
             discount_price = product.discount_price
@@ -113,7 +141,7 @@ class CreateOrderService:
 
             self.subtotal += unit_price * quantity
 
-            if discount_price:
+            if discount_price is not None:
                 self.discount_total += (unit_price - discount_price) * quantity
 
             OrderItem.objects.create(
@@ -128,6 +156,10 @@ class CreateOrderService:
                 brand_snapshot=product.brand,
                 product_type_snapshot=product.product_type,
             )
+
+            inventory.quantity = F("quantity") - quantity
+            inventory.save(update_fields=["quantity", "updated_at"])
+            inventory.refresh_from_db(fields=["quantity"])
 
     def _create_totals(self):
 
@@ -164,11 +196,32 @@ class CreateOrderService:
 
     def _register_event(self):
 
+        now = timezone.now()
+
         OrderEvent.objects.create(
             order=self.order,
             event_type=OrderEvent.TYPE_CREATED,
             performed_by=self.customer,
             metadata={
-                "created_at": timezone.now().isoformat()
+                "created_at": now.isoformat()
             }
+        )
+
+    def _create_address(self):
+        """
+        Creates the order address snapshot.
+        """
+
+        if not self.address:
+            raise InvalidOrderAddressError()
+
+        OrderAddress.objects.create(
+            order=self.order,
+            full_name=self.address["full_name"],
+            address_line=self.address["address_line"],
+            city=self.address["city"],
+            state=self.address["state"],
+            country=self.address["country"],
+            postal_code=self.address["postal_code"],
+            phone=self.address.get("phone", ""),
         )

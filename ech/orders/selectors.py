@@ -127,3 +127,44 @@ def get_order_for_update(order_id):
         .filter(id=order_id)
         .first()
     )
+
+
+def list_orders_for_management():
+    """
+    Returns all orders for staff management dashboards.
+
+    Optimized for operational listing views.
+    """
+
+    return (
+        Order.objects
+        .select_related(
+            "customer",
+            "totals",
+        )
+        .order_by("-created_at")
+    )
+
+
+def get_order_detail_for_management(order_id):
+    """
+    Returns a specific order with full related data
+    for staff management detail views.
+    """
+
+    return (
+        Order.objects
+        .select_related(
+            "customer",
+            "totals",
+            "address",
+            "lifecycle",
+        )
+        .prefetch_related(
+            "items",
+            "events",
+            "notes",
+        )
+        .filter(id=order_id)
+        .first()
+    )

@@ -369,6 +369,17 @@ class OrderLifecycle(models.Model):
         blank=True
     )
 
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    def __str__(self):
+        return f"Lifecycle for Order {self.order_id}"
+
 
 class OrderEvent(models.Model):
     """
@@ -423,7 +434,7 @@ class OrderEvent(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.event_type} - {self.order_id}"
+        return f"{self.event_type} - {self.order.id}"
 
 
 class OrderNote(models.Model):

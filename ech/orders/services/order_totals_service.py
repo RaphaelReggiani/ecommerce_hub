@@ -12,7 +12,6 @@ class OrderTotalsService:
     """
 
     def __init__(self, *, order):
-
         self.order = order
 
         self.subtotal = Decimal("0.00")
@@ -24,6 +23,11 @@ class OrderTotalsService:
         """
         Recalculate totals and update OrderTotals record.
         """
+
+        self.subtotal = Decimal("0.00")
+        self.discount_total = Decimal("0.00")
+        self.tax_total = Decimal("0.00")
+        self.shipping_total = Decimal("0.00")
 
         with transaction.atomic():
 
@@ -52,7 +56,7 @@ class OrderTotalsService:
 
             self.subtotal += unit_price * quantity
 
-            if discount_price:
+            if discount_price is not None:
                 self.discount_total += (unit_price - discount_price) * quantity
 
     def _calculate_extras(self):
@@ -62,9 +66,7 @@ class OrderTotalsService:
         """
 
         self.tax_total = Decimal("0.00")
-
         self.shipping_total = Decimal("0.00")
-
 
     def _save_totals(self):
         """
@@ -96,3 +98,4 @@ class OrderTotalsService:
             "grand_total",
             "updated_at",
         ])
+
