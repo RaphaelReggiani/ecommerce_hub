@@ -73,77 +73,141 @@ Example structure of the backend:
 ecommerce_hub/
 │
 ├── core/
-│ ├── exceptions/
-│ │ ├── handlers.py
-│ │
-│ └── settings.py
+│   ├── exceptions/
+│   │   └── handlers.py
+│   │
+│   └── settings.py
 │
 ├── ech/
 │
-│ ├── users/
-│ │ ├── api/
-│ │ │ ├── tests/
-│ │ │ ├── serializers.py
-│ │ │ ├── permissions.py
-│ │ │ ├── throttles.py
-│ │ │ ├── urls.py
-│ │ │ └── views.py
-│ │ │
-│ │ ├── constants/
-│ │ ├── services/
-│ │ ├── selectors/
-│ │ ├── tests/
-│ │ ├── views/
-│ │ ├── models.py
-│ │ ├── decorators.py
-│ │ ├── exceptions.py
-│ │ └── forms.py
+│   ├── users/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_login_api.py
+│   │   │   │   ├── test_logout_api.py
+│   │   │   │   ├── test_token_refresh_api.py
+│   │   │   │   ├── test_register_api.py
+│   │   │   │   ├── test_confirm_email_api.py
+│   │   │   │   ├── test_password_reset_api.py
+│   │   │   │   └── test_password_reset_confirm_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── throttles.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── constants/
+│   │   │
+│   │   ├── services/
+│   │   │   ├── registration_service.py
+│   │   │   └── password_reset_service.py
+│   │   │
+│   │   ├── selectors/
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_registration_service.py
+│   │   │   ├── test_password_reset_service.py
+│   │   │   └── test_user_tokens.py
+│   │   │
+│   │   ├── views/
+│   │   ├── models.py
+│   │   ├── decorators.py
+│   │   ├── exceptions.py
+│   │   └── forms.py
 │
-│ ├── products/
-│ │ ├── api/
-│ │ │ ├── tests/
-│ │ │ ├── serializers.py
-│ │ │ ├── permissions.py
-│ │ │ ├── pagination.py
-│ │ │ ├── urls.py
-│ │ │ └── views.py
-│ │ │
-│ │ ├── services/
-│ │ ├── selectors/
-│ │ ├── infrastructure/
-│ │ │ └── cache.py
-│ │ │
-│ │ ├── constants/
-│ │ ├── tests/
-│ │ ├── filters.py
-│ │ ├── models.py
-│ │ ├── exceptions.py
-│ │ └── apps.py
+│   ├── products/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_product_create_api.py
+│   │   │   │   ├── test_product_update_api.py
+│   │   │   │   ├── test_product_delete_api.py
+│   │   │   │   ├── test_product_list_api.py
+│   │   │   │   ├── test_product_detail_api.py
+│   │   │   │   └── test_product_images_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── product_creation_service.py
+│   │   │   ├── product_delete_service.py
+│   │   │   ├── product_event_service.py
+│   │   │   ├── product_image_service.py
+│   │   │   ├── product_inventory_service.py
+│   │   │   └── product_update_service.py
+│   │   │
+│   │   ├── selectors/
+│   │   │
+│   │   ├── infrastructure/
+│   │   │   └── cache.py
+│   │   │
+│   │   ├── constants/
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_product_creation_service.py
+│   │   │   ├── test_product_update_service.py
+│   │   │   ├── test_product_delete_service.py
+│   │   │   ├── test_product_inventory_service.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
 │
-│ ├── orders/
-│ │ ├── api/
-│ │ │ ├── tests/
-│ │ │ ├── serializers.py
-│ │ │ ├── permissions.py
-│ │ │ ├── pagination.py
-│ │ │ ├── urls.py
-│ │ │ └── views.py
-│ │ │
-│ │ ├── services/
-│ │ │ ├── create_order_service.py
-│ │ │ ├── order_status_service.py
-│ │ │ ├── cancel_order_service.py
-│ │ │ └── order_totals_service.py
-│ │ │
-│ │ ├── selectors/
-│ │ ├── constants/
-│ │ ├── tests/
-│ │ ├── filters.py
-│ │ ├── models.py
-│ │ ├── exceptions.py
-│ │ └── apps.py
+│   ├── orders/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_order_create_api.py
+│   │   │   │   ├── test_order_list_api.py
+│   │   │   │   ├── test_order_detail_api.py
+│   │   │   │   ├── test_order_cancel_api.py
+│   │   │   │   ├── test_order_management_list_api.py
+│   │   │   │   ├── test_order_management_detail_api.py
+│   │   │   │   ├── test_order_confirm_api.py
+│   │   │   │   ├── test_order_processing_api.py
+│   │   │   │   ├── test_order_shipping_api.py
+│   │   │   │   └── test_order_delivery_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── create_order_service.py
+│   │   │   ├── order_status_service.py
+│   │   │   ├── cancel_order_service.py
+│   │   │   └── order_totals_service.py
+│   │   │
+│   │   ├── selectors/
+│   │   │
+│   │   ├── constants/
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_create_order_service.py
+│   │   │   ├── test_order_status_service.py
+│   │   │   ├── test_cancel_order_service.py
+│   │   │   ├── test_order_totals_service.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
 │
-│ └── migrations/
+│   └── migrations/
 │
 └── manage.py
 
