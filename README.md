@@ -1,7 +1,8 @@
-# ECH (E-commerce Hub) EN-US
+# ECH (E-commerce Hub) 
+### Project Language: EN-US
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat)
-![Django](https://img.shields.io/badge/Django-4.2-green?style=flat)
+![Django](https://img.shields.io/badge/Django-6.0-green?style=flat)
 ![DRF](https://img.shields.io/badge/DRF-3.14-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.
@@ -17,12 +18,30 @@ The project focuses on demonstrating **backend engineering best practices**, inc
 # Tech Stack
 
 * Python 3.13
-* Django
+* Django 6.0
 * Django REST Framework (DRF)
+* Django-filter
 * MySQL
 * HTML5 + CSS3
 * JWT Authentication (SimpleJWT)
 * Pytest for automated testing
+
+---
+
+# Key Backend Concepts Demonstrated
+
+This project demonstrates several backend engineering concepts used in production systems:
+
+* API-first architecture
+* Service-layer business logic
+* Domain-driven design principles
+* Transactional consistency using `transaction.atomic`
+* Concurrency protection using `select_for_update`
+* Idempotent operations for order creation
+* Inventory consistency in concurrent environments
+* Audit event logging for operational monitoring
+* Modular Django architecture
+* Automated testing with pytest
 
 ---
 
@@ -65,6 +84,27 @@ Centralizes system messages and configuration values.
 
 ---
 
+# Architecture Diagram
+
+Client
+   |
+   v
+Django REST API
+   |
+   v
+Service Layer
+   |
+   +------------------+
+   |                  |
+Selectors         Domain Logic
+   |                  |
+   +---------> Django ORM
+                     |
+                     v
+                  Database
+
+---
+
 # Project Structure
 
 Example structure of the backend:
@@ -98,6 +138,8 @@ ecommerce_hub/
 │   │   │   └── views.py
 │   │   │
 │   │   ├── constants/
+│   │   │   ├── constants.py
+│   │   │   └── messages.py
 │   │   │
 │   │   ├── services/
 │   │   │   ├── registration_service.py
@@ -148,6 +190,13 @@ ecommerce_hub/
 │   │   │   └── cache.py
 │   │   │
 │   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── inventory.py
+│   │   │   ├── messages.py
+│   │   │   ├── roles_management.py
+│   │   │   ├── rules.py
+│   │   │   └── storage.py
 │   │   │
 │   │   ├── tests/
 │   │   │   ├── test_models.py
@@ -192,9 +241,14 @@ ecommerce_hub/
 │   │   ├── selectors/
 │   │   │
 │   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
 │   │   │
 │   │   ├── tests/
 │   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
 │   │   │   ├── test_selectors.py
 │   │   │   ├── test_create_order_service.py
 │   │   │   ├── test_order_status_service.py
@@ -374,69 +428,91 @@ Staff management endpoints support:
 
 ## Users
 
-| Endpoint                                | Description                         |
-|-----------------------------------------|-------------------------------------|
-| `/api/v1/users/register/`               | User registration                   |
-| `/api/v1/users/login/`                  | JWT authentication                  |
-| `/api/v1/users/token/refresh/`          | Refresh access token                |
-| `/api/v1/users/logout/`                 | Logout and invalidate refresh token |
-| `/api/v1/users/confirm-email/`          | Email confirmation                  |
-| `/api/v1/users/password-reset/`         | Request password reset              |
-| `/api/v1/users/password-reset-confirm/` | Confirm password reset              |
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/users/register/` | User registration |
+| POST | `/api/v1/users/login/` | JWT authentication |
+| POST | `/api/v1/users/token/refresh/` | Refresh access token |
+| POST | `/api/v1/users/logout/` | Logout and invalidate refresh token |
+| POST | `/api/v1/users/confirm-email/` | Email confirmation |
+| POST | `/api/v1/users/password-reset/` | Request password reset |
+| POST | `/api/v1/users/password-reset-confirm/` | Confirm password reset |
 
 ---
 
 ## Products
 
-| Endpoint                                    | Description                     |
-|---------------------------------------------|---------------------------------|
-| `/api/v1/products/`                         | Create product                  |
-| `/api/v1/products/list/`                    | List products (paginated)       |
-| `/api/v1/products/{product_id}/`            | Retrieve product details        |
-| `/api/v1/products/{product_id}/images/`     | Upload product images           |
-| `/api/v1/products/{product_id}/` (PATCH)    | Update product                  |
-| `/api/v1/products/{product_id}/` (DELETE)   | Soft delete product             |
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/products/` | Create product |
+| GET | `/api/v1/products/list/` | List products (paginated) |
+| GET | `/api/v1/products/{product_id}/` | Retrieve product details |
+| POST | `/api/v1/products/{product_id}/images/` | Upload product images |
+| PATCH | `/api/v1/products/{product_id}/` | Update product |
+| DELETE | `/api/v1/products/{product_id}/` | Soft delete product |
 
 ---
 
 ## Orders (Customer)
 
-| Endpoint | Description |
-|--------|-------------|
-| `/api/v1/orders/` | List authenticated customer orders |
-| `/api/v1/orders/create/` | Create new order |
-| `/api/v1/orders/{order_id}/` | Retrieve order details |
-| `/api/v1/orders/{order_id}/cancel/` | Cancel order |
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/orders/` | List authenticated customer orders |
+| POST | `/api/v1/orders/create/` | Create new order |
+| GET | `/api/v1/orders/{order_id}/` | Retrieve order details |
+| POST | `/api/v1/orders/{order_id}/cancel/` | Cancel order |
 
 ---
 
 ## Orders (Management)
 
-| Endpoint | Description |
-|--------|-------------|
-| `/api/v1/orders/management/` | List all orders (staff) |
-| `/api/v1/orders/management/{order_id}/` | Retrieve order details (staff) |
-| `/api/v1/orders/management/{order_id}/confirm/` | Confirm order |
-| `/api/v1/orders/management/{order_id}/start-processing/` | Start order processing |
-| `/api/v1/orders/management/{order_id}/ship/` | Ship order |
-| `/api/v1/orders/management/{order_id}/deliver/` | Mark order as delivered |
-| `/api/v1/orders/management/{order_id}/cancel/` | Cancel order (staff) |
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/orders/management/` | List all orders (staff) |
+| GET | `/api/v1/orders/management/{order_id}/` | Retrieve order details (staff) |
+| POST | `/api/v1/orders/management/{order_id}/confirm/` | Confirm order |
+| POST | `/api/v1/orders/management/{order_id}/start-processing/` | Start order processing |
+| POST | `/api/v1/orders/management/{order_id}/ship/` | Ship order |
+| POST | `/api/v1/orders/management/{order_id}/deliver/` | Mark order as delivered |
+| POST | `/api/v1/orders/management/{order_id}/cancel/` | Cancel order (staff) |
 
 ---
 
 # Automated Tests
 
-The project includes automated tests using **pytest** and **Django REST Framework testing tools**.
+The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
 
-Current tests cover:
+---
 
-### Users
+# Testing Strategy
+
+The project follows a domain-first testing strategy.
+
+1. Domain layer tests validate business rules and services
+2. Selector tests validate database queries
+3. API tests validate endpoint behavior and permissions
+
+This ensures business logic remains stable independently from the API layer.
+
+---
+
+## Users
+
+### Tests Coverage Status:
+
+Domain: 19 tests
+API: 29 tests
+
+### Users Domain Tests
 
 * user creation
 * invalid role validation
 * expired token validation
 * inactive account protection
 * email confirmation flow
+
+### Users API Tests
+
 * register API
 * login API
 * token refresh API
@@ -445,7 +521,23 @@ Current tests cover:
 * password reset confirmation API
 * invalid token protections
 
-### Products
+---
+
+## Products
+
+### Tests Coverage Status:
+
+Domain: 54 tests
+API: 24 tests
+
+### Products Domain Tests
+
+* permission validation
+* pagination consistency
+* filtering and search behavior
+* edge cases for product data validation
+
+### Products API Tests
 
 * product creation API
 * product listing API
@@ -453,18 +545,121 @@ Current tests cover:
 * product update API
 * product deletion API
 * product image upload API
-* permission validation
-* pagination consistency
-* filtering and search behavior
-* edge cases for product data validation
+
+---
+
+## Orders
+
+### Tests Coverage Status:
+
+Domain: 200 tests
+API: *Current step*
+
+### Orders Domain Tests
+
+### Domain Models
+
+* order creation and relationships
+* order item associations
+* order totals one-to-one integrity
+* order lifecycle timestamps
+* order events audit trail
+* order notes relationships
+* model ordering behavior
+* string representations
+
+### Domain Exceptions
+
+* order not found validation
+* permission protection
+* duplicate order protection
+* invalid status transition handling
+* cancellation rule validation
+* inventory validation
+* invalid payment and shipping state protections
+
+### Query Selectors
+
+Tests validate query optimizations and retrieval logic:
+
+* retrieving orders by ID
+* retrieving orders with related entities
+* listing orders by customer
+* listing orders by status
+* listing orders by payment status
+* listing orders by shipping status
+* listing recent orders
+* management dashboard queries
+* database locking for updates (`select_for_update`)
+
+### Order Creation Service
+
+* order creation workflow
+* product availability validation
+* inventory validation
+* snapshot product data creation
+* totals calculation
+* lifecycle initialization
+* address snapshot creation
+* order event registration
+* idempotency key protection
+* transactional rollback validation
+
+### Order Status Service
+
+* order confirmation
+* processing transition
+* shipping transition
+* delivery transition
+* lifecycle timestamp updates
+* audit event registration
+* invalid status transition protection
+
+### Order Cancellation Service
+
+* order cancellation workflow
+* cancellation rule validation
+* prevention of cancelling shipped/delivered orders
+* prevention of cancelling already cancelled orders
+* lifecycle cancellation timestamp update
+* inventory restoration after cancellation
+* cancellation event audit log
+
+### Order Totals Service
+
+* totals recalculation from order items
+* discount calculation
+* subtotal and grand total consistency
+* updating existing totals
+* creating totals when missing
+* recalculation after item changes
+* zero totals when order has no items
+
+### Operational Filters
+
+Tests validate filtering behavior for operational endpoints:
+
+* filtering by order status
+* filtering by payment status
+* filtering by shipping status
+* filtering by customer email
+* filtering by customer name
+* filtering by creation date range
+* case-insensitive filtering behavior
+* combined filter queries
+
+---
 
 Example test execution:
 
 ```
 pytest ech/users/tests/
 pytest ech/users/api/tests/
+
 pytest ech/products/tests/
 pytest ech/products/api/tests/
+
+pytest ech/orders/tests/
 ```
 
 ---
@@ -474,8 +669,9 @@ pytest ech/products/api/tests/
 Clone the repository:
 
 ```
-git clone https://github.com/your-username/ech.git
+git clone https://github.com/RaphaelReggiani/ecommerce_hub
 cd ech
+cd ech_web
 ```
 
 Create a virtual environment:
@@ -524,7 +720,7 @@ Planned modules:
 
 * Users module ✔
 * Products module ✔
-* Orders system (Actual step)
+* Orders system (*Current step*)
 * Payment integration
 * Shipping system
 * Reviews system

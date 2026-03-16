@@ -80,22 +80,30 @@ class OrderTotalsService:
             + self.shipping_total
         )
 
-        totals, _ = OrderTotals.objects.get_or_create(
-            order=self.order
+        totals, created = OrderTotals.objects.get_or_create(
+            order=self.order,
+            defaults={
+                "subtotal": self.subtotal,
+                "discount_total": self.discount_total,
+                "tax_total": self.tax_total,
+                "shipping_total": self.shipping_total,
+                "grand_total": grand_total,
+            }
         )
 
-        totals.subtotal = self.subtotal
-        totals.discount_total = self.discount_total
-        totals.tax_total = self.tax_total
-        totals.shipping_total = self.shipping_total
-        totals.grand_total = grand_total
+        if not created:
+            totals.subtotal = self.subtotal
+            totals.discount_total = self.discount_total
+            totals.tax_total = self.tax_total
+            totals.shipping_total = self.shipping_total
+            totals.grand_total = grand_total
 
-        totals.save(update_fields=[
-            "subtotal",
-            "discount_total",
-            "tax_total",
-            "shipping_total",
-            "grand_total",
-            "updated_at",
-        ])
+            totals.save(update_fields=[
+                "subtotal",
+                "discount_total",
+                "tax_total",
+                "shipping_total",
+                "grand_total",
+                "updated_at",
+            ])
 
