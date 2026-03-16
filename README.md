@@ -3,7 +3,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat)
 ![Django](https://img.shields.io/badge/Django-6.0-green?style=flat)
-![DRF](https://img.shields.io/badge/DRF-3.14-red?style=flat)
+![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.
 
@@ -19,7 +19,7 @@ The project focuses on demonstrating **backend engineering best practices**, inc
 
 * Python 3.13
 * Django 6.0
-* Django REST Framework (DRF)
+* Django REST Framework (DRF) 3.16
 * Django-filter
 * MySQL
 * HTML5 + CSS3
