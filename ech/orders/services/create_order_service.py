@@ -1,18 +1,19 @@
 from decimal import Decimal
 
 from django.db import transaction
-from django.utils import timezone
 
 from django.db.models import F
 
 from ech.products.models import ProductInventory
+
+from ech.orders.domain_events.dispatcher import EventDispatcher
+from ech.orders.domain_events.events import OrderCreatedEvent
 
 from ech.orders.models import (
     Order,
     OrderItem,
     OrderTotals,
     OrderLifecycle,
-    OrderEvent,
     OrderAddress,
 )
 
@@ -24,6 +25,8 @@ from ech.orders.exceptions import (
 )
 
 from ech.products.selectors import get_active_product_by_id
+
+from ech.orders.services.cache_service import invalidate_order_related_caches
 
 
 class CreateOrderService:
@@ -98,6 +101,8 @@ class CreateOrderService:
             self._create_lifecycle()
 
             self._register_event()
+
+        invalidate_order_related_caches(self.order)
 
         return self.order
 
@@ -195,16 +200,11 @@ class CreateOrderService:
         )
 
     def _register_event(self):
-
-        now = timezone.now()
-
-        OrderEvent.objects.create(
-            order=self.order,
-            event_type=OrderEvent.TYPE_CREATED,
-            performed_by=self.customer,
-            metadata={
-                "created_at": now.isoformat()
-            }
+        EventDispatcher.dispatch(
+            OrderCreatedEvent(
+                order=self.order,
+                performed_by=self.customer,
+            )
         )
 
     def _create_address(self):
@@ -225,3 +225,5 @@ class CreateOrderService:
             postal_code=self.address["postal_code"],
             phone=self.address.get("phone", ""),
         )
+
+    

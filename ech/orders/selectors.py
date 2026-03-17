@@ -1,12 +1,40 @@
 from ech.orders.models import Order
 
+from django.core.cache import cache
+
+from ech.orders.utils.cache_keys import (
+    order_detail_cache_key,
+    order_management_detail_cache_key,
+)
+
+from ech.orders.constants.cache import (
+    ORDER_DETAIL_CACHE_TIMEOUT,
+    ORDER_MANAGEMENT_DETAIL_CACHE_TIMEOUT,
+)
+
+
+"""
+Order selectors with read-side caching.
+
+Note:
+These selectors currently cache materialized ORM objects / lists for simplicity.
+This is acceptable for the current project stage, but if cache serialization
+or stale-object issues appear in the future, prefer caching IDs or serialized payloads.
+"""
+
 
 def get_order_by_id(order_id):
     """
     Returns an order by its ID with related data.
     """
 
-    return (
+    cache_key = order_detail_cache_key(order_id)
+    cached_order = cache.get(cache_key)
+
+    if cached_order is not None:
+        return cached_order
+
+    order = (
         Order.objects
         .select_related(
             "customer",
@@ -23,6 +51,9 @@ def get_order_by_id(order_id):
         .first()
     )
 
+    cache.set(cache_key, order, ORDER_DETAIL_CACHE_TIMEOUT)
+    return order
+
 
 def list_orders_by_customer(customer):
     """
@@ -32,7 +63,7 @@ def list_orders_by_customer(customer):
     return (
         Order.objects
         .filter(customer=customer)
-        .select_related("totals")
+        .select_related("customer", "totals")
         .order_by("-created_at")
     )
 
@@ -152,7 +183,13 @@ def get_order_detail_for_management(order_id):
     for staff management detail views.
     """
 
-    return (
+    cache_key = order_management_detail_cache_key(order_id)
+    cached_order = cache.get(cache_key)
+
+    if cached_order is not None:
+        return cached_order
+
+    order = (
         Order.objects
         .select_related(
             "customer",
@@ -168,3 +205,6 @@ def get_order_detail_for_management(order_id):
         .filter(id=order_id)
         .first()
     )
+
+    cache.set(cache_key, order, ORDER_MANAGEMENT_DETAIL_CACHE_TIMEOUT)
+    return order

@@ -303,14 +303,17 @@ class OrderManagementListSerializer(serializers.ModelSerializer):
     totals = OrderTotalsSerializer(read_only=True)
 
     class Meta:
-        model = OrderLifecycle
+        model = Order
         fields = [
-            "confirmed_at",
-            "processing_at",
-            "shipped_at",
-            "delivered_at",
-            "cancelled_at",
-            "refunded_at",
+            "id",
+            "customer",
+            "customer_name",
+            "customer_email",
+            "status",
+            "payment_status",
+            "shipping_status",
+            "currency",
+            "totals",
             "created_at",
             "updated_at",
         ]
@@ -318,8 +321,8 @@ class OrderManagementListSerializer(serializers.ModelSerializer):
 
 class OrderManagementDetailSerializer(serializers.ModelSerializer):
     """
-    Full serializer for staff management order detail endpoints.
-    Includes operational and audit information.
+    Serializer used for staff management order list endpoints.
+    Optimized for operational dashboards.
     """
 
     customer_name = serializers.CharField(

@@ -3,9 +3,18 @@ from django.utils import timezone
 
 from ech.orders.selectors import get_order_for_update
 
+from ech.orders.services.cache_service import invalidate_order_related_caches
+
 from ech.orders.models import (
     Order,
-    OrderEvent,
+)
+
+from ech.orders.domain_events.dispatcher import EventDispatcher
+from ech.orders.domain_events.events import (
+    OrderConfirmedEvent,
+    OrderProcessingStartedEvent,
+    OrderShippedEvent,
+    OrderDeliveredEvent,
 )
 
 from ech.orders.constants.messages import (
@@ -50,7 +59,16 @@ class OrderStatusService:
             lifecycle.confirmed_at = now
             lifecycle.save(update_fields=["confirmed_at"])
 
-            self._register_event(OrderEvent.TYPE_CONFIRMED)
+            EventDispatcher.dispatch(
+                OrderConfirmedEvent(
+                    order=self.order,
+                    performed_by=self.performed_by,
+                )
+            )
+
+        invalidate_order_related_caches(self.order)
+
+        return self.order
 
     def start_processing(self):
 
@@ -73,7 +91,16 @@ class OrderStatusService:
             lifecycle.processing_at = now
             lifecycle.save(update_fields=["processing_at"])
 
-            self._register_event(OrderEvent.TYPE_PROCESSING_STARTED)
+            EventDispatcher.dispatch(
+                OrderProcessingStartedEvent(
+                    order=self.order,
+                    performed_by=self.performed_by,
+                )
+            )
+
+        invalidate_order_related_caches(self.order)
+
+        return self.order
 
     def ship_order(self):
 
@@ -101,7 +128,16 @@ class OrderStatusService:
             lifecycle.shipped_at = now
             lifecycle.save(update_fields=["shipped_at"])
 
-            self._register_event(OrderEvent.TYPE_SHIPPED)
+            EventDispatcher.dispatch(
+                OrderShippedEvent(
+                    order=self.order,
+                    performed_by=self.performed_by,
+                )
+            )
+
+        invalidate_order_related_caches(self.order)
+
+        return self.order
 
     def deliver_order(self):
 
@@ -129,14 +165,15 @@ class OrderStatusService:
             lifecycle.delivered_at = now
             lifecycle.save(update_fields=["delivered_at"])
 
-            self._register_event(OrderEvent.TYPE_DELIVERED)
+            EventDispatcher.dispatch(
+                OrderDeliveredEvent(
+                    order=self.order,
+                    performed_by=self.performed_by,
+                )
+            )
 
-    def _register_event(self, event_type):
+        invalidate_order_related_caches(self.order)
+        
+        return self.order
 
-        OrderEvent.objects.create(
-            order=self.order,
-            event_type=event_type,
-            performed_by=self.performed_by,
-            metadata={},
-        )
 

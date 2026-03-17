@@ -6,10 +6,14 @@ from ech.products.models import ProductInventory
 
 from ech.orders.models import (
     Order,
-    OrderEvent,
 )
 
+from ech.orders.domain_events.dispatcher import EventDispatcher
+from ech.orders.domain_events.events import OrderCancelledEvent
+
 from ech.orders.selectors import get_order_for_update
+
+from ech.orders.services.cache_service import invalidate_order_related_caches
 
 from ech.orders.constants.messages import (
     MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED,
@@ -54,6 +58,10 @@ class CancelOrderService:
             self._update_lifecycle(now)
 
             self._register_event()
+
+        invalidate_order_related_caches(self.order)
+
+        return self.order
 
     def _validate_cancellation(self):
         """
@@ -103,13 +111,12 @@ class CancelOrderService:
         Registers cancellation event.
         """
 
-        OrderEvent.objects.create(
-            order=self.order,
-            event_type=OrderEvent.TYPE_CANCELLED,
-            performed_by=self.performed_by,
-            metadata={
-                "reason": "manual_cancellation"
-            }
+        EventDispatcher.dispatch(
+            OrderCancelledEvent(
+                order=self.order,
+                performed_by=self.performed_by,
+                reason="manual_cancellation",
+            )
         )
 
     def _restore_inventory(self):

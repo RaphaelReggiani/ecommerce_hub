@@ -233,10 +233,20 @@ ecommerce_hub/
 │   │   │   └── views.py
 │   │   │
 │   │   ├── services/
+│   │   │   ├── cache_service.py
 │   │   │   ├── create_order_service.py
 │   │   │   ├── order_status_service.py
 │   │   │   ├── cancel_order_service.py
 │   │   │   └── order_totals_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
 │   │   │
 │   │   ├── selectors/
 │   │   │
@@ -254,6 +264,7 @@ ecommerce_hub/
 │   │   │   ├── test_order_status_service.py
 │   │   │   ├── test_cancel_order_service.py
 │   │   │   ├── test_order_totals_service.py
+│   │   │   ├── test_domain_events.py
 │   │   │   └── test_filters.py
 │   │   │
 │   │   ├── filters.py
@@ -360,7 +371,7 @@ Orders are composed of multiple related entities:
 * **OrderTotals** – calculated financial totals
 * **OrderAddress** – shipping address snapshot
 * **OrderLifecycle** – timestamps for order lifecycle events
-* **OrderEvent** – operational event logging
+* **OrderEvent** – operational event logging with event-driven architecture
 * **OrderNote** – communication logs between staff and customer
 
 ### Inventory Safety
@@ -552,8 +563,8 @@ This ensures business logic remains stable independently from the API layer.
 
 ### Tests Coverage Status:
 
-* Domain: 200 tests
-* API: *Current step*
+* Domain: 202 tests
+* API: 77 tests
 
 ### Orders Domain Tests
 
@@ -648,6 +659,143 @@ Tests validate filtering behavior for operational endpoints:
 * case-insensitive filtering behavior
 * combined filter queries
 
+### Order Events Domains
+
+* dispatch call registered
+* dispatch for cancelled events
+
+---
+
+### Orders API Tests
+
+### Authentication & Access Control
+
+* JWT authentication enforcement
+* unauthorized access protection (401)
+* permission-based access control (403)
+* customer vs staff access boundaries
+* resource ownership validation (customers can only access their own orders)
+
+---
+
+### Order Detail API
+
+* retrieving order details by ID
+* nested related data serialization (items, totals, lifecycle, address)
+* UUID serialization consistency
+* access restriction for non-owners
+* handling non-existent orders (404)
+* response structure validation
+
+---
+
+### Customer Orders List API
+
+* listing orders for authenticated customer
+* ensuring only customer-owned orders are returned
+* ordering by `created_at` (descending)
+* pagination behavior
+* empty state handling
+
+---
+
+### Order Management List API (Staff)
+
+* access restricted to staff roles
+* listing all orders for management dashboard
+* ordering by `created_at` (descending)
+* pagination validation
+* filtering integration with:
+  * order status
+  * payment status
+  * shipping status
+  * customer email
+  * customer name
+  * date range (created_after / created_before)
+* combined filters behavior
+
+---
+
+### Order Management Detail API (Staff)
+
+* retrieving full order detail for staff
+* nested entities validation (items, events, notes, lifecycle)
+* timestamp fields validation (confirmed, shipped, delivered, etc.)
+* handling non-existent orders
+* permission enforcement
+
+---
+
+### Order Creation API
+
+* successful order creation
+* validation of empty items payload
+* product availability validation
+* inventory validation
+* address validation
+* idempotency key behavior
+* transactional consistency on failure
+* response payload validation
+
+---
+
+### Order Status APIs
+
+#### Confirm Order
+
+* successful confirmation flow
+* validation of invalid transitions
+* lifecycle timestamp update (`confirmed_at`)
+* response payload validation
+
+#### Start Processing
+
+* successful processing transition
+* validation of invalid transitions
+* lifecycle timestamp update (`processing_at`)
+* response payload validation
+
+#### Ship Order
+
+* successful shipping transition
+* validation of invalid transitions
+* shipping status update
+* lifecycle timestamp update (`shipped_at`)
+* response payload validation
+
+#### Deliver Order
+
+* successful delivery transition
+* validation of invalid transitions
+* shipping status update
+* lifecycle timestamp update (`delivered_at`)
+* response payload validation
+
+---
+
+### Order Cancellation API
+
+* successful cancellation flow
+* validation of cancellation rules
+* prevention of invalid cancellations
+* inventory restoration behavior
+* lifecycle timestamp update (`cancelled_at`)
+* cancellation event registration
+* response payload validation
+* handling service-level exceptions (400 responses)
+
+---
+
+### Caching Behavior (API Layer)
+
+* cache consistency after order mutations
+* cache invalidation after:
+  * order creation
+  * order status transitions
+  * order cancellation
+* ensuring fresh data is returned after updates
+* preventing stale responses in detail endpoints
+
 ---
 
 Example test execution:
@@ -660,6 +808,7 @@ pytest ech/products/tests/
 pytest ech/products/api/tests/
 
 pytest ech/orders/tests/
+pytest ech/orders/api/tests/
 ```
 
 ---
