@@ -1,5 +1,5 @@
 # ECH (E-commerce Hub) 
-## Project Language: EN-US
+### Project Language: EN-US
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat)
 ![Django](https://img.shields.io/badge/Django-6.0-green?style=flat)
@@ -500,8 +500,8 @@ This ensures business logic remains stable independently from the API layer.
 
 ### Tests Coverage Status:
 
-Domain: 19 tests
-API: 29 tests
+* Domain: 19 tests
+* API: 29 tests
 
 ### Users Domain Tests
 
@@ -527,8 +527,8 @@ API: 29 tests
 
 ### Tests Coverage Status:
 
-Domain: 54 tests
-API: 24 tests
+* Domain: 54 tests
+* API: 24 tests
 
 ### Products Domain Tests
 
@@ -552,8 +552,8 @@ API: 24 tests
 
 ### Tests Coverage Status:
 
-Domain: 200 tests
-API: *Current step*
+* Domain: 200 tests
+* API: *Current step*
 
 ### Orders Domain Tests
 
