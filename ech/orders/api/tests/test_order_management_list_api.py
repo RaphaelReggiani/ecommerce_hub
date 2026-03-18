@@ -233,3 +233,27 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["count"], 5)
         self.assertEqual(len(response.data["results"]), 2)
         self.assertIsNotNone(response.data["next"])
+
+    def test_filter_by_partially_refunded_payment_status(self):
+        self.authenticate(self.staff)
+
+        self.create_order(
+            customer=self.customer,
+            payment_status=Order.PAYMENT_STATUS_CAPTURED,
+        )
+        self.create_order(
+            customer=self.customer,
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )
+
+        response = self.client.get(
+            self.url,
+            {"payment_status": Order.PAYMENT_STATUS_PARTIALLY_REFUNDED},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["payment_status"],
+            Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )

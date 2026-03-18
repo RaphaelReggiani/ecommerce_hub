@@ -215,6 +215,7 @@ ecommerce_hub/
 │   ├── orders/
 │   │   ├── api/
 │   │   │   ├── tests/
+│   │   │   │   ├── test_order_cache_api.py
 │   │   │   │   ├── test_order_create_api.py
 │   │   │   │   ├── test_order_list_api.py
 │   │   │   │   ├── test_order_detail_api.py
@@ -234,9 +235,9 @@ ecommerce_hub/
 │   │   │
 │   │   ├── services/
 │   │   │   ├── cache_service.py
-│   │   │   ├── create_order_service.py
+│   │   │   ├── order_create_service.py
 │   │   │   ├── order_status_service.py
-│   │   │   ├── cancel_order_service.py
+│   │   │   ├── order_cancel_service.py
 │   │   │   └── order_totals_service.py
 │   │   │ 
 │   │   ├── utils/
@@ -265,6 +266,8 @@ ecommerce_hub/
 │   │   │   ├── test_cancel_order_service.py
 │   │   │   ├── test_order_totals_service.py
 │   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
 │   │   │   └── test_filters.py
 │   │   │
 │   │   ├── filters.py
@@ -272,7 +275,70 @@ ecommerce_hub/
 │   │   ├── exceptions.py
 │   │   └── apps.py
 │
-│   └── migrations/
+│   ├── payments/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_payment_create_api.py
+│   │   │   │   ├── test_payment_list_api.py
+│   │   │   │   ├── test_payment_detail_api.py
+│   │   │   │   ├── test_payment_process_api.py
+│   │   │   │   ├── test_payment_cancel_api.py
+│   │   │   │   ├── test_payment_refund_api.py
+│   │   │   │   ├── test_payment_transaction_list_api.py
+│   │   │   │   └── test_payment_management_detail_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── payment_creation_service.py
+│   │   │   ├── payment_processing_service.py
+│   │   │   ├── payment_status_service.py
+│   │   │   ├── payment_refund_service.py
+│   │   │   └── payment_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── selectors/
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_payment_create_service.py
+│   │   │   ├── test_payment_status_service.py
+│   │   │   ├── test_payment_processing_service.py
+│   │   │   ├── test_payment_refund_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── exceptions.py
+│   │   ├── selectors.py
+│   │   └── apps.py
+│ 
+├── ech_web/
+│   └── ...
 │
 └── manage.py
 
@@ -563,8 +629,8 @@ This ensures business logic remains stable independently from the API layer.
 
 ### Tests Coverage Status:
 
-* Domain: 202 tests
-* API: 77 tests
+* Domain: 230 tests
+* API: 87 tests
 
 ### Orders Domain Tests
 
@@ -664,6 +730,31 @@ Tests validate filtering behavior for operational endpoints:
 * dispatch call registered
 * dispatch for cancelled events
 
+### Order Caching
+
+Tests validate caching behavior and consistency for order retrieval:
+
+* caching of order detail by ID
+* caching of management order detail
+* cache hit returns consistent data
+* caching of non-existent orders (None responses)
+* stale data behavior before cache invalidation
+* fresh data retrieval after cache invalidation
+* cache isolation between tests (`cache.clear()` usage)
+
+### Cache Invalidation
+
+Tests validate that domain services correctly invalidate cache:
+
+* cache invalidation after order creation
+* cache invalidation after order cancellation
+* cache invalidation after order confirmation
+* cache invalidation after processing transition
+* cache invalidation after shipping transition
+* cache invalidation after delivery transition
+* fresh data retrieval after each mutation
+* validation that cached data is replaced after state changes
+
 ---
 
 ### Orders API Tests
@@ -676,8 +767,6 @@ Tests validate filtering behavior for operational endpoints:
 * customer vs staff access boundaries
 * resource ownership validation (customers can only access their own orders)
 
----
-
 ### Order Detail API
 
 * retrieving order details by ID
@@ -687,8 +776,6 @@ Tests validate filtering behavior for operational endpoints:
 * handling non-existent orders (404)
 * response structure validation
 
----
-
 ### Customer Orders List API
 
 * listing orders for authenticated customer
@@ -696,8 +783,6 @@ Tests validate filtering behavior for operational endpoints:
 * ordering by `created_at` (descending)
 * pagination behavior
 * empty state handling
-
----
 
 ### Order Management List API (Staff)
 
@@ -714,8 +799,6 @@ Tests validate filtering behavior for operational endpoints:
   * date range (created_after / created_before)
 * combined filters behavior
 
----
-
 ### Order Management Detail API (Staff)
 
 * retrieving full order detail for staff
@@ -723,8 +806,6 @@ Tests validate filtering behavior for operational endpoints:
 * timestamp fields validation (confirmed, shipped, delivered, etc.)
 * handling non-existent orders
 * permission enforcement
-
----
 
 ### Order Creation API
 
@@ -736,8 +817,6 @@ Tests validate filtering behavior for operational endpoints:
 * idempotency key behavior
 * transactional consistency on failure
 * response payload validation
-
----
 
 ### Order Status APIs
 
@@ -771,8 +850,6 @@ Tests validate filtering behavior for operational endpoints:
 * lifecycle timestamp update (`delivered_at`)
 * response payload validation
 
----
-
 ### Order Cancellation API
 
 * successful cancellation flow
@@ -784,8 +861,6 @@ Tests validate filtering behavior for operational endpoints:
 * response payload validation
 * handling service-level exceptions (400 responses)
 
----
-
 ### Caching Behavior (API Layer)
 
 * cache consistency after order mutations
@@ -795,6 +870,18 @@ Tests validate filtering behavior for operational endpoints:
   * order cancellation
 * ensuring fresh data is returned after updates
 * preventing stale responses in detail endpoints
+
+### Order Caching (API Layer)
+
+Tests validate caching behavior through API endpoints:
+
+* fresh data returned after order cancellation via API
+* fresh data returned after order confirmation via API
+* fresh data returned after processing transition via API
+* fresh data returned after shipping transition via API
+* fresh data returned after delivery transition via API
+* repeated requests return consistent data (cache stability)
+* prevention of stale data in order detail endpoints
 
 ---
 
@@ -869,8 +956,8 @@ Planned modules:
 
 * Users module ✔
 * Products module ✔
-* Orders system (*Current step*)
-* Payment integration
+* Orders system ✔
+* Payment integration (*Current step*)
 * Shipping system
 * Reviews system
 * Notifications system

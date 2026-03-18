@@ -19,7 +19,7 @@ from ech.orders.models import (
     OrderEvent,
     OrderAddress,
 )
-from ech.orders.services.create_order_service import CreateOrderService
+from ech.orders.services.order_create_service import CreateOrderService
 from ech.products.models import Product, ProductInventory
 
 
@@ -173,7 +173,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         )
 
         with patch(
-            "ech.orders.services.create_order_service.get_active_product_by_id",
+            "ech.orders.services.order_create_service.get_active_product_by_id",
             return_value=None,
         ):
             with self.assertRaises(ProductNotAvailableError):

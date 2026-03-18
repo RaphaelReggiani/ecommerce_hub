@@ -15,10 +15,13 @@ LABEL_ORDER_STATUS_REFUNDED = "Refunded Order"
 # =========================
 
 LABEL_PAYMENT_PENDING = "Pending Payment"
+LABEL_PAYMENT_PROCESSING = "Processing"
 LABEL_PAYMENT_AUTHORIZED = "Authorized Payment"
 LABEL_PAYMENT_CAPTURED = "Captured Payment"
 LABEL_PAYMENT_FAILED = "Failed Payment"
+LABEL_PAYMENT_PARTIALLY_REFUNDED = "Partially Refunded"
 LABEL_PAYMENT_REFUNDED = "Refunded Payment"
+LABEL_PAYMENT_CANCELLED = "Cancelled"
 
 # =========================
 # SHIPPING STATUS
@@ -30,6 +33,3 @@ LABEL_SHIPPING_SHIPPED = "Shipped"
 LABEL_SHIPPING_IN_TRANSIT = "Shipping in Transit"
 LABEL_SHIPPING_DELIVERED = "Shipping Delivered"
 
-# =========================
-# EVENTS MODELS LABELS
-# =========================

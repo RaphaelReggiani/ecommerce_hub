@@ -248,3 +248,24 @@ class OrderListApiTestCase(APITestCase):
         for result in response.data["results"]:
             self.assertEqual(result["customer"], self.customer.id)
             self.assertEqual(result["customer_email"], self.customer.user_email)
+
+    def test_list_orders_returns_partially_refunded_payment_status(self):
+        self.authenticate(self.customer)
+
+        order = self.create_order(
+            customer=self.customer,
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["id"],
+            str(order.id),
+        )
+        self.assertEqual(
+            response.data["results"][0]["payment_status"],
+            Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )

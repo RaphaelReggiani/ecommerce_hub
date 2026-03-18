@@ -237,9 +237,12 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
             values,
             {
                 Order.PAYMENT_STATUS_PENDING,
+                Order.PAYMENT_STATUS_PROCESSING,
                 Order.PAYMENT_STATUS_AUTHORIZED,
                 Order.PAYMENT_STATUS_CAPTURED,
                 Order.PAYMENT_STATUS_FAILED,
+                Order.PAYMENT_STATUS_CANCELLED,
+                Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
                 Order.PAYMENT_STATUS_REFUNDED,
             },
         )
@@ -265,6 +268,36 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         index_names = {index.name for index in Order._meta.indexes}
         self.assertIn("order_customer_created_idx", index_names)
         self.assertIn("order_status_idx", index_names)
+
+    def test_order_creation_accepts_processing_payment_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PROCESSING
+        )
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_PROCESSING,
+        )
+
+    def test_order_creation_accepts_cancelled_payment_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_CANCELLED
+        )
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_CANCELLED,
+        )
+
+    def test_order_creation_accepts_partially_refunded_payment_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED
+        )
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )
 
 
 class OrderItemModelTestCase(BaseModelFactoryMixin, TestCase):
@@ -460,3 +493,5 @@ class OrderNoteModelTestCase(BaseModelFactoryMixin, TestCase):
 
     def test_order_note_meta_ordering(self):
         self.assertEqual(OrderNote._meta.ordering, ["created_at"])
+
+    

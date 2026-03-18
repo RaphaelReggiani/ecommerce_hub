@@ -34,7 +34,7 @@ class CancelOrderService:
     - Validate cancellation rules
     - Update order status
     - Update lifecycle timestamps
-    - Register event
+    - Register domain event for downstream financial handling
     """
 
     def __init__(self, *, order, performed_by):

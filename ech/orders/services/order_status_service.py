@@ -175,5 +175,21 @@ class OrderStatusService:
         invalidate_order_related_caches(self.order)
         
         return self.order
+    
+    @staticmethod
+    def update_order_payment_status(*, order_id, payment_status):
+        with transaction.atomic():
+
+            now = timezone.now()
+
+            order = get_order_for_update(order_id)
+
+            order.payment_status = payment_status
+            order.updated_at = now
+            order.save(update_fields=["payment_status", "updated_at"])
+
+        invalidate_order_related_caches(order)
+
+        return order
 
 

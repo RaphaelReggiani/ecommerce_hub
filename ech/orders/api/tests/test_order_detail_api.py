@@ -270,3 +270,45 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertIn("created_at", response.data["address"])
         self.assertIn("created_at", response.data["events"][0])
         self.assertIn("created_at", response.data["notes"][0])
+
+    def test_order_detail_returns_partially_refunded_payment_status(self):
+        self.authenticate(self.customer)
+
+        order = Order.objects.create(
+            customer=self.customer,
+            status=Order.ORDER_STATUS_DELIVERED,
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+            shipping_status=Order.SHIPPING_STATUS_DELIVERED,
+            currency="USD",
+        )
+
+        OrderTotals.objects.create(
+            order=order,
+            subtotal=Decimal("200.00"),
+            discount_total=Decimal("0.00"),
+            tax_total=Decimal("0.00"),
+            shipping_total=Decimal("0.00"),
+            grand_total=Decimal("200.00"),
+        )
+
+        OrderAddress.objects.create(
+            order=order,
+            full_name="User Tester",
+            address_line="Rua Teste, 123",
+            city="Sao Paulo",
+            state="SP",
+            country="Brazil",
+            postal_code="01234-567",
+            phone="11999999999",
+        )
+
+        OrderLifecycle.objects.create(order=order)
+
+        url = reverse("orders-api:order-detail", kwargs={"order_id": order.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["payment_status"],
+            Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )

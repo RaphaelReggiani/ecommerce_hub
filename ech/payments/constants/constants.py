@@ -1,0 +1,48 @@
+# =========================
+# PAYMENTS STATUS LABELS
+# =========================
+
+LABEL_PAYMENT_STATUS_PENDING = "Payment Pending"
+LABEL_PAYMENT_STATUS_PROCESSING = "Payment Processing"
+LABEL_PAYMENT_STATUS_AUTHORIZED = "Payment Authorized"
+LABEL_PAYMENT_STATUS_CAPTURED = "Payment Captured"
+LABEL_PAYMENT_STATUS_FAILED = "Payment Failed"
+LABEL_PAYMENT_STATUS_CANCELLED = "Payment Cancelled"
+LABEL_PAYMENT_STATUS_PARTIALLY_REFUNDED = "Payment Partially Refunded"
+LABEL_PAYMENT_STATUS_REFUNDED = "Payment Refunded"
+
+# =========================
+# PAYMENTS METHOD LABELS
+# =========================
+
+LABEL_PAYMENT_METHOD_CREDIT_CARD = "Credit Card"
+LABEL_PAYMENT_METHOD_DEBIT_CARD = "Debit Card"
+LABEL_PAYMENT_METHOD_PIX = "Pix"
+LABEL_PAYMENT_METHOD_BANK_SLIP = "Bank Slip"
+LABEL_PAYMENT_METHOD_WALLET = "Wallet"
+
+# ============================
+# TRANSACTION STATUS LABELS
+# ============================
+
+LABEL_TRANSACTION_TYPE_AUTHORIZATION = "Authorization"
+LABEL_TRANSACTION_TYPE_CAPTURE = "Capture"
+LABEL_TRANSACTION_TYPE_CHARGE = "Charge"
+LABEL_TRANSACTION_TYPE_REFUND = "Refund"
+LABEL_TRANSACTION_TYPE_PARTIAL_REFUND = "Partial Refund"
+LABEL_TRANSACTION_TYPE_CANCELLATION = "Cancellation"
+LABEL_TRANSACTION_TYPE_FAILURE = "Failure"
+LABEL_TRANSACTION_STATUS_PENDING = "Transaction Pending"
+LABEL_TRANSACTION_STATUS_SUCCESS = "Transaction Succes"
+LABEL_TRANSACTION_STATUS_FAILED = "Transaction Failed"
+LABEL_TRANSACTION_STATUS_CANCELLED = "Transaction Cancelled"
+
+# ============================
+# REFUND STATUS LABELS
+# ============================
+
+LABEL_REFUND_STATUS_PENDING = "Refund Pending"
+LABEL_REFUND_STATUS_PROCESSED = "Refund Processed"
+LABEL_REFUND_STATUS_FAILED = "Refund Failed"
+LABEL_REFUND_STATUS_CANCELLED = "Refund Cancelled"
+

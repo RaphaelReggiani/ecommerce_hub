@@ -18,7 +18,7 @@ from ech.orders.models import (
     OrderLifecycle,
     OrderEvent,
 )
-from ech.orders.services.cancel_order_service import CancelOrderService
+from ech.orders.services.order_cancel_service import CancelOrderService
 from ech.products.models import Product, ProductInventory
 
 

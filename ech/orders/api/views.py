@@ -44,7 +44,7 @@ from ech.orders.selectors import (
     get_order_by_id,
     list_orders_by_customer,
 )
-from ech.orders.services.cancel_order_service import (
+from ech.orders.services.order_cancel_service import (
     CancelOrderService,
 )
 

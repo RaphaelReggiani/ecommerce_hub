@@ -26,13 +26,11 @@ INSTALLED_APPS = [
     'ech.users.apps.UsersConfig',
     'ech.products.apps.ProductsConfig',
     'ech.orders.apps.OrdersConfig',
+    'ech.payments.apps.PaymentsConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
-    # 'widget_tweaks',
-    # 'api',
-    # 'django_extensions',
 ]
 
 MIDDLEWARE = [

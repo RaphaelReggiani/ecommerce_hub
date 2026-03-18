@@ -7,10 +7,9 @@ from ech.orders.models import (
     OrderAddress,
     OrderEvent,
     OrderNote,
-    OrderLifecycle,
 )
 from ech.products.selectors import get_active_product_by_id
-from ech.orders.services.create_order_service import (
+from ech.orders.services.order_create_service import (
     CreateOrderService,
 )
 

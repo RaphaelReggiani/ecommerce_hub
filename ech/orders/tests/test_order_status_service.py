@@ -364,3 +364,108 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
             service.deliver_order()
 
         self.assertEqual(OrderEvent.objects.count(), 0)
+
+
+class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+    def test_update_order_payment_status_updates_payment_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PENDING
+        )
+
+        updated_order = OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_PROCESSING,
+        )
+
+        order.refresh_from_db()
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_PROCESSING,
+        )
+        self.assertEqual(updated_order.id, order.id)
+
+    def test_update_order_payment_status_updates_updated_at(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PENDING
+        )
+
+        original_updated_at = order.updated_at
+
+        updated_order = OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_AUTHORIZED,
+        )
+
+        order.refresh_from_db()
+
+        self.assertNotEqual(order.updated_at, original_updated_at)
+        self.assertEqual(updated_order.updated_at, order.updated_at)
+
+    def test_update_order_payment_status_accepts_cancelled_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PENDING
+        )
+
+        OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_CANCELLED,
+        )
+
+        order.refresh_from_db()
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_CANCELLED,
+        )
+
+    def test_update_order_payment_status_accepts_partially_refunded_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_CAPTURED
+        )
+
+        OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )
+
+        order.refresh_from_db()
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_PARTIALLY_REFUNDED,
+        )
+
+    def test_update_order_payment_status_accepts_refunded_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED
+        )
+
+        OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_REFUNDED,
+        )
+
+        order.refresh_from_db()
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_REFUNDED,
+        )
+
+    def test_update_order_payment_status_accepts_captured_status(self):
+        order = self.create_order(
+            payment_status=Order.PAYMENT_STATUS_AUTHORIZED
+        )
+
+        OrderStatusService.update_order_payment_status(
+            order_id=order.id,
+            payment_status=Order.PAYMENT_STATUS_CAPTURED,
+        )
+
+        order.refresh_from_db()
+
+        self.assertEqual(
+            order.payment_status,
+            Order.PAYMENT_STATUS_CAPTURED,
+        )
