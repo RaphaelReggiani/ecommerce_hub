@@ -5,6 +5,8 @@ from django.db import models
 
 from ech.orders.models import Order
 
+from django.core.exceptions import ValidationError
+
 from ech.payments.constants.constants import (
     LABEL_PAYMENT_STATUS_PENDING,
     LABEL_PAYMENT_STATUS_PROCESSING,
@@ -94,7 +96,7 @@ class Payment(models.Model):
         editable=False
     )
 
-    order = models.OneToOneField(
+    order = models.ForeignKey(
         Order,
         on_delete=models.PROTECT,
         related_name="payment"
@@ -418,6 +420,14 @@ class PaymentRefund(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="requested_payment_refunds"
+    )
+
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="processed_payment_refunds"
     )
 
     processed_at = models.DateTimeField(
