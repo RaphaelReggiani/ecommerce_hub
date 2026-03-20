@@ -1,7 +1,8 @@
 # ECH (E-commerce Hub) 
-### Project Language: EN-US
 
 ---
+
+### Project Language: EN-US
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue?style=flat)
 ![Django](https://img.shields.io/badge/Django-6.0-green?style=flat)
