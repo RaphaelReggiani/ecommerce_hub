@@ -37,7 +37,7 @@ from ech.products.services.product_delete_service import (
     delete_product,
 )
 
-from ech.products.infrastructure.cache import (
+from ech.products.utils.cache import (
     get_product_from_cache,
     set_product_cache,
     invalidate_product_cache,

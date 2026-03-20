@@ -1,126 +1,101 @@
 from decimal import Decimal
+import uuid
 
 from django.test import TestCase
-from django.contrib.auth import get_user_model
 
-from ech.products.models import (
-    Product, 
-    ProductInventory,
-)
-from ech.products.services.product_inventory_service import decrease_inventory
-
-from ech.users.models import (
-    CustomUser,
-)
-
+from ech.users.models import CustomUser
+from ech.products.models import Product, ProductInventory
 from ech.products.exceptions import ProductOutOfStockError
-from ech.users.constants.constants import (
-    CORPORATE_EMAIL_DOMAIN,
-)
-
-
-User = get_user_model()
+from ech.products.services.product_inventory_service import decrease_inventory
 
 
 class ProductInventoryServiceTestCase(TestCase):
-
     def setUp(self):
-
-        self.user = User.objects.create_user(
-            email=f"ops{CORPORATE_EMAIL_DOMAIN}",
+        self.user = CustomUser.objects.create_user(
+            email="inventory@company.com",
             password="StrongPassword123",
-            user_name="ops_user",
-            role=CustomUser.ROLE_OPERATIONS_STAFF
+            role=CustomUser.ROLE_OPERATIONS_STAFF,
+            user_name="Inventory User",
         )
 
         self.product = Product.objects.create(
             name="Gaming Mouse",
-            product_type=Product.PRODUCT_CHOICES[0][0],
+            product_type=Product.MOUSE,
             brand="Logitech",
             sold_by=self.user,
             description="Gaming mouse",
-            technical_information="16000 DPI",
+            technical_information="Specs",
             price=Decimal("200.00"),
+            is_active=True,
         )
 
         self.inventory = ProductInventory.objects.create(
             product=self.product,
-            quantity=10
+            quantity=10,
         )
 
-    def test_decrease_inventory_success(self):
-        """
-        Inventory should decrease correctly.
-        """
-
-        decrease_inventory(
+    def test_decrease_inventory_reduces_quantity_successfully(self):
+        """Ensure decrease_inventory reduces inventory quantity correctly."""
+        updated_inventory = decrease_inventory(
             product_id=self.product.id,
-            quantity=3
+            quantity=3,
         )
 
         self.inventory.refresh_from_db()
 
+        self.assertEqual(updated_inventory.quantity, 7)
         self.assertEqual(self.inventory.quantity, 7)
 
-    def test_decrease_inventory_exact_stock(self):
-        """
-        Should allow decreasing entire stock.
-        """
-
-        decrease_inventory(
+    def test_decrease_inventory_allows_exact_quantity_reduction(self):
+        """Ensure decrease_inventory allows reducing inventory to zero."""
+        updated_inventory = decrease_inventory(
             product_id=self.product.id,
-            quantity=10
+            quantity=10,
         )
 
         self.inventory.refresh_from_db()
 
+        self.assertEqual(updated_inventory.quantity, 0)
         self.assertEqual(self.inventory.quantity, 0)
 
-    def test_decrease_inventory_insufficient_stock(self):
-        """
-        Should raise error when stock is insufficient.
-        """
-
+    def test_decrease_inventory_raises_error_when_insufficient_stock(self):
+        """Ensure decrease_inventory raises ProductOutOfStockError when quantity is insufficient."""
         with self.assertRaises(ProductOutOfStockError):
-
             decrease_inventory(
                 product_id=self.product.id,
-                quantity=20
+                quantity=11,
             )
 
         self.inventory.refresh_from_db()
-
         self.assertEqual(self.inventory.quantity, 10)
 
-    def test_decrease_inventory_does_not_go_negative(self):
-        """
-        Inventory must never become negative.
-        """
+    def test_decrease_inventory_returns_inventory_instance(self):
+        """Ensure decrease_inventory returns updated inventory instance."""
+        updated_inventory = decrease_inventory(
+            product_id=self.product.id,
+            quantity=2,
+        )
 
-        with self.assertRaises(ProductOutOfStockError):
+        self.assertEqual(updated_inventory.product, self.product)
+        self.assertEqual(updated_inventory.quantity, 8)
 
+    def test_decrease_inventory_persists_changes_in_database(self):
+        """Ensure decrease_inventory persists changes in database."""
+        decrease_inventory(
+            product_id=self.product.id,
+            quantity=4,
+        )
+
+        refreshed_inventory = ProductInventory.objects.get(product=self.product)
+
+        self.assertEqual(refreshed_inventory.quantity, 6)
+
+    def test_decrease_inventory_raises_error_when_inventory_does_not_exist(self):
+        """Ensure decrease_inventory raises DoesNotExist when inventory is missing."""
+        ProductInventory.objects.filter(product=self.product).delete()
+
+        with self.assertRaises(ProductInventory.DoesNotExist):
             decrease_inventory(
                 product_id=self.product.id,
-                quantity=11
+                quantity=1,
             )
-
-        self.inventory.refresh_from_db()
-
-        self.assertGreaterEqual(self.inventory.quantity, 0)
-
-    def test_inventory_unchanged_after_exception(self):
-        """
-        Transaction should rollback on failure.
-        """
-
-        try:
-            decrease_inventory(
-                product_id=self.product.id,
-                quantity=100
-            )
-        except ProductOutOfStockError:
-            pass
-
-        self.inventory.refresh_from_db()
-
-        self.assertEqual(self.inventory.quantity, 10)

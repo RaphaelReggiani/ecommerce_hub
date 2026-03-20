@@ -89,7 +89,7 @@ class PaymentProcessingFailed(PaymentError):
     Raised when the payment processing operation fails.
     """
 
-    default_message = MSG_EXCEPTIONS_ERROR_PAYMENT_PROCESSING_FAILED,
+    default_message = MSG_EXCEPTIONS_ERROR_PAYMENT_PROCESSING_FAILED
 
 
 class InvalidPaymentStatusTransition(PaymentError):
@@ -97,7 +97,7 @@ class InvalidPaymentStatusTransition(PaymentError):
     Raised when attempting an invalid payment status transition.
     """
 
-    default_message = MSG_EXCEPTIONS_ERROR_INVALID_PAYMENT_TRANSITION,
+    default_message = MSG_EXCEPTIONS_ERROR_INVALID_PAYMENT_TRANSITION
 
 
 class PaymentCancellationNotAllowed(PaymentError):

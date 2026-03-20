@@ -115,21 +115,27 @@ ecommerce_hub/
 ├── core/
 │   ├── exceptions/
 │   │   └── handlers.py
-│   │
-│   └── settings.py
+│   ├── settings.py
+│   └── urls.py
 │
 ├── ech/
+│   ├── admin.py
+│   ├── apps.py
+│   ├── urls.py
 │
+│   │
 │   ├── users/
 │   │   ├── api/
 │   │   │   ├── tests/
 │   │   │   │   ├── test_login_api.py
-│   │   │   │   ├── test_logout_api.py
-│   │   │   │   ├── test_token_refresh_api.py
-│   │   │   │   ├── test_register_api.py
+│   │   │   │   ├── test_logout_invalid_refresh_token_api.py
 │   │   │   │   ├── test_confirm_email_api.py
-│   │   │   │   ├── test_password_reset_api.py
-│   │   │   │   └── test_password_reset_confirm_api.py
+│   │   │   │   ├── test_email_protections_api.py
+│   │   │   │   ├── test_password_reset_confirm_api.py
+│   │   │   │   ├── test_password_reset_confirm_invalid_token_api.py
+│   │   │   │   ├── test_password_reset_request_api.py
+│   │   │   │   ├── test_register_api.py
+│   │   │   │   └── test_token_refresh_api.py
 │   │   │   │
 │   │   │   ├── serializers.py
 │   │   │   ├── permissions.py
@@ -141,24 +147,30 @@ ecommerce_hub/
 │   │   │   ├── constants.py
 │   │   │   └── messages.py
 │   │   │
+│   │   ├── logs/
+│   │   │   ├── logger.py
+│   │   │   └── security_events.py
+│   │   │
 │   │   ├── services/
 │   │   │   ├── registration_service.py
 │   │   │   └── password_reset_service.py
 │   │   │
-│   │   ├── selectors/
+│   │   ├── utils/
+│   │   │   └── request_metadata.py
 │   │   │
 │   │   ├── tests/
 │   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
 │   │   │   ├── test_selectors.py
 │   │   │   ├── test_registration_service.py
 │   │   │   ├── test_password_reset_service.py
-│   │   │   └── test_user_tokens.py
+│   │   │   └── test_security_events.py
 │   │   │
-│   │   ├── views/
-│   │   ├── models.py
 │   │   ├── decorators.py
+│   │   ├── models.py
+│   │   ├── selectors.py
 │   │   ├── exceptions.py
-│   │   └── forms.py
+│   │   └── apps.py
 │
 │   ├── products/
 │   │   ├── api/
@@ -182,7 +194,8 @@ ecommerce_hub/
 │   │   │   ├── product_event_service.py
 │   │   │   ├── product_image_service.py
 │   │   │   ├── product_inventory_service.py
-│   │   │   └── product_update_service.py
+│   │   │   ├── product_update_service.py
+│   │   │   └── stock_service.py
 │   │   │
 │   │   ├── selectors/
 │   │   │
@@ -201,11 +214,13 @@ ecommerce_hub/
 │   │   ├── tests/
 │   │   │   ├── test_models.py
 │   │   │   ├── test_selectors.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_filters.py
 │   │   │   ├── test_product_creation_service.py
+│   │   │   ├── test_product_image_service.py
 │   │   │   ├── test_product_update_service.py
 │   │   │   ├── test_product_delete_service.py
-│   │   │   ├── test_product_inventory_service.py
-│   │   │   └── test_filters.py
+│   │   │   └── test_product_inventory_service.py
 │   │   │
 │   │   ├── filters.py
 │   │   ├── models.py
@@ -577,26 +592,140 @@ This ensures business logic remains stable independently from the API layer.
 
 ### Tests Coverage Status:
 
-* Domain: 19 tests
+* Domain: 99 tests
 * API: 29 tests
 
 ### Users Domain Tests
 
-* user creation
-* invalid role validation
-* expired token validation
-* inactive account protection
+### Domain Models
+
+* custom user creation and manager behavior
+* email normalization and uniqueness validation
+* role-based behavior and permissions flags (`is_staff`, `is_superuser`)
+* corporate email enforcement for staff roles
+* age validation boundaries (min/max)
+* default field values (`is_active`, `email_confirmed`)
+* model properties (`is_superadmin`, `can_create_staff`)
+* string representation consistency
+
+### User Token Model
+
+* token creation and uniqueness
+* expiration validation
+* expired token rejection
+* token usage tracking (`used` flag)
+* token lifecycle methods (`is_expired`, `mark_as_used`)
+* metadata field behavior
+
+### Domain Exceptions
+
+* base domain exception behavior
+* default vs custom message handling
+* exception hierarchy validation
+* authentication and token-related exceptions
+* role and access-related exceptions
+
+### Query Selectors
+
+Tests validate database query behavior and filtering logic:
+
+* retrieving user by ID
+* retrieving user by email (case-insensitive)
+* listing users by role
+* listing active users
+* listing staff users
+* retrieving email confirmation tokens
+* retrieving valid tokens (non-expired, unused, correct type)
+* handling of invalid or missing records
+
+### Registration Service
+
+* user registration workflow
+* default role assignment
+* duplicate email protection (domain-level validation)
+* inactive and unconfirmed user initialization
+* email confirmation token generation
+* replacement of existing confirmation tokens
+* transaction-safe email scheduling (`on_commit`)
 * email confirmation flow
+* activation and confirmation state updates
+* invalid and expired token handling
+
+### Password Reset Service
+
+* password reset request workflow
+* protection against user enumeration
+* handling inactive or non-existent users
+* reset token creation and replacement
+* transaction-safe email scheduling
+* password reset execution
+* password update and hashing validation
+* token invalidation and usage tracking
+* invalid and expired token handling
+
+### Security Logging
+
+Tests validate security event logging behavior:
+
+* login success and failure events
+* user registration logging
+* email confirmation logging
+* password change logging
+* invalid token logging
+* password reset request logging
+* structured logging payload validation
+* request metadata integration (IP, user agent, request ID)
+
+---
 
 ### Users API Tests
 
-* register API
-* login API
-* token refresh API
-* logout security tests
-* password reset request API
-* password reset confirmation API
-* invalid token protections
+### Authentication & Access Control
+
+* login with valid credentials
+* authentication failure (invalid credentials)
+* inactive account protection
+* email confirmation requirement enforcement
+
+### Registration API
+
+* successful user registration
+* validation of required fields
+* duplicate email protection
+* response structure validation
+
+### Token Management
+
+* JWT token refresh flow
+* invalid and malformed token handling
+* logout with invalid refresh token
+
+### Email Confirmation API
+
+* successful email confirmation
+* invalid token handling
+* expired token handling
+
+### Password Reset APIs
+
+#### Request Password Reset
+
+* valid email request handling
+* non-existent email protection (no information leakage)
+* inactive user handling
+
+#### Confirm Password Reset
+
+* successful password reset
+* invalid token handling
+* expired token handling
+* payload validation
+
+### Email Protection Tests
+
+* access restrictions for unconfirmed users
+* validation of protected endpoints
+* enforcement of authentication and confirmation rules
 
 ---
 
@@ -604,24 +733,189 @@ This ensures business logic remains stable independently from the API layer.
 
 ### Tests Coverage Status:
 
-* Domain: 54 tests
+* Domain: 114 tests
 * API: 24 tests
 
 ### Products Domain Tests
 
-* permission validation
-* pagination consistency
-* filtering and search behavior
-* edge cases for product data validation
+### Domain Models
+
+* product creation and core field validation
+* UUID primary key generation
+* product type choices validation
+* price and discount field behavior
+* active/inactive state handling
+* discount logic validation (`has_discount`)
+* main image resolution logic
+* inventory shortcut property behavior
+* model ordering by `created_at`
+* string representations
+
+### Product Inventory Model
+
+* one-to-one relationship with product
+* default inventory value
+* inventory updates and persistence
+* uniqueness constraint enforcement
+* string representation validation
+
+### Product Image Model
+
+* image creation and relationship with product
+* file upload path validation
+* file extension validation (jpg, jpeg, png, webp)
+* display order validation (`order >= 1`)
+* unique constraint per product (`product + order`)
+* ordering behavior by display order
+* string representation validation
+
+### Product Event Log Model
+
+* event creation and lifecycle tracking
+* UUID primary key generation
+* event type validation
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+### Domain Exceptions
+
+* validation error inheritance consistency
+* permission error inheritance consistency
+* default message validation
+* formatted message validation (min/max images)
+* exception hierarchy consistency
+
+### Query Selectors
+
+Tests validate query behavior and filtering logic:
+
+* retrieving product by ID
+* retrieving active product by ID
+* listing all active products
+* filtering products by type
+* retrieving products with discount
+* search by name and brand (case-insensitive)
+* retrieving products created by user
+* retrieving available products (inventory > 0)
+* handling of non-existent records
+
+### Product Creation Service
+
+* product creation workflow
+* permission validation for allowed roles
+* product type validation
+* price validation (null, zero, negative)
+* discount validation (negative, >= price)
+* inventory validation (negative values)
+* creation of inventory record
+* handling of optional discount
+* transactional rollback on failure
+
+### Product Update Service
+
+* updating single field
+* updating multiple fields
+* updating text fields
+* persistence of updated data
+* return of updated product instance
+* handling non-existent product
+* no-op update (no fields provided)
+
+### Product Delete Service
+
+* soft delete behavior (`is_active=False`)
+* persistence of state change
+* record retention in database
+* ensuring only active flag is modified
+* handling non-existent product
+
+### Product Image Service
+
+* adding single image
+* adding multiple images
+* empty upload handling
+* maximum image limit enforcement
+* sequential order assignment
+* continuation of order after existing images
+* bulk creation behavior
+* handling non-existent product
+
+### Product Image Validation
+
+* minimum image requirement enforcement
+* validation failure below minimum threshold
+* validation success at minimum threshold
+* validation success above minimum threshold
+* validation failure when no images exist
+
+### Product Inventory Service
+
+* decreasing inventory successfully
+* exact inventory depletion (to zero)
+* insufficient inventory protection
+* persistence of inventory updates
+* return of updated inventory instance
+* handling missing inventory record
+
+### Product Filters
+
+Tests validate filtering behavior for product listing:
+
+* filtering by minimum price (`price_min`)
+* filtering by maximum price (`price_max`)
+* filtering by price range
+* filtering by brand (case-insensitive)
+* filtering by product type
+* combined filter queries
+* empty result handling
+
+---
 
 ### Products API Tests
 
-* product creation API
-* product listing API
-* product detail API
-* product update API
-* product deletion API
-* product image upload API
+### Product Creation API
+
+* successful product creation
+* validation of required fields
+* permission enforcement
+* invalid payload handling
+
+### Product Listing API
+
+* listing active products
+* pagination behavior
+* filtering integration
+* response structure validation
+
+### Product Detail API
+
+* retrieving product by ID
+* nested related data (images, inventory)
+* handling non-existent products
+* response structure validation
+
+### Product Update API
+
+* successful product update
+* validation of invalid fields
+* permission enforcement
+* partial update behavior
+
+### Product Deletion API
+
+* soft delete via API
+* permission enforcement
+* validation of non-existent product
+* response structure validation
+
+### Product Image API
+
+* image upload workflow
+* multiple image upload handling
+* maximum image limit enforcement
+* response validation
 
 ---
 

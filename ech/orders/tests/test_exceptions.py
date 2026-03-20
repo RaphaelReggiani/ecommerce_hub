@@ -27,7 +27,7 @@ from ech.orders.constants.messages import (
     MSG_EXCEPTIONS_ERROR_DUPLICATED_ORDER,
     MSG_EXCEPTIONS_ERROR_PRODUCT_NOT_AVAILABLE,
     MSG_EXCEPTIONS_ERROR_PRODUCT_IS_INACTIVE,
-    MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVETORY,
+    MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVENTORY,
     MSG_EXCEPTIONS_ERROR_INVALID_TRANSITION_STATUS,
     MSG_EXCEPTIONS_ERROR_ORDER_CANNOT_BE_CANCELLED,
     MSG_EXCEPTIONS_ERROR_ORDER_IS_ALREADY_CANCELLED,
@@ -200,8 +200,8 @@ class InsufficientInventoryErrorTestCase(SimpleTestCase):
     def test_insufficient_inventory_error_uses_default_message(self):
         exception = InsufficientInventoryError()
 
-        self.assertEqual(exception.message, MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVETORY)
-        self.assertEqual(str(exception), MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVETORY)
+        self.assertEqual(exception.message, MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVENTORY)
+        self.assertEqual(str(exception), MSG_EXCEPTIONS_ERROR_INSUFFICIENT_INVENTORY)
 
     def test_insufficient_inventory_error_accepts_custom_message(self):
         exception = InsufficientInventoryError("Insufficient inventory for requested quantity")
