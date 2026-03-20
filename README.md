@@ -86,6 +86,8 @@ Centralizes system messages and configuration values.
 
 # Architecture Diagram
 
+```
+
 Client
    |
    v
@@ -103,6 +105,8 @@ Selectors         Domain Logic
                      v
                   Database
 
+
+```
 ---
 
 # Project Structure
