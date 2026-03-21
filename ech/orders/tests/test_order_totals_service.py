@@ -118,7 +118,9 @@ class BaseOrderTotalsFactoryMixin:
 
 
 class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
+
     def test_execute_creates_order_totals_when_it_does_not_exist(self):
+        """Create OrderTotals when the order does not yet have totals."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -141,6 +143,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("160.00"))
 
     def test_execute_updates_existing_order_totals(self):
+        """Update existing OrderTotals values when totals already exist."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -170,6 +173,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("90.00"))
 
     def test_execute_calculates_totals_correctly_for_single_discounted_item(self):
+        """Calculate totals correctly for a single discounted order item."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -188,6 +192,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("300.00"))
 
     def test_execute_calculates_totals_correctly_for_single_item_without_discount(self):
+        """Calculate totals correctly for an item without discount."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -208,6 +213,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("150.00"))
 
     def test_execute_calculates_totals_correctly_for_multiple_items(self):
+        """Calculate totals correctly when the order has multiple items."""
         order = self.create_order()
 
         self.create_order_item(
@@ -237,6 +243,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("330.00"))
 
     def test_execute_sets_zero_totals_when_order_has_no_items(self):
+        """Set all totals to zero when the order has no items."""
         order = self.create_order()
 
         service = OrderTotalsService(order=order)
@@ -250,6 +257,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("0.00"))
 
     def test_execute_does_not_accumulate_values_between_multiple_runs(self):
+        """Ensure totals are recalculated and not accumulated between executions."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -269,6 +277,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("80.00"))
 
     def test_execute_recalculates_after_new_item_is_added(self):
+        """Recalculate totals correctly after a new item is added to the order."""
         order = self.create_order()
 
         self.create_order_item(
@@ -300,6 +309,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("190.00"))
 
     def test_execute_keeps_tax_total_zero_in_current_logic(self):
+        """Keep tax_total equal to zero according to current service logic."""
         order = self.create_order()
         self.create_order_item(
             order=order,
@@ -316,6 +326,7 @@ class OrderTotalsServiceTestCase(BaseOrderTotalsFactoryMixin, TestCase):
         self.assertEqual(totals.tax_total, Decimal("0.00"))
 
     def test_execute_keeps_shipping_total_zero_in_current_logic(self):
+        """Keep shipping_total equal to zero according to current service logic."""
         order = self.create_order()
         self.create_order_item(
             order=order,

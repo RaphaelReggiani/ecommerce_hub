@@ -42,6 +42,7 @@ class ProductDetailAPITestCase(APITestCase):
         )
 
     def test_product_detail_success(self):
+        """Return product detail successfully when product exists."""
 
         url = reverse("product-detail", args=[str(self.product.id)])
 
@@ -50,6 +51,7 @@ class ProductDetailAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_product_detail_not_found(self):
+        """Return 404 when requested product does not exist."""
 
         url = reverse("product-detail", args=["00000000-0000-0000-0000-000000000000"])
 

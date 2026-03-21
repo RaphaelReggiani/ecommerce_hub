@@ -89,22 +89,34 @@ Centralizes system messages and configuration values.
 
 ```
 
-Client
-   |
-   v
-Django REST API
-   |
-   v
-Service Layer
-   |
-   +------------------+
-   |                  |
-Selectors         Domain Logic
-   |                  |
-   +---------> Django ORM
-                     |
-                     v
-                  Database
+                          Client (Web / Mobile)
+                                  |
+                                  v
+                         Django REST API (DRF)
+                                  |
+                                  v
+                             API Layer
+              (views • serializers • permissions)
+                                  |
+                                  v
+                             Service Layer
+                  (business rules / orchestration)
+                                  |
+                 +------------------------------------+
+                 |                                    |
+                 v                                    v
+             Selectors                           Domain Events
+        (query optimization)                (event dispatcher)
+                 |                                    |
+                 v                                    v
+             Django ORM                         Event Handlers
+                 |
+                 v
+              Database
+                 |
+                 v
+               Cache
+        (Django Cache / Redis)
 
 
 ```
@@ -143,7 +155,6 @@ ecommerce_hub/
 │   │   │   │   └── test_token_refresh_api.py
 │   │   │   │
 │   │   │   ├── serializers.py
-│   │   │   ├── permissions.py
 │   │   │   ├── throttles.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
@@ -298,7 +309,7 @@ ecommerce_hub/
 │   ├── payments/
 │   │   ├── api/
 │   │   │   ├── tests/
-│   │   │   │   ├── test_payment_create_api.py
+│   │   │   │   ├── test_payment_creation_api.py
 │   │   │   │   ├── test_payment_list_api.py
 │   │   │   │   ├── test_payment_detail_api.py
 │   │   │   │   ├── test_payment_process_api.py
@@ -518,6 +529,160 @@ Staff management endpoints support:
 * filtering by shipping status
 * filtering by customer email
 * paginated order listing
+
+---
+
+## Payments Module
+
+### Payment Processing
+
+* Payment creation through a dedicated service layer
+* Support for multiple payment methods:
+  * credit card
+  * debit card
+  * PIX
+  * bank slip
+  * digital wallet
+* Unique payment reference generation
+* Idempotency key protection to prevent duplicate payment requests
+* Gateway integration-ready architecture (gateway identifiers supported)
+
+### Payment Components
+
+Payments are composed of multiple related entities:
+
+* **Payment** – main aggregate root
+* **PaymentTransaction** – records every financial operation attempt
+* **PaymentRefund** – stores refund requests and outcomes
+* **PaymentLifecycle** – timestamps for payment lifecycle events
+* **PaymentEvent** – audit event log for payment operations
+
+This structure ensures traceability of every financial operation.
+
+### Payment Lifecycle Management
+
+Payments follow a controlled lifecycle:
+
+```
+PENDING
+→ PROCESSING
+→ AUTHORIZED
+→ CAPTURED
+```
+
+Additional transitions:
+
+```
+FAILED
+CANCELLED
+PARTIALLY_REFUNDED
+REFUNDED
+```
+
+Lifecycle timestamps are tracked in the `PaymentLifecycle` model.
+
+### Refund Management
+
+The refund system supports:
+
+* refund request creation
+* partial refunds
+* full refunds
+* refund processing
+* refund cancellation
+* refund failure handling
+
+Refund processing updates:
+
+* payment refunded balance
+* lifecycle timestamps
+* transaction history
+* operational events
+
+### Transaction History
+
+Every payment operation creates a `PaymentTransaction`, including:
+
+* authorization attempts
+* capture operations
+* charges
+* refunds
+* cancellations
+* failures
+
+This guarantees a complete financial audit trail.
+
+### Domain Event System
+
+The payments module uses an event-driven architecture:
+
+* domain events dispatched for payment lifecycle transitions
+* in-memory event dispatcher
+* structured event payloads
+* event handler registry executed at application startup
+* logging handlers for operational monitoring
+
+Events include:
+
+* payment created
+* payment processing started
+* payment authorized
+* payment captured
+* payment failed
+* payment cancelled
+* refund requested
+* refund processed
+* refund failed
+* refund cancelled
+
+### Caching Layer
+
+A dedicated caching service provides performance optimization for payment operations:
+
+* payment detail caching
+* payment lookup by reference
+* customer payment list caching
+* management payment list caching
+* filtered payment list caching (status and method)
+* payment transactions caching
+* payment refunds caching
+
+All cache keys are **versioned**, allowing safe cache invalidation strategies.
+
+### Cache Invalidation Strategy
+
+The system ensures cache consistency through automatic invalidation when:
+
+* a payment is created
+* payment status changes
+* payment is cancelled
+* refunds are requested or processed
+* refund states change
+
+Cache invalidation is centralized in the `PaymentCacheService`.
+
+### Filtering and Query Optimization
+
+Payment listing endpoints support filtering by:
+
+* payment status
+* payment method
+* customer ID
+* order ID
+* payment reference
+* gateway payment ID
+* amount range
+* refunded amount range
+* creation date range
+* fully refunded payments
+* partially refunded payments
+
+Database queries are optimized using:
+
+* `select_related`
+* `prefetch_related`
+* indexed fields
+* paginated query patterns
 
 ---
 
@@ -1184,6 +1349,247 @@ Tests validate caching behavior through API endpoints:
 
 ---
 
+## Payments
+
+### Tests Coverage Status:
+
+* Domain: 226 tests
+* API: (pending)
+
+### Payments Domain Tests
+
+### Domain Models
+
+* payment creation and core field validation
+* UUID primary key generation
+* payment status choices validation
+* payment method choices validation
+* payment reference uniqueness
+* gateway identifiers handling
+* refunded amount default behavior
+* currency default value
+* metadata storage behavior
+* model ordering by `created_at`
+* string representations
+
+### Payment Transaction Model
+
+* transaction creation and relationships
+* transaction type validation
+* transaction status validation
+* gateway transaction identifiers
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+### Payment Refund Model
+
+* refund creation and payment association
+* refund status validation
+* gateway refund identifiers
+* requested_by and processed_by behavior
+* refund processing timestamps
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+### Payment Lifecycle Model
+
+* lifecycle relationship integrity
+* lifecycle timestamps handling
+* timestamp persistence behavior
+* string representation validation
+
+### Payment Event Model
+
+* event creation and lifecycle tracking
+* UUID primary key generation
+* event type validation
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+---
+
+### Domain Exceptions
+
+* base payment exception behavior
+* default vs custom message handling
+* exception inheritance hierarchy validation
+* payment not found handling
+* permission protection exceptions
+* duplicate reference protection
+* idempotency key reuse protection
+* invalid payment status transition validation
+* cancellation rule validation
+* refund eligibility validation
+* refund amount validation
+* transaction-related exceptions
+* refund lifecycle exceptions
+
+---
+
+### Query Selectors
+
+Tests validate query behavior and data retrieval logic:
+
+* retrieving payment by ID
+* retrieving payment by reference
+* retrieving payment with full related entities
+* retrieving payment restricted to customer ownership
+* retrieving payment by order ID
+* retrieving payment lifecycle object
+* retrieving refund by ID
+* listing payments for customer
+* listing payments for management dashboards
+* listing payments by status
+* listing payments by method
+* listing payment transactions
+* listing payment refunds
+* listing payment events
+* listing pending payment refunds
+* handling non-existent records
+
+---
+
+### Payment Creation Service
+
+* payment creation workflow
+* validation of order eligibility
+* prevention of payments for cancelled/refunded orders
+* prevention of duplicate payments for same order
+* idempotency key validation
+* duplicate payment reference protection
+* automatic payment reference generation
+* creation of lifecycle record
+* creation of initial payment event
+* transactional rollback validation
+
+---
+
+### Payment Status Service
+
+* payment processing start transition
+* payment authorization transition
+* payment capture transition
+* payment failure transition
+* lifecycle timestamp updates
+* creation of transaction records
+* event dispatch for each transition
+* validation of invalid state transitions
+* protection against invalid payment states
+
+---
+
+### Payment Processing Service
+
+* payment cancellation workflow
+* cancellation state validation
+* prevention of invalid cancellation states
+* lifecycle timestamp updates
+* transaction record creation
+* event dispatch after cancellation
+* consistent payment state updates
+
+---
+
+### Payment Refund Service
+
+* refund request workflow
+* refund amount validation
+* prevention of refunds above available balance
+* validation of refundable payment states
+* partial refund handling
+* full refund handling
+* refund processing workflow
+* refund failure handling
+* refund cancellation workflow
+* payment refunded amount updates
+* lifecycle timestamp updates
+* transaction record creation
+* event dispatch for refund lifecycle
+
+---
+
+### Domain Events
+
+Tests validate domain event infrastructure:
+
+* domain event base class behavior
+* event payload integrity validation
+* event metadata defaults
+* dispatcher handler registration
+* prevention of duplicate handler registration
+* event dispatch execution
+* multiple handlers execution
+* event type isolation
+* dispatcher clearing behavior
+* handler execution with structured logging
+* registry handler registration
+* registry idempotency protection
+
+---
+
+### Payment Caching
+
+Tests validate caching behavior and consistency:
+
+* versioned cache key generation
+* storing values in cache
+* retrieving cached values
+* deleting cached entries
+* `get_or_set` cache pattern behavior
+* payment detail caching
+* payment lookup by reference caching
+* customer payment list caching
+* management payment list caching
+* filtered payment list caching
+* payment transactions caching
+* payment refunds caching
+* cache hit vs cache miss behavior
+
+---
+
+### Cache Invalidation
+
+Tests validate that payment services invalidate cache correctly:
+
+* invalidation of payment detail cache
+* invalidation of reference lookup cache
+* invalidation of payment transaction cache
+* invalidation of payment refund cache
+* invalidation of customer payment lists
+* invalidation of management payment lists
+* invalidation of filtered payment caches (status)
+* invalidation of filtered payment caches (method)
+* aggregated payment cache invalidation
+* partial invalidation behavior when optional fields are absent
+
+---
+
+### Payment Filters
+
+Tests validate filtering behavior for payment listings:
+
+* filtering by payment status
+* filtering by payment method
+* filtering by customer ID
+* filtering by order ID
+* filtering by payment reference (case-insensitive)
+* filtering by gateway payment ID
+* filtering by minimum amount
+* filtering by maximum amount
+* filtering by refunded amount range
+* filtering by creation date range
+* filtering fully refunded payments
+* filtering partially refunded payments
+* combined filter queries
+* empty result handling
+
+---
+
 Example test execution:
 
 ```
@@ -1195,6 +1601,9 @@ pytest ech/products/api/tests/
 
 pytest ech/orders/tests/
 pytest ech/orders/api/tests/
+
+pytest ech/payments/tests/
+
 ```
 
 ---

@@ -47,9 +47,7 @@ class ProductUpdateAPITestCase(APITestCase):
         )
 
     def test_update_product_success(self):
-        """
-        Operations staff should be able to update a product.
-        """
+        """Operations staff should be able to update a product."""
 
         self.client.force_authenticate(self.manager)
 
@@ -70,9 +68,7 @@ class ProductUpdateAPITestCase(APITestCase):
         self.assertEqual(self.product.brand, "LG UltraGear")
 
     def test_update_product_partial(self):
-        """
-        Partial update should modify only provided fields.
-        """
+        """Partial update should modify only provided fields."""
 
         self.client.force_authenticate(self.manager)
 
@@ -91,9 +87,7 @@ class ProductUpdateAPITestCase(APITestCase):
         self.assertEqual(self.product.price, Decimal("1300.00"))
 
     def test_update_product_forbidden(self):
-        """
-        Customer users cannot update products.
-        """
+        """Customer users cannot update products."""
 
         self.client.force_authenticate(self.customer)
 
@@ -108,9 +102,7 @@ class ProductUpdateAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_update_product_not_found(self):
-        """
-        Updating a non-existing product should return 404.
-        """
+        """Updating a non-existing product should return 404."""
 
         self.client.force_authenticate(self.manager)
 
@@ -127,9 +119,7 @@ class ProductUpdateAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_product_invalid_discount(self):
-        """
-        Discount price cannot be greater than product price.
-        """
+        """Discount price cannot be greater than product price."""
 
         self.client.force_authenticate(self.manager)
 
@@ -145,9 +135,7 @@ class ProductUpdateAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_does_not_modify_unrelated_fields(self):
-        """
-        Updating one field should not change other product fields.
-        """
+        """Updating one field should not change other product fields."""
 
         self.client.force_authenticate(self.manager)
 

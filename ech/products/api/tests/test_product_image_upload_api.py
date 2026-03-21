@@ -96,9 +96,7 @@ class ProductImageUploadAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_upload_image_limit_exceeded(self):
-        """
-        Uploading more images than allowed should fail.
-        """
+        """Uploading more images than allowed should fail."""
 
         self.client.force_authenticate(self.manager)
 

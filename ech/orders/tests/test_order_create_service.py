@@ -119,6 +119,7 @@ class BaseCreateOrderFactoryMixin:
 
 class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
     def test_execute_raises_empty_order_error_when_items_is_empty(self):
+        """Raise EmptyOrderError when attempting to create an order with no items."""
         customer = self.create_user()
         address = self.build_address()
 
@@ -134,6 +135,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_execute_returns_existing_order_when_idempotency_key_already_exists(self):
+        """Return the existing order when the idempotency key already exists."""
         customer = self.create_user()
         existing_order = Order.objects.create(
             customer=customer,
@@ -164,6 +166,8 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderAddress.objects.count(), 0)
 
     def test_execute_raises_product_not_available_error_when_product_selector_returns_none(self):
+        """Raise ProductNotAvailableError when the product selector returns None."""
+        
         customer = self.create_user()
 
         service = CreateOrderService(
@@ -183,6 +187,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderItem.objects.count(), 0)
 
     def test_execute_raises_insufficient_inventory_error_when_inventory_does_not_exist(self):
+        """Raise InsufficientInventoryError when product inventory does not exist."""
         customer = self.create_user()
         product = self.create_product()
 
@@ -199,6 +204,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderItem.objects.count(), 0)
 
     def test_execute_raises_insufficient_inventory_error_when_inventory_is_less_than_requested_quantity(self):
+        """Raise InsufficientInventoryError when inventory quantity is insufficient."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=1)
@@ -217,6 +223,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderTotals.objects.count(), 0)
 
     def test_execute_raises_invalid_order_address_error_when_address_is_none(self):
+        """Raise InvalidOrderAddressError when the provided address is None."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -238,6 +245,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderAddress.objects.count(), 0)
 
     def test_execute_creates_order_with_expected_default_statuses(self):
+        """Create order with default pending status, payment, and shipping states."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -257,6 +265,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertIsNone(order.idempotency_key)
 
     def test_execute_creates_order_with_idempotency_key_when_provided(self):
+        """Persist idempotency key when provided during order creation."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -274,6 +283,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(order.idempotency_key, idempotency_key)
 
     def test_execute_creates_order_item_with_product_snapshot_fields(self):
+        """Create order item with correct product snapshot data."""
         customer = self.create_user()
         product = self.create_product(
             name="Pro Gaming Mouse",
@@ -303,6 +313,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(item.total_price, Decimal("240.00"))
 
     def test_execute_updates_inventory_after_order_creation(self):
+        """Decrease product inventory after successful order creation."""
         customer = self.create_user()
         product = self.create_product()
         inventory = self.create_inventory(product=product, quantity=10)
@@ -319,6 +330,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(inventory.quantity, 7)
 
     def test_execute_creates_totals_correctly_for_single_discounted_item(self):
+        """Calculate totals correctly for a single discounted product."""
         customer = self.create_user()
         product = self.create_product(
             price=Decimal("100.00"),
@@ -342,6 +354,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("160.00"))
 
     def test_execute_creates_totals_correctly_when_product_has_no_discount(self):
+        """Calculate totals correctly when product has no discount."""
         customer = self.create_user()
         product = self.create_product(
             price=Decimal("75.00"),
@@ -367,6 +380,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("150.00"))
 
     def test_execute_creates_totals_correctly_for_multiple_items(self):
+        """Calculate totals correctly when order contains multiple items."""
         customer = self.create_user()
 
         product_1 = self.create_product(
@@ -400,6 +414,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(totals.grand_total, Decimal("330.00"))
 
     def test_execute_creates_lifecycle_with_all_status_dates_as_none(self):
+        """Create lifecycle record with all status timestamps initially None."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -422,6 +437,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertIsNone(lifecycle.refunded_at)
 
     def test_execute_registers_created_event(self):
+        """Register a created event when the order is successfully created."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -441,6 +457,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertIn("created_at", event.metadata)
 
     def test_execute_creates_address_with_phone_when_provided(self):
+        """Create order address including phone when provided."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -465,6 +482,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(order_address.phone, "+11 99999-9999")
 
     def test_execute_creates_address_with_empty_phone_when_not_provided(self):
+        """Create order address with empty phone when phone is not provided."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -483,6 +501,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(order.address.phone, "")
 
     def test_execute_creates_all_related_records_successfully(self):
+        """Create all related order records successfully during order creation."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -504,6 +523,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(order.items.count(), 1)
 
     def test_execute_rolls_back_everything_when_address_is_invalid(self):
+        """Rollback entire transaction when address validation fails."""
         customer = self.create_user()
         product = self.create_product()
         self.create_inventory(product=product, quantity=10)
@@ -525,6 +545,7 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
         self.assertEqual(OrderAddress.objects.count(), 0)
 
     def test_execute_rolls_back_order_when_second_item_has_insufficient_inventory(self):
+        """Rollback order creation when a later item fails inventory validation."""
         customer = self.create_user()
 
         product_1 = self.create_product(price=Decimal("100.00"), discount_price=Decimal("90.00"))

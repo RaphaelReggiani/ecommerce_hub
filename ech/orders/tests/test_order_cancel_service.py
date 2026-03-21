@@ -137,6 +137,7 @@ class BaseCancelOrderFactoryMixin:
 
 class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
     def test_execute_cancels_order_successfully(self):
+        """Cancel the order successfully when cancellation is valid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -147,6 +148,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_CANCELLED)
 
     def test_execute_updates_lifecycle_cancelled_at(self):
+        """Update lifecycle cancelled_at timestamp when order is cancelled."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -157,6 +159,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertIsNotNone(order.lifecycle.cancelled_at)
 
     def test_execute_registers_cancelled_event(self):
+        """Register cancelled event when order cancellation succeeds."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -170,6 +173,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(event.metadata, {"reason": "manual_cancellation"})
 
     def test_execute_restores_inventory_for_single_item(self):
+        """Restore inventory quantity when cancelling an order with one item."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -189,6 +193,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(inventory.quantity, 5)
 
     def test_execute_restores_inventory_for_multiple_items(self):
+        """Restore inventory quantities for multiple cancelled order items."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -211,6 +216,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(inventory_2.quantity, 11)
 
     def test_execute_does_not_fail_when_product_inventory_does_not_exist(self):
+        """Cancel order even when product inventory record does not exist."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -230,6 +236,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(OrderEvent.objects.count(), 1)
 
     def test_execute_raises_order_cancellation_not_allowed_error_for_shipped_order(self):
+        """Raise error when attempting to cancel a shipped order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 
@@ -244,6 +251,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         )
 
     def test_execute_raises_order_cancellation_not_allowed_error_for_delivered_order(self):
+        """Raise error when attempting to cancel a delivered order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_DELIVERED)
 
@@ -258,6 +266,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         )
 
     def test_execute_raises_order_already_cancelled_error_for_cancelled_order(self):
+        """Raise error when attempting to cancel an already cancelled order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CANCELLED)
 
@@ -272,6 +281,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         )
 
     def test_execute_does_not_create_event_when_order_is_shipped(self):
+        """Prevent event creation when cancellation of shipped order fails."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 
@@ -283,6 +293,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(OrderEvent.objects.count(), 0)
 
     def test_execute_does_not_create_event_when_order_is_delivered(self):
+        """Prevent event creation when cancellation of delivered order fails."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_DELIVERED)
 
@@ -294,6 +305,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(OrderEvent.objects.count(), 0)
 
     def test_execute_does_not_create_event_when_order_is_already_cancelled(self):
+        """Prevent event creation when order is already cancelled."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CANCELLED)
 
@@ -305,6 +317,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(OrderEvent.objects.count(), 0)
 
     def test_execute_does_not_change_status_when_order_is_shipped(self):
+        """Ensure order status remains unchanged when cancellation fails."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 
@@ -317,6 +330,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_SHIPPED)
 
     def test_execute_does_not_change_status_when_order_is_delivered(self):
+        """Ensure delivered order status remains unchanged after failed cancellation."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_DELIVERED)
 
@@ -329,6 +343,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_DELIVERED)
 
     def test_execute_does_not_update_lifecycle_when_cancellation_is_invalid(self):
+        """Prevent lifecycle updates when cancellation transition is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 
@@ -341,6 +356,7 @@ class CancelOrderServiceTestCase(BaseCancelOrderFactoryMixin, TestCase):
         self.assertIsNone(order.lifecycle.cancelled_at)
 
     def test_execute_does_not_restore_inventory_when_cancellation_is_invalid(self):
+        """Prevent inventory restoration when cancellation attempt is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 

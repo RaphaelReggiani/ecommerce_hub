@@ -99,6 +99,7 @@ class OrderCancelApiTestCase(APITestCase):
         return order
 
     def test_cancel_order_successfully(self):
+        """Cancel order successfully and return updated order data."""
         self.authenticate(self.customer)
 
         order = self.create_order(customer=self.customer)
@@ -116,6 +117,7 @@ class OrderCancelApiTestCase(APITestCase):
         self.assertEqual(response.data["status"], Order.ORDER_STATUS_CANCELLED)
 
     def test_cancel_order_requires_authentication(self):
+        """Require authentication to cancel an order."""
         order = self.create_order(customer=self.customer)
 
         url = reverse("orders-api:order-cancel", kwargs={"order_id": order.id})
@@ -128,6 +130,7 @@ class OrderCancelApiTestCase(APITestCase):
         )
 
     def test_cancel_order_denied_for_non_owner(self):
+        """Deny order cancellation for users who do not own the order."""
         self.authenticate(self.other_customer)
 
         order = self.create_order(customer=self.customer)
@@ -139,6 +142,7 @@ class OrderCancelApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cancel_order_returns_404_when_not_found(self):
+        """Return 404 when attempting to cancel a nonexistent order."""
         self.authenticate(self.customer)
 
         url = reverse("orders-api:order-cancel", kwargs={"order_id": uuid4()})
@@ -149,6 +153,7 @@ class OrderCancelApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.CancelOrderService.execute")
     def test_cancel_order_returns_400_when_service_raises_order_error(self, mock_execute):
+        """Return 400 when cancel service raises a business OrderError."""
         self.authenticate(self.customer)
 
         order = self.create_order(customer=self.customer)
@@ -163,6 +168,7 @@ class OrderCancelApiTestCase(APITestCase):
         self.assertEqual(response.data["detail"], "Business error")
 
     def test_cancel_order_returns_updated_order_data(self):
+        """Return full order payload after successful cancellation."""
         self.authenticate(self.customer)
 
         order = self.create_order(customer=self.customer)

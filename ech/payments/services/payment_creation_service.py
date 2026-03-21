@@ -192,12 +192,9 @@ class PaymentCreationService:
     def _validate_order_has_no_payment(*, order: Order) -> None:
         """
         Validate that the order does not already have a payment.
-
-        This rule matches the current Payment model, where Payment.order
-        is a OneToOneField.
         """
 
-        if hasattr(order, "payment"):
+        if Payment.objects.filter(order=order).exists():
             raise PaymentCreationNotAllowed(MSG_SERVICE_ERROR_PAYMENT_ALREADY_EXISTS_FOR_THIS_ORDER)
 
     @staticmethod

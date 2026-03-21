@@ -69,6 +69,7 @@ class OrderManagementListApiTestCase(APITestCase):
         return order
 
     def test_management_list_requires_authentication(self):
+        """Require authentication to access the order management list endpoint."""
         response = self.client.get(self.url)
 
         self.assertIn(
@@ -77,6 +78,7 @@ class OrderManagementListApiTestCase(APITestCase):
         )
 
     def test_management_list_denied_for_non_staff_user(self):
+        """Deny access to order management list for non-staff users."""
         self.authenticate(self.customer)
 
         response = self.client.get(self.url)
@@ -84,6 +86,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_management_list_allowed_for_staff(self):
+        """Allow staff users to access the order management list."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer)
@@ -94,6 +97,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertIn("results", response.data)
 
     def test_management_list_returns_all_orders(self):
+        """Return all orders in the management list endpoint."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer)
@@ -105,6 +109,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["count"], 2)
 
     def test_management_list_is_ordered_by_created_at_desc(self):
+        """Return orders ordered by created_at descending."""
         self.authenticate(self.staff)
 
         older = self.create_order(customer=self.customer)
@@ -119,6 +124,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(results[1]["id"], str(older.id))
 
     def test_filter_by_status(self):
+        """Filter orders by status in the management list endpoint."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer, status_value=Order.ORDER_STATUS_PENDING)
@@ -131,6 +137,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["status"], "confirmed")
 
     def test_filter_by_payment_status(self):
+        """Filter orders by payment status."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer, payment_status=Order.PAYMENT_STATUS_PENDING)
@@ -143,6 +150,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["payment_status"], "captured")
 
     def test_filter_by_shipping_status(self):
+        """Filter orders by shipping status."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer, shipping_status=Order.SHIPPING_STATUS_PENDING)
@@ -155,6 +163,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["shipping_status"], "shipped")
 
     def test_filter_by_customer_email(self):
+        """Filter orders by partial customer email."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer)
@@ -177,6 +186,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertIn("another@test.com", response.data["results"][0]["customer_email"])
 
     def test_filter_by_customer_name(self):
+        """Filter orders by partial customer name."""
         self.authenticate(self.staff)
 
         self.create_order(customer=self.customer)
@@ -199,6 +209,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["customer_name"], "John Doe")
 
     def test_filter_by_created_date_range(self):
+        """Filter orders by created_at date range."""
         self.authenticate(self.staff)
 
         now = timezone.now()
@@ -222,6 +233,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"][0]["id"], str(new_order.id))
 
     def test_management_list_pagination(self):
+        """Paginate order management list results."""
         self.authenticate(self.staff)
 
         for _ in range(5):
@@ -235,6 +247,7 @@ class OrderManagementListApiTestCase(APITestCase):
         self.assertIsNotNone(response.data["next"])
 
     def test_filter_by_partially_refunded_payment_status(self):
+        """Filter orders by partially refunded payment status."""
         self.authenticate(self.staff)
 
         self.create_order(

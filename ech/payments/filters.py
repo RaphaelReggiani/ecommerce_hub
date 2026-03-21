@@ -24,7 +24,7 @@ class PaymentFilter(django_filters.FilterSet):
     status = django_filters.CharFilter(field_name="status")
     method = django_filters.CharFilter(field_name="method")
 
-    customer_id = django_filters.UUIDFilter(field_name="customer_id")
+    customer_id = django_filters.NumberFilter(field_name="customer_id")
     order_id = django_filters.UUIDFilter(field_name="order_id")
 
     payment_reference = django_filters.CharFilter(

@@ -124,11 +124,8 @@ class OrderManagementDetailApiTestCase(APITestCase):
 
         return order
 
-    # =========================
-    # AUTH / PERMISSION
-    # =========================
-
     def test_management_detail_requires_authentication(self):
+        """Require authentication to access order management detail."""
         order = self.create_order_with_full_data(customer=self.customer)
 
         url = reverse(self.url_name, kwargs={"order_id": order.id})
@@ -141,6 +138,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         )
 
     def test_management_detail_denied_for_non_staff(self):
+        """Deny order management detail access for non-staff users."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -152,6 +150,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_management_detail_allowed_for_staff(self):
+        """Allow staff users to access order management detail."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -162,11 +161,8 @@ class OrderManagementDetailApiTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    # =========================
-    # CORE BEHAVIOR
-    # =========================
-
     def test_management_detail_returns_full_order_data(self):
+        """Return complete order management detail payload."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -221,6 +217,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         self.assertEqual(note["message"], "Test note")
 
     def test_management_detail_returns_404_when_order_not_found(self):
+        """Return 404 when requested order does not exist."""
         self.authenticate(self.staff)
 
         url = reverse(self.url_name, kwargs={"order_id": uuid4()})
@@ -231,6 +228,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         self.assertIn("detail", response.data)
 
     def test_management_detail_returns_correct_order_when_multiple_exist(self):
+        """Return the correct order when multiple orders exist."""
         self.authenticate(self.staff)
 
         other_order = self.create_order_with_full_data(customer=self.customer)
@@ -245,6 +243,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         self.assertNotEqual(response.data["id"], str(other_order.id))
 
     def test_management_detail_contains_timestamp_fields(self):
+        """Include timestamp fields across order related resources."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -265,6 +264,7 @@ class OrderManagementDetailApiTestCase(APITestCase):
         self.assertIn("created_at", data["notes"][0])
 
     def test_management_detail_returns_partially_refunded_payment_status(self):
+        """Return partially refunded payment status when applicable."""
         self.authenticate(self.staff)
 
         order = Order.objects.create(

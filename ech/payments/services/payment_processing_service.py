@@ -5,7 +5,6 @@ from ech.payments.exceptions import (
     PaymentAlreadyCancelled,
     PaymentAlreadyProcessed,
     PaymentNotFound,
-    PaymentProcessingFailed,
     PaymentProcessingNotAllowed,
 )
 from ech.payments.models import (

@@ -79,6 +79,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.client.force_authenticate(user=user or self.customer)
 
     def test_create_order_successfully(self):
+        """Create order successfully and persist all related entities."""
         self.authenticate()
 
         response = self.client.post(self.url, self.valid_payload, format="json")
@@ -141,6 +142,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(response.data["totals"]["grand_total"], "160.00")
 
     def test_create_order_returns_unauthorized_for_unauthenticated_user(self):
+        """Reject order creation for unauthenticated users."""
         response = self.client.post(self.url, self.valid_payload, format="json")
 
         self.assertIn(
@@ -150,6 +152,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_items_is_empty(self):
+        """Return validation error when items list is empty."""
         self.authenticate()
 
         payload = {
@@ -164,6 +167,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_product_is_inactive(self):
+        """Return validation error when product is inactive."""
         self.authenticate()
 
         self.product.is_active = False
@@ -176,6 +180,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_product_id_does_not_exist(self):
+        """Return validation error when product id does not exist."""
         self.authenticate()
 
         payload = {
@@ -195,6 +200,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_quantity_is_less_than_one(self):
+        """Return validation error when quantity is less than one."""
         self.authenticate()
 
         payload = {
@@ -214,6 +220,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_inventory_is_insufficient(self):
+        """Return error when inventory is insufficient for requested quantity."""
         self.authenticate()
 
         payload = {
@@ -241,6 +248,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(self.inventory.quantity, 10)
 
     def test_create_order_fails_when_address_is_missing(self):
+        """Return validation error when address payload is missing."""
         self.authenticate()
 
         payload = {
@@ -254,6 +262,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_fails_when_address_required_field_is_missing(self):
+        """Return validation error when required address field is missing."""
         self.authenticate()
 
         payload = {
@@ -274,6 +283,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
 
     def test_create_order_allows_blank_phone(self):
+        """Allow blank phone field in address payload."""
         self.authenticate()
 
         payload = {
@@ -292,6 +302,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(order.address.phone, "")
 
     def test_create_order_returns_existing_order_when_idempotency_key_is_reused(self):
+        """Return existing order when idempotency key is reused."""
         self.authenticate()
 
         idempotency_key = str(uuid4())
@@ -320,6 +331,7 @@ class OrderCreateApiTestCase(APITestCase):
         self.assertEqual(self.inventory.quantity, 8)
 
     def test_create_order_supports_product_without_discount(self):
+        """Support product without discount price during order creation."""
         self.authenticate()
 
         self.product.discount_price = None

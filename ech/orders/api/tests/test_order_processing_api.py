@@ -134,6 +134,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
         )
 
     def test_start_processing_requires_authentication(self):
+        """Require authentication to start order processing."""
         order = self.create_order_with_full_data(customer=self.customer)
 
         response = self.client.post(self.get_url(order.id))
@@ -144,6 +145,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
         )
 
     def test_start_processing_denied_for_non_management_user(self):
+        """Deny starting order processing for non-management users."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -153,6 +155,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_start_processing_returns_404_when_order_does_not_exist(self):
+        """Return 404 when attempting to start processing for nonexistent order."""
         self.authenticate(self.staff)
 
         response = self.client.post(self.get_url(uuid4()))
@@ -162,6 +165,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.start_processing")
     def test_start_processing_successfully(self, mock_start_processing):
+        """Start order processing successfully and return updated detail."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -196,6 +200,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.start_processing")
     def test_start_processing_returns_400_when_service_raises_order_error(self, mock_start_processing):
+        """Return 400 when service raises a domain OrderError."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -211,6 +216,7 @@ class OrderStartProcessingApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.start_processing")
     def test_start_processing_returns_management_detail_payload(self, mock_start_processing):
+        """Return full management payload after starting processing."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)

@@ -132,6 +132,7 @@ class OrderDetailApiTestCase(APITestCase):
         return order
 
     def test_order_detail_returns_order_for_owner(self):
+        """Return order detail when requested by the order owner."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_related_data(customer=self.customer)
@@ -150,6 +151,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertEqual(response.data["currency"], "USD")
 
     def test_order_detail_returns_nested_related_data(self):
+        """Return nested related resources for order detail endpoint."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_related_data(customer=self.customer)
@@ -209,6 +211,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertFalse(note["is_internal"])
 
     def test_order_detail_denies_access_to_non_owner_without_management_role(self):
+        """Deny access when user is not the order owner."""
         self.authenticate(self.other_customer)
 
         order = self.create_order_with_related_data(customer=self.customer)
@@ -219,6 +222,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_order_detail_requires_authentication(self):
+        """Require authentication to access order detail endpoint."""
         order = self.create_order_with_related_data(customer=self.customer)
         url = reverse("orders-api:order-detail", kwargs={"order_id": order.id})
 
@@ -230,6 +234,7 @@ class OrderDetailApiTestCase(APITestCase):
         )
 
     def test_order_detail_returns_404_when_order_does_not_exist(self):
+        """Return 404 when requested order does not exist."""
         self.authenticate(self.customer)
 
         url = reverse("orders-api:order-detail", kwargs={"order_id": uuid4()})
@@ -240,6 +245,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertIn("detail", response.data)
 
     def test_order_detail_returns_correct_order_when_customer_has_multiple_orders(self):
+        """Return correct order when customer has multiple orders."""
         self.authenticate(self.customer)
 
         other_order = self.create_order_with_related_data(customer=self.customer)
@@ -254,6 +260,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertNotEqual(response.data["id"], str(other_order.id))
 
     def test_order_detail_returns_created_and_updated_fields(self):
+        """Include created and updated timestamps in order detail response."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_related_data(customer=self.customer)
@@ -272,6 +279,7 @@ class OrderDetailApiTestCase(APITestCase):
         self.assertIn("created_at", response.data["notes"][0])
 
     def test_order_detail_returns_partially_refunded_payment_status(self):
+        """Return partially refunded payment status correctly."""
         self.authenticate(self.customer)
 
         order = Order.objects.create(

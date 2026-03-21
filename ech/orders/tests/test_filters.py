@@ -77,6 +77,7 @@ class BaseOrderFilterFactoryMixin:
 
 class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
     def test_filter_by_status(self):
+        """Filter orders correctly by status."""
         matching_order = self.create_order(status=Order.ORDER_STATUS_PENDING)
         self.create_order(status=Order.ORDER_STATUS_CANCELLED)
 
@@ -89,6 +90,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_status_is_case_insensitive(self):
+        """Filter orders by status using case-insensitive input."""
         matching_order = self.create_order(status=Order.ORDER_STATUS_PENDING)
         self.create_order(status=Order.ORDER_STATUS_CANCELLED)
 
@@ -101,6 +103,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_payment_status(self):
+        """Filter orders correctly by payment status."""
         matching_order = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
         self.create_order(payment_status=Order.PAYMENT_STATUS_CAPTURED)
 
@@ -113,6 +116,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_payment_status_is_case_insensitive(self):
+        """Filter orders by payment status using case-insensitive input."""
         matching_order = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
         self.create_order(payment_status=Order.PAYMENT_STATUS_FAILED)
 
@@ -125,6 +129,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_shipping_status(self):
+        """Filter orders correctly by shipping status."""
         matching_order = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
         self.create_order(shipping_status=Order.SHIPPING_STATUS_DELIVERED)
 
@@ -137,6 +142,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_shipping_status_is_case_insensitive(self):
+        """Filter orders by shipping status using case-insensitive input."""
         matching_order = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
         self.create_order(shipping_status=Order.SHIPPING_STATUS_SHIPPED)
 
@@ -149,6 +155,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_customer_email_using_icontains(self):
+        """Filter orders by partial customer email using icontains."""
         matching_customer = self.create_user(
             user_email="alpha.customer@test.com",
             user_name="Alpha Customer",
@@ -170,6 +177,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_customer_email_is_case_insensitive(self):
+        """Filter orders by customer email using case-insensitive matching."""
         matching_customer = self.create_user(
             user_email="mixed.case@test.com",
             user_name="Mixed Case",
@@ -191,6 +199,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_customer_name_using_icontains(self):
+        """Filter orders by partial customer name using icontains."""
         matching_customer = self.create_user(
             user_email="customer1@test.com",
             user_name="Example Customer",
@@ -212,6 +221,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_customer_name_is_case_insensitive(self):
+        """Filter orders by customer name using case-insensitive matching."""
         matching_customer = self.create_user(
             user_email="customer3@test.com",
             user_name="Sample Buyer",
@@ -233,6 +243,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_by_created_after(self):
+        """Filter orders created after the specified timestamp."""
         older_order = self.create_order()
         newer_order = self.create_order()
 
@@ -247,6 +258,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(newer_order, filtered_qs)
 
     def test_filter_by_created_before(self):
+        """Filter orders created before the specified timestamp."""
         older_order = self.create_order()
         newer_order = self.create_order()
 
@@ -261,6 +273,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertNotIn(newer_order, filtered_qs)
 
     def test_filter_combines_multiple_fields(self):
+        """Filter orders correctly when multiple filter fields are combined."""
         target_customer = self.create_user(
             user_email="target.customer@test.com",
             user_name="Target Customer",
@@ -304,6 +317,7 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(matching_order, filtered_qs)
 
     def test_filter_returns_all_orders_when_no_data_is_provided(self):
+        """Return all orders when no filter data is provided."""
         first_order = self.create_order()
         second_order = self.create_order()
 
@@ -317,9 +331,11 @@ class OrderFilterTestCase(BaseOrderFilterFactoryMixin, TestCase):
         self.assertIn(second_order, filtered_qs)
 
     def test_filter_meta_model_is_order(self):
+        """Ensure OrderFilter meta model is Order."""
         self.assertEqual(OrderFilter._meta.model, Order)
 
     def test_filter_meta_fields_are_expected(self):
+        """Ensure OrderFilter exposes the expected filter fields."""
         self.assertEqual(
             OrderFilter._meta.fields,
             [

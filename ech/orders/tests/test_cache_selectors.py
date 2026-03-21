@@ -102,11 +102,8 @@ class OrderCacheSelectorsTestCase(TestCase):
 
         return order
 
-    # =========================
-    # get_order_by_id
-    # =========================
-
     def test_get_order_by_id_returns_order_and_caches_result(self):
+        """Return order by id and reuse cached result on subsequent calls."""
         order = self.create_order_with_related_data()
 
         first_result = get_order_by_id(order.id)
@@ -118,6 +115,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertEqual(second_result.id, order.id)
 
     def test_get_order_by_id_returns_none_and_caches_empty_result(self):
+        """Return None for missing order and cache the empty result."""
         missing_order_id = uuid4()
 
         first_result = get_order_by_id(missing_order_id)
@@ -127,6 +125,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertIsNone(second_result)
 
     def test_get_order_by_id_returns_stale_data_until_cache_is_invalidated(self):
+        """Return stale cached data until the cache is explicitly invalidated."""
         order = self.create_order_with_related_data(status=Order.ORDER_STATUS_PENDING)
 
         cached_order = get_order_by_id(order.id)
@@ -138,6 +137,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertEqual(stale_order.status, Order.ORDER_STATUS_PENDING)
 
     def test_get_order_by_id_returns_fresh_data_after_cache_invalidation(self):
+        """Return fresh data after related order caches are invalidated."""
         order = self.create_order_with_related_data(status=Order.ORDER_STATUS_PENDING)
 
         cached_order = get_order_by_id(order.id)
@@ -151,11 +151,8 @@ class OrderCacheSelectorsTestCase(TestCase):
         fresh_order = get_order_by_id(order.id)
         self.assertEqual(fresh_order.status, Order.ORDER_STATUS_CONFIRMED)
 
-    # =========================
-    # get_order_detail_for_management
-    # =========================
-
     def test_get_order_detail_for_management_returns_order_and_caches_result(self):
+        """Return order detail for management and cache the result."""
         order = self.create_order_with_related_data()
 
         first_result = get_order_detail_for_management(order.id)
@@ -167,6 +164,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertEqual(second_result.id, order.id)
 
     def test_get_order_detail_for_management_returns_none_for_nonexistent_order(self):
+        """Return None when management selector is called with nonexistent id."""
         missing_order_id = uuid4()
 
         first_result = get_order_detail_for_management(missing_order_id)
@@ -176,6 +174,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertIsNone(second_result)
 
     def test_get_order_detail_for_management_returns_stale_data_until_cache_is_invalidated(self):
+        """Return stale management detail until cache invalidation occurs."""
         order = self.create_order_with_related_data(status=Order.ORDER_STATUS_PENDING)
 
         cached_order = get_order_detail_for_management(order.id)
@@ -187,6 +186,7 @@ class OrderCacheSelectorsTestCase(TestCase):
         self.assertEqual(stale_order.status, Order.ORDER_STATUS_PENDING)
 
     def test_get_order_detail_for_management_returns_fresh_data_after_invalidation(self):
+        """Return fresh management detail after cache invalidation."""
         order = self.create_order_with_related_data(status=Order.ORDER_STATUS_PENDING)
 
         cached_order = get_order_detail_for_management(order.id)

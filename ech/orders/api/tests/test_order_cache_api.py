@@ -126,6 +126,7 @@ class OrderCacheApiTestCase(APITestCase):
         return order
 
     def test_order_detail_returns_fresh_data_after_order_cancellation(self):
+        """Return fresh order detail after order cancellation invalidates cache."""
         order = self.create_order_with_full_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -151,6 +152,7 @@ class OrderCacheApiTestCase(APITestCase):
         self.assertEqual(second_response.data["status"], Order.ORDER_STATUS_CANCELLED)
 
     def test_management_detail_returns_fresh_data_after_order_confirmation(self):
+        """Return fresh management detail after order confirmation."""
         order = self.create_order_with_full_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -179,6 +181,7 @@ class OrderCacheApiTestCase(APITestCase):
         self.assertEqual(second_response.data["status"], Order.ORDER_STATUS_CONFIRMED)
 
     def test_management_detail_returns_fresh_data_after_start_processing(self):
+        """Return fresh management detail after starting order processing."""
         order = self.create_order_with_full_data(
             status=Order.ORDER_STATUS_CONFIRMED,
             confirmed_at=order_time(),
@@ -208,6 +211,7 @@ class OrderCacheApiTestCase(APITestCase):
         self.assertEqual(second_response.data["status"], Order.ORDER_STATUS_PROCESSING)
 
     def test_management_detail_returns_fresh_data_after_shipping(self):
+        """Return fresh management detail after shipping an order."""
         now = order_time()
 
         order = self.create_order_with_full_data(
@@ -249,6 +253,7 @@ class OrderCacheApiTestCase(APITestCase):
         )
 
     def test_management_detail_returns_fresh_data_after_delivery(self):
+        """Return fresh management detail after delivering an order."""
         now = order_time()
 
         order = self.create_order_with_full_data(
@@ -291,6 +296,7 @@ class OrderCacheApiTestCase(APITestCase):
         )
 
     def test_repeated_order_detail_requests_return_consistent_data(self):
+        """Return consistent order detail data across repeated requests."""
         order = self.create_order_with_full_data(
             status=Order.ORDER_STATUS_PENDING,
         )

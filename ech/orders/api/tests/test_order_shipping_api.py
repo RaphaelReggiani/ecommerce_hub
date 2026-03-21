@@ -131,6 +131,7 @@ class OrderShipApiTestCase(APITestCase):
         return reverse("orders-api:order-ship", kwargs={"order_id": order_id})
 
     def test_ship_order_requires_authentication(self):
+        """Require authentication to ship an order."""
         order = self.create_order_with_full_data(customer=self.customer)
 
         response = self.client.post(self.get_url(order.id))
@@ -141,6 +142,7 @@ class OrderShipApiTestCase(APITestCase):
         )
 
     def test_ship_order_denied_for_non_management_user(self):
+        """Deny shipping orders for non-management users."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -150,6 +152,7 @@ class OrderShipApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_ship_order_returns_404_when_order_does_not_exist(self):
+        """Return 404 when attempting to ship a nonexistent order."""
         self.authenticate(self.staff)
 
         response = self.client.post(self.get_url(uuid4()))
@@ -159,6 +162,7 @@ class OrderShipApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.ship_order")
     def test_ship_order_successfully(self, mock_ship_order):
+        """Ship order successfully and return updated management detail."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -194,6 +198,7 @@ class OrderShipApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.ship_order")
     def test_ship_order_returns_400_when_service_raises_order_error(self, mock_ship_order):
+        """Return 400 when order service raises a business error."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -209,6 +214,7 @@ class OrderShipApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.ship_order")
     def test_ship_order_returns_management_detail_payload(self, mock_ship_order):
+        """Return full management payload after successful shipping."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)

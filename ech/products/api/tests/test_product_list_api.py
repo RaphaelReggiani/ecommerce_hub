@@ -75,9 +75,7 @@ class ProductListAPITestCase(APITestCase):
 
 
     def test_product_list_requires_authentication(self):
-        """
-        API should require authentication to access the product list.
-        """
+        """API should require authentication to access the product list."""
 
         url = reverse("product-list")
 
@@ -86,9 +84,7 @@ class ProductListAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_product_list_pagination_consistency(self):
-        """
-        Pagination should not duplicate products across pages.
-        """
+        """Pagination should not duplicate products across pages."""
 
         self.client.force_authenticate(self.user)
 

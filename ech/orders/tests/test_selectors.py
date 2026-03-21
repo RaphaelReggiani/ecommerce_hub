@@ -171,6 +171,7 @@ class BaseSelectorFactoryMixin:
 
 class GetOrderByIdSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_get_order_by_id_returns_order_when_found(self):
+        """Return the order when the given ID exists."""
         order = self.create_full_order()
 
         result = get_order_by_id(order.id)
@@ -179,11 +180,13 @@ class GetOrderByIdSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(result.id, order.id)
 
     def test_get_order_by_id_returns_none_when_not_found(self):
+        """Return None when the given order ID does not exist."""
         result = get_order_by_id(uuid.uuid4())
 
         self.assertIsNone(result)
 
     def test_get_order_by_id_returns_related_data_accessibly(self):
+        """Load related order data for direct access."""
         order = self.create_full_order()
 
         result = get_order_by_id(order.id)
@@ -199,6 +202,7 @@ class GetOrderByIdSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class ListOrdersByCustomerSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_orders_by_customer_returns_only_orders_from_given_customer(self):
+        """Return only orders that belong to the given customer."""
         customer = self.create_user()
         other_customer = self.create_user()
 
@@ -213,6 +217,7 @@ class ListOrdersByCustomerSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertIn(second_order, results)
 
     def test_list_orders_by_customer_returns_empty_queryset_when_customer_has_no_orders(self):
+        """Return an empty queryset when the customer has no orders."""
         customer = self.create_user()
 
         results = list_orders_by_customer(customer)
@@ -220,6 +225,7 @@ class ListOrdersByCustomerSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(results.count(), 0)
 
     def test_list_orders_by_customer_returns_orders_ordered_by_created_at_desc(self):
+        """Return customer orders sorted by newest first."""
         customer = self.create_user()
 
         older = self.create_order(customer=customer)
@@ -233,6 +239,7 @@ class ListOrdersByCustomerSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class ListOrdersByStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_orders_by_status_returns_only_matching_status(self):
+        """Return only orders with the requested status."""
         pending_order = self.create_order(status=Order.ORDER_STATUS_PENDING)
         second_pending_order = self.create_order(status=Order.ORDER_STATUS_PENDING)
         self.create_order(status=Order.ORDER_STATUS_CANCELLED)
@@ -244,6 +251,7 @@ class ListOrdersByStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertIn(second_pending_order, results)
 
     def test_list_orders_by_status_returns_empty_queryset_when_no_match(self):
+        """Return an empty queryset when no orders match the status."""
         self.create_order(status=Order.ORDER_STATUS_CANCELLED)
 
         results = list_orders_by_status(Order.ORDER_STATUS_DELIVERED)
@@ -251,6 +259,7 @@ class ListOrdersByStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(results.count(), 0)
 
     def test_list_orders_by_status_returns_orders_ordered_by_created_at_desc(self):
+        """Return status-filtered orders sorted by newest first."""
         older = self.create_order(status=Order.ORDER_STATUS_PENDING)
         newer = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -262,6 +271,7 @@ class ListOrdersByStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class ListOrdersByPaymentStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_orders_by_payment_status_returns_only_matching_payment_status(self):
+        """Return only orders with the requested payment status."""
         first_order = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
         second_order = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
         self.create_order(payment_status=Order.PAYMENT_STATUS_CAPTURED)
@@ -273,6 +283,7 @@ class ListOrdersByPaymentStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCa
         self.assertIn(second_order, results)
 
     def test_list_orders_by_payment_status_returns_empty_queryset_when_no_match(self):
+        """Return an empty queryset when no payment status matches."""
         self.create_order(payment_status=Order.PAYMENT_STATUS_CAPTURED)
 
         results = list_orders_by_payment_status(Order.PAYMENT_STATUS_FAILED)
@@ -280,6 +291,7 @@ class ListOrdersByPaymentStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCa
         self.assertEqual(results.count(), 0)
 
     def test_list_orders_by_payment_status_returns_orders_ordered_by_created_at_desc(self):
+        """Return payment-filtered orders sorted by newest first."""
         older = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
         newer = self.create_order(payment_status=Order.PAYMENT_STATUS_PENDING)
 
@@ -291,6 +303,7 @@ class ListOrdersByPaymentStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCa
 
 class ListOrdersByShippingStatusSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_orders_by_shipping_status_returns_only_matching_shipping_status(self):
+        """Return only orders with the requested shipping status."""
         first_order = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
         second_order = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
         self.create_order(shipping_status=Order.SHIPPING_STATUS_DELIVERED)
@@ -302,6 +315,7 @@ class ListOrdersByShippingStatusSelectorTestCase(BaseSelectorFactoryMixin, TestC
         self.assertIn(second_order, results)
 
     def test_list_orders_by_shipping_status_returns_empty_queryset_when_no_match(self):
+        """Return an empty queryset when no shipping status matches."""
         self.create_order(shipping_status=Order.SHIPPING_STATUS_SHIPPED)
 
         results = list_orders_by_shipping_status(Order.SHIPPING_STATUS_IN_TRANSIT)
@@ -309,6 +323,7 @@ class ListOrdersByShippingStatusSelectorTestCase(BaseSelectorFactoryMixin, TestC
         self.assertEqual(results.count(), 0)
 
     def test_list_orders_by_shipping_status_returns_orders_ordered_by_created_at_desc(self):
+        """Return shipping-filtered orders sorted by newest first."""
         older = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
         newer = self.create_order(shipping_status=Order.SHIPPING_STATUS_PENDING)
 
@@ -320,6 +335,7 @@ class ListOrdersByShippingStatusSelectorTestCase(BaseSelectorFactoryMixin, TestC
 
 class ListRecentOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_recent_orders_returns_most_recent_orders(self):
+        """Return only the most recent orders up to the limit."""
         older = self.create_order()
         middle = self.create_order()
         newer = self.create_order()
@@ -332,6 +348,7 @@ class ListRecentOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertNotIn(older, results)
 
     def test_list_recent_orders_uses_default_limit_of_20(self):
+        """Use a default limit of 20 recent orders."""
         for _ in range(25):
             self.create_order()
 
@@ -340,6 +357,7 @@ class ListRecentOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(len(results), 20)
 
     def test_list_recent_orders_returns_empty_queryset_when_no_orders_exist(self):
+        """Return an empty queryset when no recent orders exist."""
         results = list(list_recent_orders())
 
         self.assertEqual(results, [])
@@ -347,6 +365,7 @@ class ListRecentOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class ListAllOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_all_orders_returns_all_orders(self):
+        """Return all stored orders."""
         first_order = self.create_order()
         second_order = self.create_order()
 
@@ -357,6 +376,7 @@ class ListAllOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertIn(second_order, results)
 
     def test_list_all_orders_returns_orders_ordered_by_created_at_desc(self):
+        """Return all orders sorted by newest first."""
         older = self.create_order()
         newer = self.create_order()
 
@@ -366,6 +386,7 @@ class ListAllOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(results[1], older)
 
     def test_list_all_orders_returns_empty_queryset_when_no_orders_exist(self):
+        """Return an empty queryset when no orders exist."""
         results = list(list_all_orders())
 
         self.assertEqual(results, [])
@@ -373,6 +394,7 @@ class ListAllOrdersSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class GetOrderForUpdateSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_get_order_for_update_returns_order_when_found(self):
+        """Return the order for update when the ID exists."""
         order = self.create_full_order()
 
         with transaction.atomic():
@@ -382,12 +404,14 @@ class GetOrderForUpdateSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
         self.assertEqual(result.id, order.id)
 
     def test_get_order_for_update_returns_none_when_not_found(self):
+        """Return None for update when the order ID does not exist."""
         with transaction.atomic():
             result = get_order_for_update(uuid.uuid4())
 
         self.assertIsNone(result)
 
     def test_get_order_for_update_returns_related_data_accessibly(self):
+        """Load related order data when retrieving for update."""
         order = self.create_full_order()
 
         with transaction.atomic():
@@ -404,6 +428,7 @@ class GetOrderForUpdateSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
 
 class ListOrdersForManagementSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_list_orders_for_management_returns_all_orders(self):
+        """Return all orders for management listing."""
         first_order = self.create_order()
         second_order = self.create_order()
 
@@ -414,6 +439,7 @@ class ListOrdersForManagementSelectorTestCase(BaseSelectorFactoryMixin, TestCase
         self.assertIn(second_order, results)
 
     def test_list_orders_for_management_returns_orders_ordered_by_created_at_desc(self):
+        """Return management orders sorted by newest first."""
         older = self.create_order()
         newer = self.create_order()
 
@@ -423,6 +449,7 @@ class ListOrdersForManagementSelectorTestCase(BaseSelectorFactoryMixin, TestCase
         self.assertEqual(results[1], older)
 
     def test_list_orders_for_management_returns_empty_queryset_when_no_orders_exist(self):
+        """Return an empty queryset when no management orders exist."""
         results = list(list_orders_for_management())
 
         self.assertEqual(results, [])
@@ -430,6 +457,7 @@ class ListOrdersForManagementSelectorTestCase(BaseSelectorFactoryMixin, TestCase
 
 class GetOrderDetailForManagementSelectorTestCase(BaseSelectorFactoryMixin, TestCase):
     def test_get_order_detail_for_management_returns_order_when_found(self):
+        """Return the management order detail when found."""
         order = self.create_full_order()
 
         result = get_order_detail_for_management(order.id)
@@ -438,11 +466,13 @@ class GetOrderDetailForManagementSelectorTestCase(BaseSelectorFactoryMixin, Test
         self.assertEqual(result.id, order.id)
 
     def test_get_order_detail_for_management_returns_none_when_not_found(self):
+        """Return None when the management order detail is missing."""
         result = get_order_detail_for_management(uuid.uuid4())
 
         self.assertIsNone(result)
 
     def test_get_order_detail_for_management_returns_related_data_accessibly(self):
+        """Load related data for management order detail access."""
         order = self.create_full_order()
 
         result = get_order_detail_for_management(order.id)

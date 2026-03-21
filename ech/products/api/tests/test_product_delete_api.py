@@ -47,9 +47,7 @@ class ProductDeleteAPITestCase(APITestCase):
         )
 
     def test_delete_product_success(self):
-        """
-        Operations staff should be able to delete a product.
-        """
+        """Operations staff should be able to delete a product."""
 
         self.client.force_authenticate(self.manager)
 
@@ -64,9 +62,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.assertFalse(self.product.is_active)
 
     def test_delete_product_forbidden(self):
-        """
-        Customer users cannot delete products.
-        """
+        """Customer users cannot delete products."""
 
         self.client.force_authenticate(self.customer)
 
@@ -77,9 +73,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_delete_product_not_found(self):
-        """
-        Deleting a non-existing product should return 404.
-        """
+        """Deleting a non-existing product should return 404."""
 
         self.client.force_authenticate(self.manager)
 
@@ -92,9 +86,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_deleted_product_not_visible_in_list(self):
-        """
-        Soft deleted products should not appear in the product list.
-        """
+        """Soft deleted products should not appear in the product list."""
 
         self.client.force_authenticate(self.manager)
 
@@ -114,9 +106,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.assertNotIn(str(self.product.id), product_ids)
 
     def test_delete_product_idempotent(self):
-        """
-        Deleting the same product twice should not break the API.
-        """
+        """Deleting the same product twice should not break the API."""
 
         self.client.force_authenticate(self.manager)
 
@@ -129,9 +119,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.assertIn(response2.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_404_NOT_FOUND])
 
     def test_deleted_product_not_accessible(self):
-        """
-        Soft deleted products should not be accessible via detail endpoint.
-        """
+        """Soft deleted products should not be accessible via detail endpoint."""
 
         self.client.force_authenticate(self.manager)
 

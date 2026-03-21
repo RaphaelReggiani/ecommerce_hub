@@ -181,6 +181,7 @@ class BaseModelFactoryMixin:
 
 class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_creation_success(self):
+        """Create an order successfully with default values."""
         order = self.create_order()
 
         self.assertIsInstance(order.id, uuid.UUID)
@@ -192,10 +193,12 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(order.updated_at)
 
     def test_order_str_returns_expected_value(self):
+        """Return expected string representation for order."""
         order = self.create_order()
         self.assertEqual(str(order), f"Order {order.id}")
 
     def test_order_default_ordering_is_created_at_desc(self):
+        """Ensure default ordering returns newest orders first."""
         older = self.create_order()
         newer = self.create_order()
 
@@ -204,10 +207,12 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertEqual(orders[1], older)
 
     def test_order_idempotency_key_accepts_null(self):
+        """Allow idempotency_key to be null."""
         order = self.create_order(idempotency_key=None)
         self.assertIsNone(order.idempotency_key)
 
     def test_order_idempotency_key_must_be_unique_when_provided(self):
+        """Enforce uniqueness of idempotency_key when provided."""
         idem_key = uuid.uuid4()
         self.create_order(idempotency_key=idem_key)
 
@@ -215,6 +220,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
             self.create_order(idempotency_key=idem_key)
 
     def test_order_status_choices_contain_expected_values(self):
+        """Ensure order status choices contain all expected values."""
         values = {choice[0] for choice in Order.ORDER_STATUS_CHOICES}
 
         self.assertSetEqual(
@@ -231,6 +237,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         )
 
     def test_order_payment_status_choices_contain_expected_values(self):
+        """Ensure payment status choices contain all expected values."""
         values = {choice[0] for choice in Order.PAYMENT_STATUS_CHOICES}
 
         self.assertSetEqual(
@@ -248,6 +255,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         )
 
     def test_order_shipping_status_choices_contain_expected_values(self):
+        """Ensure shipping status choices contain all expected values."""
         values = {choice[0] for choice in Order.SHIPPING_STATUS_CHOICES}
 
         self.assertSetEqual(
@@ -262,14 +270,17 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         )
 
     def test_order_meta_ordering(self):
+        """Verify model meta ordering configuration."""
         self.assertEqual(Order._meta.ordering, ["-created_at"])
 
     def test_order_has_expected_indexes(self):
+        """Ensure expected database indexes exist for order."""
         index_names = {index.name for index in Order._meta.indexes}
         self.assertIn("order_customer_created_idx", index_names)
         self.assertIn("order_status_idx", index_names)
 
     def test_order_creation_accepts_processing_payment_status(self):
+        """Allow creation of order with processing payment status."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PROCESSING
         )
@@ -280,6 +291,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         )
 
     def test_order_creation_accepts_cancelled_payment_status(self):
+        """Allow creation of order with cancelled payment status."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_CANCELLED
         )
@@ -290,6 +302,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
         )
 
     def test_order_creation_accepts_partially_refunded_payment_status(self):
+        """Allow creation of order with partially refunded payment status."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED
         )
@@ -302,6 +315,7 @@ class OrderModelTestCase(BaseModelFactoryMixin, TestCase):
 
 class OrderItemModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_item_creation_success(self):
+        """Create order item successfully with expected snapshot data."""
         item = self.create_order_item()
 
         self.assertIsInstance(item.id, uuid.UUID)
@@ -315,6 +329,7 @@ class OrderItemModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(item.created_at)
 
     def test_order_item_str_returns_expected_value(self):
+        """Return expected string representation for order item."""
         item = self.create_order_item(
             product_name_snapshot="Mechanical Keyboard",
             quantity=3,
@@ -322,10 +337,12 @@ class OrderItemModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertEqual(str(item), "Mechanical Keyboard x3")
 
     def test_order_item_discount_price_can_be_null(self):
+        """Allow discount_price field to be null."""
         item = self.create_order_item(discount_price=None)
         self.assertIsNone(item.discount_price)
 
     def test_order_item_belongs_to_order(self):
+        """Ensure order item belongs to the correct order."""
         order = self.create_order()
         item = self.create_order_item(order=order)
 
@@ -333,12 +350,14 @@ class OrderItemModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIn(item, order.items.all())
 
     def test_order_item_has_expected_indexes(self):
+        """Ensure expected database indexes exist for order item."""
         index_names = {index.name for index in OrderItem._meta.indexes}
         self.assertIn("orderitem_order_idx", index_names)
 
 
 class OrderTotalsModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_totals_creation_success(self):
+        """Create order totals successfully with expected values."""
         totals = self.create_order_totals()
 
         self.assertEqual(totals.subtotal, Decimal("100.00"))
@@ -349,10 +368,12 @@ class OrderTotalsModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(totals.updated_at)
 
     def test_order_totals_str_returns_expected_value(self):
+        """Return expected string representation for order totals."""
         totals = self.create_order_totals()
         self.assertEqual(str(totals), f"Totals for Order {totals.order_id}")
 
     def test_order_totals_is_one_to_one_with_order(self):
+        """Ensure order totals have a one-to-one relationship with order."""
         order = self.create_order()
         self.create_order_totals(order=order)
 
@@ -360,6 +381,7 @@ class OrderTotalsModelTestCase(BaseModelFactoryMixin, TestCase):
             self.create_order_totals(order=order)
 
     def test_order_totals_defaults_are_zero_for_discount_tax_shipping(self):
+        """Ensure default totals for discount, tax, and shipping are zero."""
         order = self.create_order()
         totals = OrderTotals.objects.create(
             order=order,
@@ -374,6 +396,7 @@ class OrderTotalsModelTestCase(BaseModelFactoryMixin, TestCase):
 
 class OrderAddressModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_address_creation_success(self):
+        """Create order address successfully with expected fields."""
         address = self.create_order_address()
 
         self.assertEqual(address.full_name, "User Tester")
@@ -386,14 +409,17 @@ class OrderAddressModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(address.created_at)
 
     def test_order_address_str_returns_expected_value(self):
+        """Return expected string representation for order address."""
         address = self.create_order_address(full_name="John Doe", city="Campinas")
         self.assertEqual(str(address), "John Doe - Campinas")
 
     def test_order_address_phone_can_be_blank(self):
+        """Allow phone field to be blank."""
         address = self.create_order_address(phone="")
         self.assertEqual(address.phone, "")
 
     def test_order_address_is_one_to_one_with_order(self):
+        """Ensure order address has a one-to-one relationship with order."""
         order = self.create_order()
         self.create_order_address(order=order)
 
@@ -403,6 +429,7 @@ class OrderAddressModelTestCase(BaseModelFactoryMixin, TestCase):
 
 class OrderLifecycleModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_lifecycle_creation_success(self):
+        """Create lifecycle record with all timestamps initially null."""
         lifecycle = self.create_order_lifecycle()
 
         self.assertIsNone(lifecycle.confirmed_at)
@@ -415,10 +442,12 @@ class OrderLifecycleModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(lifecycle.updated_at)
 
     def test_order_lifecycle_str_returns_expected_value(self):
+        """Return expected string representation for order lifecycle."""
         lifecycle = self.create_order_lifecycle()
         self.assertEqual(str(lifecycle), f"Lifecycle for Order {lifecycle.order_id}")
 
     def test_order_lifecycle_is_one_to_one_with_order(self):
+        """Ensure lifecycle record has a one-to-one relationship with order."""
         order = self.create_order()
         self.create_order_lifecycle(order=order)
 
@@ -428,6 +457,7 @@ class OrderLifecycleModelTestCase(BaseModelFactoryMixin, TestCase):
 
 class OrderEventModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_event_creation_success(self):
+        """Create order event successfully with expected values."""
         event = self.create_order_event()
 
         self.assertIsInstance(event.id, uuid.UUID)
@@ -437,10 +467,12 @@ class OrderEventModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(event.created_at)
 
     def test_order_event_str_returns_expected_value(self):
+        """Return expected string representation for order event."""
         event = self.create_order_event(event_type=OrderEvent.TYPE_CONFIRMED)
         self.assertEqual(str(event), f"{event.event_type} - {event.order.id}")
 
     def test_order_event_ordering_is_created_at_desc(self):
+        """Ensure order events are ordered by newest first."""
         older = self.create_order_event()
         newer = self.create_order_event()
 
@@ -449,14 +481,17 @@ class OrderEventModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertEqual(events[1], older)
 
     def test_order_event_performed_by_can_be_null(self):
+        """Allow performed_by field to be null."""
         event = self.create_order_event(performed_by=None)
         self.assertIsNone(event.performed_by)
 
     def test_order_event_metadata_can_be_null(self):
+        """Allow metadata field to be null."""
         event = self.create_order_event(metadata=None)
         self.assertIsNone(event.metadata)
 
     def test_order_event_type_constants_are_defined(self):
+        """Ensure all expected order event type constants exist."""
         self.assertEqual(OrderEvent.TYPE_CREATED, "order_created")
         self.assertEqual(OrderEvent.TYPE_CONFIRMED, "order_confirmed")
         self.assertEqual(OrderEvent.TYPE_PROCESSING_STARTED, "order_processing_started")
@@ -468,6 +503,7 @@ class OrderEventModelTestCase(BaseModelFactoryMixin, TestCase):
 
 class OrderNoteModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_note_creation_success(self):
+        """Create order note successfully with expected values."""
         note = self.create_order_note()
 
         self.assertEqual(note.message, "Customer requested address confirmation.")
@@ -476,14 +512,17 @@ class OrderNoteModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertIsNotNone(note.created_at)
 
     def test_order_note_str_returns_expected_value(self):
+        """Return expected string representation for order note."""
         note = self.create_order_note()
         self.assertEqual(str(note), f"Note on {note.order_id}")
 
     def test_order_note_author_can_be_null(self):
+        """Allow author field to be null."""
         note = self.create_order_note(author=None)
         self.assertIsNone(note.author)
 
     def test_order_note_default_ordering_is_created_at_asc(self):
+        """Ensure notes are ordered by creation time ascending."""
         older = self.create_order_note(message="First note")
         newer = self.create_order_note(message="Second note")
 
@@ -492,6 +531,7 @@ class OrderNoteModelTestCase(BaseModelFactoryMixin, TestCase):
         self.assertEqual(notes[1], newer)
 
     def test_order_note_meta_ordering(self):
+        """Verify meta ordering configuration for order notes."""
         self.assertEqual(OrderNote._meta.ordering, ["created_at"])
 
     

@@ -131,6 +131,7 @@ class OrderConfirmApiTestCase(APITestCase):
         return reverse("orders-api:order-confirm", kwargs={"order_id": order_id})
 
     def test_confirm_order_requires_authentication(self):
+        """Require authentication to confirm an order."""
         order = self.create_order_with_full_data(customer=self.customer)
 
         response = self.client.post(self.get_url(order.id))
@@ -141,6 +142,7 @@ class OrderConfirmApiTestCase(APITestCase):
         )
 
     def test_confirm_order_denied_for_non_management_user(self):
+        """Deny order confirmation for non-management users."""
         self.authenticate(self.customer)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -150,6 +152,7 @@ class OrderConfirmApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_confirm_order_returns_404_when_order_does_not_exist(self):
+        """Return 404 when confirming a nonexistent order."""
         self.authenticate(self.staff)
 
         response = self.client.post(self.get_url(uuid4()))
@@ -159,6 +162,7 @@ class OrderConfirmApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.confirm_order")
     def test_confirm_order_successfully(self, mock_confirm_order):
+        """Confirm order successfully and return updated management detail."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -195,6 +199,7 @@ class OrderConfirmApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.confirm_order")
     def test_confirm_order_returns_400_when_service_raises_order_error(self, mock_confirm_order):
+        """Return 400 when service raises a business OrderError."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)
@@ -210,6 +215,7 @@ class OrderConfirmApiTestCase(APITestCase):
 
     @patch("ech.orders.api.views.OrderStatusService.confirm_order")
     def test_confirm_order_returns_management_detail_payload(self, mock_confirm_order):
+        """Return full management payload after successful confirmation."""
         self.authenticate(self.staff)
 
         order = self.create_order_with_full_data(customer=self.customer)

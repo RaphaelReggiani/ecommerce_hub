@@ -50,6 +50,7 @@ class ProductCreateAPITestCase(APITestCase):
         }
 
     def test_create_product_success(self):
+        """Create product successfully when performed by operations staff."""
 
         self.client.force_authenticate(self.manager)
 
@@ -59,6 +60,7 @@ class ProductCreateAPITestCase(APITestCase):
         self.assertEqual(Product.objects.count(), 1)
 
     def test_create_product_forbidden_for_customer(self):
+        """Deny product creation for customer users."""
 
         self.client.force_authenticate(self.customer)
 
@@ -67,6 +69,7 @@ class ProductCreateAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_create_product_invalid_discount(self):
+        """Reject product creation when discount price exceeds product price."""
 
         self.client.force_authenticate(self.manager)
 
@@ -77,9 +80,7 @@ class ProductCreateAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_create_product_extreme_price_validation(self):
-        """
-        API should reject unrealistic product prices.
-        """
+        """API should reject unrealistic product prices."""
 
         self.client.force_authenticate(self.manager)
 

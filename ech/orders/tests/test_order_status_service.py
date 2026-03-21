@@ -89,7 +89,9 @@ class BaseOrderStatusFactoryMixin:
 
 
 class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+
     def test_confirm_order_updates_order_status(self):
+        """Update order status to CONFIRMED when confirming a pending order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -100,6 +102,7 @@ class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_CONFIRMED)
 
     def test_confirm_order_updates_lifecycle_confirmed_at(self):
+        """Set lifecycle confirmed_at timestamp when order is confirmed."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -110,6 +113,7 @@ class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertIsNotNone(order.lifecycle.confirmed_at)
 
     def test_confirm_order_registers_confirmed_event(self):
+        """Register a confirmed event when order confirmation succeeds."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -123,6 +127,7 @@ class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(event.metadata, {})
 
     def test_confirm_order_raises_error_when_order_is_not_pending(self):
+        """Raise error when confirming an order that is not pending."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -137,6 +142,7 @@ class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         )
 
     def test_confirm_order_does_not_create_event_when_transition_is_invalid(self):
+        """Prevent event creation when confirmation transition is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -149,7 +155,9 @@ class ConfirmOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
 
 
 class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+
     def test_start_processing_updates_order_status(self):
+        """Update order status to PROCESSING when processing starts."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -160,6 +168,7 @@ class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_PROCESSING)
 
     def test_start_processing_updates_lifecycle_processing_at(self):
+        """Set lifecycle processing_at timestamp when processing starts."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -170,6 +179,7 @@ class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertIsNotNone(order.lifecycle.processing_at)
 
     def test_start_processing_registers_processing_started_event(self):
+        """Register processing started event when processing begins."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -183,6 +193,7 @@ class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(event.metadata, {})
 
     def test_start_processing_raises_error_when_order_is_not_confirmed(self):
+        """Raise error when processing starts on a non-confirmed order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -197,6 +208,7 @@ class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         )
 
     def test_start_processing_does_not_create_event_when_transition_is_invalid(self):
+        """Prevent event creation when processing transition is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PENDING)
 
@@ -209,7 +221,9 @@ class StartProcessingServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
 
 
 class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+
     def test_ship_order_updates_order_status(self):
+        """Update order status to SHIPPED when shipping begins."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_PROCESSING,
@@ -223,6 +237,7 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_SHIPPED)
 
     def test_ship_order_updates_shipping_status(self):
+        """Update shipping status to SHIPPED when order is shipped."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_PROCESSING,
@@ -236,6 +251,7 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.shipping_status, Order.SHIPPING_STATUS_SHIPPED)
 
     def test_ship_order_updates_lifecycle_shipped_at(self):
+        """Set lifecycle shipped_at timestamp when order ships."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_PROCESSING,
@@ -249,6 +265,7 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertIsNotNone(order.lifecycle.shipped_at)
 
     def test_ship_order_registers_shipped_event(self):
+        """Register shipped event when shipping transition succeeds."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PROCESSING)
 
@@ -262,6 +279,7 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(event.metadata, {})
 
     def test_ship_order_raises_error_when_order_is_not_processing(self):
+        """Raise error when attempting to ship a non-processing order."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -276,6 +294,7 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         )
 
     def test_ship_order_does_not_create_event_when_transition_is_invalid(self):
+        """Prevent event creation when shipping transition is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_CONFIRMED)
 
@@ -288,7 +307,9 @@ class ShipOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
 
 
 class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+
     def test_deliver_order_updates_order_status(self):
+        """Update order status to DELIVERED when delivery is completed."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_SHIPPED,
@@ -302,6 +323,7 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.status, Order.ORDER_STATUS_DELIVERED)
 
     def test_deliver_order_updates_shipping_status(self):
+        """Update shipping status to DELIVERED when delivery completes."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_SHIPPED,
@@ -315,6 +337,7 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(order.shipping_status, Order.SHIPPING_STATUS_DELIVERED)
 
     def test_deliver_order_updates_lifecycle_delivered_at(self):
+        """Set lifecycle delivered_at timestamp when order is delivered."""
         performed_by = self.create_user()
         order = self.create_order(
             status=Order.ORDER_STATUS_SHIPPED,
@@ -328,6 +351,7 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertIsNotNone(order.lifecycle.delivered_at)
 
     def test_deliver_order_registers_delivered_event(self):
+        """Register delivered event when delivery transition succeeds."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_SHIPPED)
 
@@ -341,6 +365,7 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         self.assertEqual(event.metadata, {})
 
     def test_deliver_order_raises_error_when_order_is_not_shipped(self):
+        """Raise error when delivering an order that is not shipped."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PROCESSING)
 
@@ -355,6 +380,7 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
         )
 
     def test_deliver_order_does_not_create_event_when_transition_is_invalid(self):
+        """Prevent event creation when delivery transition is invalid."""
         performed_by = self.create_user()
         order = self.create_order(status=Order.ORDER_STATUS_PROCESSING)
 
@@ -367,7 +393,9 @@ class DeliverOrderServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
 
 
 class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestCase):
+
     def test_update_order_payment_status_updates_payment_status(self):
+        """Update payment status using the payment status service."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PENDING
         )
@@ -386,6 +414,7 @@ class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestC
         self.assertEqual(updated_order.id, order.id)
 
     def test_update_order_payment_status_updates_updated_at(self):
+        """Update updated_at timestamp when payment status changes."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PENDING
         )
@@ -403,6 +432,7 @@ class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestC
         self.assertEqual(updated_order.updated_at, order.updated_at)
 
     def test_update_order_payment_status_accepts_cancelled_status(self):
+        """Allow payment status to transition to CANCELLED."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PENDING
         )
@@ -420,6 +450,7 @@ class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestC
         )
 
     def test_update_order_payment_status_accepts_partially_refunded_status(self):
+        """Allow payment status to transition to PARTIALLY_REFUNDED."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_CAPTURED
         )
@@ -437,6 +468,7 @@ class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestC
         )
 
     def test_update_order_payment_status_accepts_refunded_status(self):
+        """Allow payment status to transition to REFUNDED."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_PARTIALLY_REFUNDED
         )
@@ -454,6 +486,7 @@ class UpdateOrderPaymentStatusServiceTestCase(BaseOrderStatusFactoryMixin, TestC
         )
 
     def test_update_order_payment_status_accepts_captured_status(self):
+        """Allow payment status to transition to CAPTURED."""
         order = self.create_order(
             payment_status=Order.PAYMENT_STATUS_AUTHORIZED
         )

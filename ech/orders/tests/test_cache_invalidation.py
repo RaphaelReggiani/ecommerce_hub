@@ -151,6 +151,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_create_service.invalidate_order_related_caches")
     def test_create_order_service_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related order caches after successful order creation."""
         service = CreateOrderService(
             customer=self.customer,
             items=self.valid_items,
@@ -163,6 +164,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_cancel_service.invalidate_order_related_caches")
     def test_cancel_order_service_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related order caches after order cancellation."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -182,6 +184,7 @@ class OrderCacheInvalidationTestCase(TestCase):
         self.assertEqual(mock_invalidate.call_args[0][0].id, order.id)
 
     def test_cancel_order_service_returns_fresh_detail_after_invalidation(self):
+        """Return fresh order detail after cancellation cache invalidation."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -200,6 +203,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_confirm_order_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related caches when confirming an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -219,6 +223,7 @@ class OrderCacheInvalidationTestCase(TestCase):
         self.assertEqual(mock_invalidate.call_args[0][0].id, order.id)
 
     def test_confirm_order_returns_fresh_detail_after_cache_invalidation(self):
+        """Return fresh management detail after confirming an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PENDING,
         )
@@ -237,6 +242,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_start_processing_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related caches when order processing starts."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_CONFIRMED,
             lifecycle_confirmed_at=timezone.now(),
@@ -257,6 +263,7 @@ class OrderCacheInvalidationTestCase(TestCase):
         self.assertEqual(mock_invalidate.call_args[0][0].id, order.id)
 
     def test_start_processing_returns_fresh_detail_after_cache_invalidation(self):
+        """Return fresh management detail after processing transition."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_CONFIRMED,
             lifecycle_confirmed_at=timezone.now(),
@@ -276,6 +283,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_ship_order_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related caches when shipping an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PROCESSING,
             shipping_status=Order.SHIPPING_STATUS_PREPARING,
@@ -299,6 +307,7 @@ class OrderCacheInvalidationTestCase(TestCase):
         self.assertEqual(mock_invalidate.call_args[0][0].id, order.id)
 
     def test_ship_order_returns_fresh_detail_after_cache_invalidation(self):
+        """Return fresh management detail after shipping an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PROCESSING,
             shipping_status=Order.SHIPPING_STATUS_PREPARING,
@@ -321,6 +330,7 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_deliver_order_invalidates_order_related_caches(self, mock_invalidate):
+        """Invalidate related caches when delivering an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_SHIPPED,
             shipping_status=Order.SHIPPING_STATUS_SHIPPED,
@@ -345,6 +355,7 @@ class OrderCacheInvalidationTestCase(TestCase):
         self.assertEqual(mock_invalidate.call_args[0][0].id, order.id)
 
     def test_deliver_order_returns_fresh_detail_after_cache_invalidation(self):
+        """Return fresh management detail after delivering an order."""
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_SHIPPED,
             shipping_status=Order.SHIPPING_STATUS_SHIPPED,

@@ -70,6 +70,7 @@ class OrderListApiTestCase(APITestCase):
         return order
 
     def test_list_orders_returns_only_authenticated_customer_orders(self):
+        """Return only orders belonging to the authenticated customer."""
         self.authenticate(self.customer)
 
         customer_order_1 = self.create_order(
@@ -105,6 +106,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertIn(str(customer_order_2.id), returned_ids)
 
     def test_list_orders_returns_empty_results_when_customer_has_no_orders(self):
+        """Return empty results when authenticated customer has no orders."""
         self.authenticate(self.customer)
 
         self.create_order(customer=self.other_customer)
@@ -116,6 +118,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertEqual(response.data["results"], [])
 
     def test_list_orders_requires_authentication(self):
+        """Require authentication to access the order list endpoint."""
         response = self.client.get(self.url)
 
         self.assertIn(
@@ -124,6 +127,7 @@ class OrderListApiTestCase(APITestCase):
         )
 
     def test_list_orders_is_ordered_by_created_at_descending(self):
+        """Return orders ordered by created_at in descending order."""
         self.authenticate(self.customer)
 
         older_order = self.create_order(
@@ -149,6 +153,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertEqual(results[1]["id"], str(older_order.id))
 
     def test_list_orders_returns_expected_serializer_fields(self):
+        """Return expected serializer fields for order list results."""
         self.authenticate(self.customer)
 
         order = self.create_order(
@@ -191,6 +196,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertIn("updated_at", result)
 
     def test_list_orders_supports_default_pagination_structure(self):
+        """Return order list using the default pagination structure."""
         self.authenticate(self.customer)
 
         for _ in range(3):
@@ -205,6 +211,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertEqual(len(response.data["results"]), 3)
 
     def test_list_orders_supports_custom_page_size(self):
+        """Support custom page size parameter in pagination."""
         self.authenticate(self.customer)
 
         for _ in range(5):
@@ -219,6 +226,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertIsNone(response.data["previous"])
 
     def test_list_orders_respects_max_page_size(self):
+        """Respect configured maximum page size limit."""
         self.authenticate(self.customer)
 
         for _ in range(105):
@@ -231,6 +239,7 @@ class OrderListApiTestCase(APITestCase):
         self.assertEqual(len(response.data["results"]), 100)
 
     def test_list_orders_does_not_return_orders_from_other_customers_even_with_many_records(self):
+        """Ensure orders from other customers are never returned."""
         self.authenticate(self.customer)
 
         for _ in range(7):
@@ -250,6 +259,7 @@ class OrderListApiTestCase(APITestCase):
             self.assertEqual(result["customer_email"], self.customer.user_email)
 
     def test_list_orders_returns_partially_refunded_payment_status(self):
+        """Return orders with partially refunded payment status correctly."""
         self.authenticate(self.customer)
 
         order = self.create_order(

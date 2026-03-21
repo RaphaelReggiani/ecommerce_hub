@@ -50,6 +50,7 @@ class DomainEventsTestCase(TestCase):
         register_order_event_handlers()
 
     def test_dispatch_calls_registered_handler(self):
+        """Dispatch confirmed event through its registered handler."""
         order = self.create_order()
         performed_by = self.create_user()
 
@@ -62,6 +63,7 @@ class DomainEventsTestCase(TestCase):
         self.assertEqual(event.event_type, OrderEvent.TYPE_CONFIRMED)
 
     def test_dispatch_cancelled_event_creates_cancelled_order_event(self):
+        """Dispatch cancelled event and create cancelled order event record."""
         order = self.create_order()
         performed_by = self.create_user()
 
