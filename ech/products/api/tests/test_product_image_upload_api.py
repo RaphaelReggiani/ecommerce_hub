@@ -69,7 +69,7 @@ class ProductImageUploadAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-image-upload", args=[str(self.product.id)])
+        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
 
         data = {
             "image": self._image(),
@@ -84,7 +84,7 @@ class ProductImageUploadAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.customer)
 
-        url = reverse("product-image-upload", args=[str(self.product.id)])
+        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
 
         data = {
             "image": self._image(),
@@ -100,7 +100,7 @@ class ProductImageUploadAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-image-upload", args=[str(self.product.id)])
+        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
 
 
         for i in range(ProductImageRules.MAX_IMAGES_ALLOWED):

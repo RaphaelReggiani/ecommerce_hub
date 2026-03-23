@@ -213,8 +213,6 @@ ecommerce_hub/
 │   │   │   ├── product_update_service.py
 │   │   │   └── stock_service.py
 │   │   │
-│   │   ├── selectors/
-│   │   │
 │   │   ├── utils/
 │   │   │   └── cache.py
 │   │   │
@@ -280,8 +278,6 @@ ecommerce_hub/
 │   │   │   ├── handlers.py
 │   │   │   └── registry.py
 │   │   │
-│   │   ├── selectors/
-│   │   │
 │   │   ├── constants/
 │   │   │   ├── cache.py
 │   │   │   ├── constants.py
@@ -341,8 +337,6 @@ ecommerce_hub/
 │   │   │   ├── handlers.py
 │   │   │   └── registry.py
 │   │   │
-│   │   ├── selectors/
-│   │   │
 │   │   ├── constants/
 │   │   │   ├── cache.py
 │   │   │   ├── constants.py
@@ -368,6 +362,68 @@ ecommerce_hub/
 │   │   ├── selectors.py
 │   │   └── apps.py
 │ 
+│   ├── shipping/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_shipping_create_api.py
+│   │   │   │   ├── test_shipping_list_api.py
+│   │   │   │   ├── test_shipping_detail_api.py
+│   │   │   │   ├── test_shipping_update_api.py
+│   │   │   │   ├── test_shipping_process_api.py
+│   │   │   │   ├── test_shipping_cancel_api.py
+│   │   │   │   ├── test_shipping_tracking_api.py
+│   │   │   │   ├── test_shipping_management_list_api.py
+│   │   │   │   └── test_shipping_management_detail_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── shipping_creation_service.py
+│   │   │   ├── shipping_update_service.py
+│   │   │   ├── shipping_status_service.py
+│   │   │   ├── shipping_cancellation_service.py
+│   │   │   ├── shipping_tracking_service.py
+│   │   │   └── shipping_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_shipping_create_service.py
+│   │   │   ├── test_shipping_update_service.py
+│   │   │   ├── test_shipping_status_service.py
+│   │   │   ├── test_shipping_cancellation_service.py
+│   │   │   ├── test_shipping_tracking_service.py
+│   │   │   ├── test_logging_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
 ├── ech_web/
 │   └── ...
 │
@@ -581,6 +637,40 @@ REFUNDED
 
 Lifecycle timestamps are tracked in the `PaymentLifecycle` model.
 
+### Payment Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> PaymentCreated
+
+    PaymentCreated --> Pending
+
+    Pending --> Processing : start_processing
+
+    Processing --> Authorized : authorize
+    Processing --> Captured : charge
+    Processing --> Failed : fail
+    Processing --> Cancelled : cancel
+
+    Authorized --> Captured : capture
+    Authorized --> Cancelled : cancel
+
+    Captured --> RefundRequested : refund_request
+
+    RefundRequested --> PartiallyRefunded : partial_refund_processed
+    RefundRequested --> Refunded : full_refund_processed
+    RefundRequested --> RefundFailed : refund_failed
+    RefundRequested --> RefundCancelled : refund_cancelled
+
+    PartiallyRefunded --> RefundRequested : additional_refund
+    PartiallyRefunded --> Refunded : full_refund_completed
+
+    Failed --> [*]
+    Cancelled --> [*]
+    Refunded --> [*]
+```
+
 ### Refund Management
 
 The refund system supports:
@@ -737,6 +827,29 @@ Database queries are optimized using:
 | POST | `/api/v1/orders/management/{order_id}/ship/` | Ship order |
 | POST | `/api/v1/orders/management/{order_id}/deliver/` | Mark order as delivered |
 | POST | `/api/v1/orders/management/{order_id}/cancel/` | Cancel order (staff) |
+
+---
+
+## Payments (Customer)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/payments/` | List authenticated customer payments |
+| POST | `/api/v1/payments/create/` | Create payment for an order |
+| GET | `/api/v1/payments/{payment_id}/` | Retrieve payment details |
+| GET | `/api/v1/payments/{payment_id}/transactions/` | List payment transactions |
+
+---
+
+## Payments (Management)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/payments/management/{payment_id}/` | Retrieve payment details (staff) |
+| POST | `/api/v1/payments/{payment_id}/process/` | Execute payment processing action (authorize, capture, charge, fail) |
+| POST | `/api/v1/payments/{payment_id}/cancel/` | Cancel payment |
+| POST | `/api/v1/payments/{payment_id}/refund/` | Create refund request |
+| POST | `/api/v1/payments/refund/{refund_id}/manage/` | Manage refund lifecycle (process, fail, cancel) |
 
 ---
 
@@ -1354,7 +1467,7 @@ Tests validate caching behavior through API endpoints:
 ### Tests Coverage Status:
 
 * Domain: 226 tests
-* API: (pending)
+* API: 57 tests
 
 ### Payments Domain Tests
 
@@ -1411,8 +1524,6 @@ Tests validate caching behavior through API endpoints:
 * ordering by `created_at`
 * string representation validation
 
----
-
 ### Domain Exceptions
 
 * base payment exception behavior
@@ -1428,8 +1539,6 @@ Tests validate caching behavior through API endpoints:
 * refund amount validation
 * transaction-related exceptions
 * refund lifecycle exceptions
-
----
 
 ### Query Selectors
 
@@ -1452,8 +1561,6 @@ Tests validate query behavior and data retrieval logic:
 * listing pending payment refunds
 * handling non-existent records
 
----
-
 ### Payment Creation Service
 
 * payment creation workflow
@@ -1467,8 +1574,6 @@ Tests validate query behavior and data retrieval logic:
 * creation of initial payment event
 * transactional rollback validation
 
----
-
 ### Payment Status Service
 
 * payment processing start transition
@@ -1481,8 +1586,6 @@ Tests validate query behavior and data retrieval logic:
 * validation of invalid state transitions
 * protection against invalid payment states
 
----
-
 ### Payment Processing Service
 
 * payment cancellation workflow
@@ -1492,8 +1595,6 @@ Tests validate query behavior and data retrieval logic:
 * transaction record creation
 * event dispatch after cancellation
 * consistent payment state updates
-
----
 
 ### Payment Refund Service
 
@@ -1511,8 +1612,6 @@ Tests validate query behavior and data retrieval logic:
 * transaction record creation
 * event dispatch for refund lifecycle
 
----
-
 ### Domain Events
 
 Tests validate domain event infrastructure:
@@ -1529,8 +1628,6 @@ Tests validate domain event infrastructure:
 * handler execution with structured logging
 * registry handler registration
 * registry idempotency protection
-
----
 
 ### Payment Caching
 
@@ -1550,8 +1647,6 @@ Tests validate caching behavior and consistency:
 * payment refunds caching
 * cache hit vs cache miss behavior
 
----
-
 ### Cache Invalidation
 
 Tests validate that payment services invalidate cache correctly:
@@ -1566,8 +1661,6 @@ Tests validate that payment services invalidate cache correctly:
 * invalidation of filtered payment caches (method)
 * aggregated payment cache invalidation
 * partial invalidation behavior when optional fields are absent
-
----
 
 ### Payment Filters
 
@@ -1590,6 +1683,112 @@ Tests validate filtering behavior for payment listings:
 
 ---
 
+### Payments API Tests
+
+### Authentication & Access Control
+
+* JWT authentication enforcement
+* unauthorized access protection (401)
+* permission-based access control (403)
+* customer vs staff access boundaries
+* resource ownership validation for customer-facing endpoints
+
+### Payment Creation API
+
+* successful payment creation
+* validation of required fields
+* order existence validation
+* duplicate payment prevention for same order
+* idempotency key behavior
+* duplicate payment reference protection
+* gateway fields payload handling
+* metadata payload handling
+* response persistence validation
+
+### Payment List API
+
+* listing payments for authenticated customer
+* ensuring only customer-owned payments are returned
+* staff visibility across all payments
+* pagination behavior
+* filtering integration with:
+  * payment method
+  * payment status
+  * fully refunded payments
+  * partially refunded payments
+* response structure validation
+
+### Payment Detail API
+
+* retrieving payment details for owner
+* access restriction for non-owners
+* handling non-existent payments (404)
+* response payload validation
+
+### Payment Management Detail API (Staff)
+
+* access restricted to payment management roles
+* retrieving full payment detail for staff
+* handling non-existent payments
+* permission enforcement
+* response structure validation
+
+### Payment Transaction List API
+
+* retrieving payment transactions for owner
+* staff access to any payment transactions
+* access restriction for non-owners
+* handling non-existent payments
+* ensuring only transactions for the requested payment are returned
+* paginated response validation
+
+### Payment Processing API
+
+* successful processing start flow
+* successful authorization flow
+* successful capture flow
+* successful direct charge flow
+* successful failure flow
+* creation of corresponding transaction records
+* payment status transition validation
+* invalid action handling
+* handling non-existent payments
+* permission enforcement for staff-only actions
+
+### Payment Cancellation API
+
+* successful payment cancellation flow
+* cancellation transaction creation
+* prevention of invalid cancellation states
+* prevention of cancelling already cancelled payments
+* handling non-existent payments
+* permission enforcement for staff-only actions
+
+### Payment Refund APIs
+
+#### Refund Request API
+
+* successful refund request creation
+* validation of refundable payment states
+* rejection of non-refundable payments
+* handling non-existent payments
+* permission enforcement for staff-only actions
+
+#### Refund Management API
+
+* successful refund processing flow
+* successful refund failure flow
+* successful refund cancellation flow
+* partial refund payment updates
+* transaction creation during refund processing
+* payment refunded amount updates
+* payment status updates after refund processing
+* invalid refund action handling
+* handling non-existent refunds
+* permission enforcement for staff-only actions
+
+---
+
 Example test execution:
 
 ```
@@ -1603,6 +1802,7 @@ pytest ech/orders/tests/
 pytest ech/orders/api/tests/
 
 pytest ech/payments/tests/
+pytest ech/payments/api/tests/
 
 ```
 
@@ -1665,8 +1865,8 @@ Planned modules:
 * Users module ✔
 * Products module ✔
 * Orders system ✔
-* Payment integration (*Current step*)
-* Shipping system
+* Payment integration ✔
+* Shipping system (*Current step*)
 * Reviews system
 * Notifications system
 * Analytics system

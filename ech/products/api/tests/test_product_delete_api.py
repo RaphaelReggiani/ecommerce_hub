@@ -51,7 +51,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-delete", args=[str(self.product.id)])
+        url = reverse("products-api:product-delete", args=[str(self.product.id)])
 
         response = self.client.delete(url)
 
@@ -66,7 +66,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.customer)
 
-        url = reverse("product-delete", args=[str(self.product.id)])
+        url = reverse("products-api:product-delete", args=[str(self.product.id)])
 
         response = self.client.delete(url)
 
@@ -79,7 +79,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         fake_uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
-        url = reverse("product-delete", args=[fake_uuid])
+        url = reverse("products-api:product-delete", args=[fake_uuid])
 
         response = self.client.delete(url)
 
@@ -93,7 +93,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.product.is_active = False
         self.product.save()
 
-        url = reverse("product-list")
+        url = reverse("products-api:product-list")
 
         response = self.client.get(url)
 
@@ -110,7 +110,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-delete", args=[str(self.product.id)])
+        url = reverse("products-api:product-delete", args=[str(self.product.id)])
 
         response1 = self.client.delete(url)
         response2 = self.client.delete(url)
@@ -126,7 +126,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.product.is_active = False
         self.product.save()
 
-        url = reverse("product-detail", args=[str(self.product.id)])
+        url = reverse("products-api:product-detail", args=[str(self.product.id)])
 
         response = self.client.get(url)
 

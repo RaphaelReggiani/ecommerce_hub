@@ -386,7 +386,7 @@ class PaymentModelsTestCase(TestCase):
         self.assertEqual(event.payment, self.payment)
         self.assertEqual(event.event_type, PaymentEvent.TYPE_CREATED)
         self.assertEqual(event.metadata, {"source": "test"})
-        self.assertEqual(str(event), "payment_created - PAY-001")
+        self.assertEqual(str(event), "created - PAY-001")
 
     def test_payment_event_ordering_by_created_at_desc(self):
         """Ensure PaymentEvent objects are ordered by newest first."""

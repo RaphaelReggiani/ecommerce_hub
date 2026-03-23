@@ -51,7 +51,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-update", args=[str(self.product.id)])
+        url = reverse("products-api:product-update", args=[str(self.product.id)])
 
         data = {
             "name": "Gaming Monitor Pro",
@@ -72,7 +72,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-update", args=[str(self.product.id)])
+        url = reverse("products-api:product-update", args=[str(self.product.id)])
 
         data = {
             "price": Decimal("1300.00"),
@@ -91,7 +91,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.customer)
 
-        url = reverse("product-update", args=[str(self.product.id)])
+        url = reverse("products-api:product-update", args=[str(self.product.id)])
 
         data = {
             "name": "Invalid Update",
@@ -108,7 +108,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         fake_uuid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
-        url = reverse("product-update", args=[fake_uuid])
+        url = reverse("products-api:product-update", args=[fake_uuid])
 
         data = {
             "name": "Non Existing",
@@ -123,7 +123,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-update", args=[str(self.product.id)])
+        url = reverse("products-api:product-update", args=[str(self.product.id)])
 
         data = {
             "price": Decimal("1000.00"),
@@ -141,7 +141,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         original_price = self.product.price
 
-        url = reverse("product-update", args=[str(self.product.id)])
+        url = reverse("products-api:product-update", args=[str(self.product.id)])
 
         response = self.client.patch(url, {"name": "Updated Name"})
 

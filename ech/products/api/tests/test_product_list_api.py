@@ -61,7 +61,7 @@ class ProductListAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.user)
 
-        url = reverse("product-list")
+        url = reverse("products-api:product-list")
 
         response = self.client.get(url)
 
@@ -77,7 +77,7 @@ class ProductListAPITestCase(APITestCase):
     def test_product_list_requires_authentication(self):
         """API should require authentication to access the product list."""
 
-        url = reverse("product-list")
+        url = reverse("products-api:product-list")
 
         response = self.client.get(url)
 
@@ -100,7 +100,7 @@ class ProductListAPITestCase(APITestCase):
                 is_active=True,
             )
 
-        url = reverse("product-list")
+        url = reverse("products-api:product-list")
 
         page1 = self.client.get(url + "?page=1")
         page2 = self.client.get(url + "?page=2")

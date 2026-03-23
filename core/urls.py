@@ -26,9 +26,13 @@ urlpatterns = [
     # =========================
 
     path("api/v1/users/", include(("ech.users.api.urls", "users-api"), namespace="users-api")),
-    path("api/v1/products/", include("ech.products.api.urls")),
-    path("api/v1/orders/", include("ech.orders.api.urls")),
-    path("api/v1/payments/", include("ech.payments.api.urls")),
+
+    path("api/v1/products/", include(("ech.products.api.urls", "products-api"), namespace="products-api")),
+
+    path("api/v1/orders/", include(("ech.orders.api.urls", "orders-api"), namespace="orders-api")),
+
+    path("api/v1/payments/", include(("ech.payments.api.urls", "payments-api"), namespace="payments-api")),
+    
 ] 
 
 if settings.DEBUG:

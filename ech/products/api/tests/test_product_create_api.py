@@ -22,7 +22,7 @@ class ProductCreateAPITestCase(APITestCase):
 
     def setUp(self):
 
-        self.url = reverse("product-create")
+        self.url = reverse("products-api:product-create")
 
         self.manager = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
@@ -84,7 +84,7 @@ class ProductCreateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("product-create")
+        url = reverse("products-api:product-create")
 
         data = {
             "name": "Extreme Product",
