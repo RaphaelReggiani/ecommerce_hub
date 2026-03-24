@@ -5,8 +5,6 @@ from django.db import models
 
 from ech.orders.models import Order
 
-from django.core.exceptions import ValidationError
-
 from ech.payments.constants.constants import (
     LABEL_PAYMENT_STATUS_PENDING,
     LABEL_PAYMENT_STATUS_PROCESSING,

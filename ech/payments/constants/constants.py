@@ -47,7 +47,7 @@ LABEL_REFUND_STATUS_FAILED = "Refund Failed"
 LABEL_REFUND_STATUS_CANCELLED = "Refund Cancelled"
 
 # ============================
-# EVENT TYPY LABELS
+# EVENT TYPE LABELS
 # ============================
 
 
