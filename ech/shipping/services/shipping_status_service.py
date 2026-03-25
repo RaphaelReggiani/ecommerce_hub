@@ -1,9 +1,6 @@
 from django.db import transaction
 from django.utils import timezone
 
-from ech.shipping.constants.messages import (
-    SHIPMENT_STATUS_UPDATED,
-)
 from ech.shipping.domain_events.dispatcher import DomainEventDispatcher
 from ech.shipping.domain_events.events import ShipmentStatusChangedEvent
 from ech.shipping.exceptions import (

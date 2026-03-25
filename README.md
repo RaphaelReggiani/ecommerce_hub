@@ -1,4 +1,4 @@
-# ECH (E-commerce Hub) 
+# E-commerce Hub (ECH)
 
 ### Project Language: EN-US
 
@@ -8,7 +8,7 @@
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.
 
-**Project currently under active development**
+**This project is currently under active development.**
 
 ECH (E-commerce Hub) is a backend-focused fullstack e-commerce system built using **Python, Django, and Django REST Framework**, designed with an **API-First architecture**.
 
@@ -120,11 +120,31 @@ Centralizes system messages and configuration values.
 
 
 ```
+
+---
+
+# Development Roadmap
+
+Planned modules:
+
+* Users module ✔
+* Products module ✔
+* Orders system ✔
+* Payment integration ✔
+* Shipping system (**Current step**)
+* Reviews system
+* Notifications system
+* Analytics system
+* Admin dashboard
+
 ---
 
 # Project Structure
 
-Example structure of the backend:
+The backend is organized using a **modular architecture**, where each domain (users, products, orders, payments, shipping, reviews, notifications, and analytics) is implemented as an independent Django app.
+
+<details>
+<summary><strong>Structure</strong></summary>
 
 ```
 ecommerce_hub/
@@ -139,7 +159,6 @@ ecommerce_hub/
 │   ├── admin.py
 │   ├── apps.py
 │   ├── urls.py
-│
 │   │
 │   ├── users/
 │   │   ├── api/
@@ -187,7 +206,7 @@ ecommerce_hub/
 │   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
-│
+│   │
 │   ├── products/
 │   │   ├── api/
 │   │   │   ├── tests/
@@ -240,7 +259,7 @@ ecommerce_hub/
 │   │   ├── models.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
-│
+│   │
 │   ├── orders/
 │   │   ├── api/
 │   │   │   ├── tests/
@@ -301,7 +320,7 @@ ecommerce_hub/
 │   │   ├── models.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
-│
+│   │
 │   ├── payments/
 │   │   ├── api/
 │   │   │   ├── tests/
@@ -361,7 +380,7 @@ ecommerce_hub/
 │   │   ├── exceptions.py
 │   │   ├── selectors.py
 │   │   └── apps.py
-│ 
+│   │
 │   ├── shipping/
 │   │   ├── api/
 │   │   │   ├── tests/
@@ -424,12 +443,16 @@ ecommerce_hub/
 │   │   ├── models.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
+│   └── ...
+│
 ├── ech_web/
 │   └── ...
 │
 └── manage.py
 
 ```
+
+</details>
 
 ---
 
@@ -551,6 +574,30 @@ Additional transitions:
 ```
 CANCELLED
 REFUNDED
+```
+
+### Order Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> Pending
+
+    Pending --> Confirmed : confirm_order
+    Pending --> Cancelled : cancel_order
+
+    Confirmed --> Processing : start_processing
+    Confirmed --> Cancelled : cancel_order
+
+    Processing --> Shipped : ship_order
+    Processing --> Cancelled : cancel_order
+
+    Shipped --> Delivered : deliver_order
+
+    Cancelled --> Refunded : refund_order
+
+    Delivered --> [*]
+    Refunded --> [*]
 ```
 
 Lifecycle timestamps are tracked in the `OrderLifecycle` model.
@@ -776,6 +823,144 @@ Database queries are optimized using:
 
 ---
 
+## Shipping Module
+
+### Shipment Management
+
+* Shipment creation through a dedicated service layer
+* Shipment updates with partial update support
+* Shipment cancellation with rule validation
+* Shipment tracking updates with event registration
+* Prevention of duplicate shipments for the same order
+
+### Shipment Components
+
+Shipments are composed of multiple related entities:
+
+* **Shipment** – main aggregate root
+* **ShipmentEvent** – operational event log for shipment lifecycle
+* **ShipmentTrackingUpdate** – carrier tracking updates and external event synchronization
+
+This structure ensures full traceability of shipping operations.
+
+### Shipment Lifecycle Management
+
+Shipments follow a controlled lifecycle:
+
+```
+PENDING
+→ PREPARING
+→ READY_TO_SHIP
+→ SHIPPED
+→ IN_TRANSIT
+→ OUT_FOR_DELIVERY
+→ DELIVERED
+```
+
+Additional transitions:
+
+```
+FAILED
+RETURNED
+CANCELLED
+```
+
+Lifecycle transitions are validated through the `ShippingStatusService`.
+
+### Shipment Cancellation Rules
+
+Shipment cancellation is controlled by domain rules:
+
+* prevention of cancelling already cancelled shipments
+* prevention of cancelling delivered shipments
+* prevention of cancelling returned shipments
+* controlled transition to `CANCELLED` state
+* operational cancellation logging
+
+### Shipment Tracking System
+
+The shipping module supports carrier tracking synchronization:
+
+* tracking event registration
+* shipment metadata updates (tracking code, carrier, external reference)
+* validation of tracking payloads
+* tracking location and timestamp handling
+* automatic shipment status synchronization from carrier events
+* audit trail through `ShipmentTrackingUpdate`
+
+### Operational Event Logging
+
+Shipping operations generate structured logs using the `ShippingLogService`, including:
+
+* shipment creation
+* shipment updates
+* shipment status transitions
+* shipment cancellation
+* shipment tracking updates
+
+Logs include structured metadata for operational observability.
+
+### Domain Event System
+
+The shipping module implements an event-driven architecture:
+
+* lightweight domain events
+* in-memory event dispatcher
+* handler registry for event subscriptions
+* structured event payload serialization
+
+Current domain events include:
+
+* shipment created
+* shipment status changed
+
+Handlers are designed to be easily extended for:
+
+* cache invalidation
+* analytics integrations
+* external notification systems
+
+### Filtering and Query Optimization
+
+Shipment listing and management operations support filtering by:
+
+* shipment status
+* shipping method
+* carrier name
+* tracking code
+* customer ID
+* order ID
+* external reference
+* creation date range
+* estimated delivery date range
+
+Database queries are optimized using:
+
+* indexed fields
+* efficient filtering patterns
+* paginated query support
+* optimized selectors for data retrieval
+
+### Service Layer Architecture
+
+The shipping module follows a service-oriented domain architecture:
+
+* `ShippingCreationService`
+* `ShippingUpdateService`
+* `ShippingStatusService`
+* `ShippingCancellationService`
+* `ShippingTrackingService`
+* `ShippingLogService`
+
+This approach ensures:
+
+* clear separation of concerns
+* transactional consistency
+* domain rule centralization
+* easier testability and maintenance
+
+---
+
 # API Endpoints
 
 ## Users
@@ -859,7 +1044,7 @@ The project includes an extensive automated test suite covering domain logic and
 
 ---
 
-# Testing Strategy
+## Testing Strategy
 
 The project follows a domain-first testing strategy.
 
@@ -871,16 +1056,34 @@ This ensures business logic remains stable independently from the API layer.
 
 ---
 
-## Users
+## Testing Suite
 
-### Tests Coverage Status:
+The testing approach follows a **Domain-First strategy**, ensuring that business rules are validated independently from the API layer.
 
-* Domain: 99 tests
-* API: 29 tests
+| Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
+| :--- | :---: | :---: | :---: | :--- | :--- |
+| **Users** | 99 | 29 | 128 | Authentication, JWT, Permissions | ✔ Stable |
+| **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
+| **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
+| **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
+| **Shipping** | — | — | — | Logistics, Delivery Lifecycle, Tracking | In Progress |
+| **TOTAL (implemented modules)** | **669** | **197** | **866** | Core Business Logic | — |
+
+> Tests are executed using **pytest**.  
+> Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
+
+---
+
+## Detailed Test Coverage
+
+The sections below summarize the main areas validated by the automated test suite.
+
+<details>
+<summary><strong>Users Module Tests</strong></summary>
 
 ### Users Domain Tests
 
-### Domain Models
+#### Domain Models
 
 * custom user creation and manager behavior
 * email normalization and uniqueness validation
@@ -891,7 +1094,7 @@ This ensures business logic remains stable independently from the API layer.
 * model properties (`is_superadmin`, `can_create_staff`)
 * string representation consistency
 
-### User Token Model
+#### User Token Model
 
 * token creation and uniqueness
 * expiration validation
@@ -900,7 +1103,7 @@ This ensures business logic remains stable independently from the API layer.
 * token lifecycle methods (`is_expired`, `mark_as_used`)
 * metadata field behavior
 
-### Domain Exceptions
+#### Domain Exceptions
 
 * base domain exception behavior
 * default vs custom message handling
@@ -908,7 +1111,7 @@ This ensures business logic remains stable independently from the API layer.
 * authentication and token-related exceptions
 * role and access-related exceptions
 
-### Query Selectors
+#### Query Selectors
 
 Tests validate database query behavior and filtering logic:
 
@@ -921,7 +1124,7 @@ Tests validate database query behavior and filtering logic:
 * retrieving valid tokens (non-expired, unused, correct type)
 * handling of invalid or missing records
 
-### Registration Service
+#### Registration Service
 
 * user registration workflow
 * default role assignment
@@ -934,7 +1137,7 @@ Tests validate database query behavior and filtering logic:
 * activation and confirmation state updates
 * invalid and expired token handling
 
-### Password Reset Service
+#### Password Reset Service
 
 * password reset request workflow
 * protection against user enumeration
@@ -946,7 +1149,7 @@ Tests validate database query behavior and filtering logic:
 * token invalidation and usage tracking
 * invalid and expired token handling
 
-### Security Logging
+#### Security Logging
 
 Tests validate security event logging behavior:
 
@@ -963,27 +1166,27 @@ Tests validate security event logging behavior:
 
 ### Users API Tests
 
-### Authentication & Access Control
+#### Authentication & Access Control
 
 * login with valid credentials
 * authentication failure (invalid credentials)
 * inactive account protection
 * email confirmation requirement enforcement
 
-### Registration API
+#### Registration API
 
 * successful user registration
 * validation of required fields
 * duplicate email protection
 * response structure validation
 
-### Token Management
+#### Token Management
 
 * JWT token refresh flow
 * invalid and malformed token handling
 * logout with invalid refresh token
 
-### Email Confirmation API
+#### Email Confirmation API
 
 * successful email confirmation
 * invalid token handling
@@ -1004,24 +1207,22 @@ Tests validate security event logging behavior:
 * expired token handling
 * payload validation
 
-### Email Protection Tests
+#### Email Protection Tests
 
 * access restrictions for unconfirmed users
 * validation of protected endpoints
 * enforcement of authentication and confirmation rules
 
+</details>
+
 ---
 
-## Products
-
-### Tests Coverage Status:
-
-* Domain: 114 tests
-* API: 24 tests
+<details>
+<summary><strong>Products Module Tests</strong></summary>
 
 ### Products Domain Tests
 
-### Domain Models
+#### Domain Models
 
 * product creation and core field validation
 * UUID primary key generation
@@ -1034,7 +1235,7 @@ Tests validate security event logging behavior:
 * model ordering by `created_at`
 * string representations
 
-### Product Inventory Model
+#### Product Inventory Model
 
 * one-to-one relationship with product
 * default inventory value
@@ -1042,7 +1243,7 @@ Tests validate security event logging behavior:
 * uniqueness constraint enforcement
 * string representation validation
 
-### Product Image Model
+#### Product Image Model
 
 * image creation and relationship with product
 * file upload path validation
@@ -1052,7 +1253,7 @@ Tests validate security event logging behavior:
 * ordering behavior by display order
 * string representation validation
 
-### Product Event Log Model
+#### Product Event Log Model
 
 * event creation and lifecycle tracking
 * UUID primary key generation
@@ -1062,7 +1263,7 @@ Tests validate security event logging behavior:
 * ordering by `created_at`
 * string representation validation
 
-### Domain Exceptions
+#### Domain Exceptions
 
 * validation error inheritance consistency
 * permission error inheritance consistency
@@ -1070,7 +1271,7 @@ Tests validate security event logging behavior:
 * formatted message validation (min/max images)
 * exception hierarchy consistency
 
-### Query Selectors
+#### Query Selectors
 
 Tests validate query behavior and filtering logic:
 
@@ -1084,7 +1285,7 @@ Tests validate query behavior and filtering logic:
 * retrieving available products (inventory > 0)
 * handling of non-existent records
 
-### Product Creation Service
+#### Product Creation Service
 
 * product creation workflow
 * permission validation for allowed roles
@@ -1096,7 +1297,7 @@ Tests validate query behavior and filtering logic:
 * handling of optional discount
 * transactional rollback on failure
 
-### Product Update Service
+#### Product Update Service
 
 * updating single field
 * updating multiple fields
@@ -1106,7 +1307,7 @@ Tests validate query behavior and filtering logic:
 * handling non-existent product
 * no-op update (no fields provided)
 
-### Product Delete Service
+#### Product Delete Service
 
 * soft delete behavior (`is_active=False`)
 * persistence of state change
@@ -1114,7 +1315,7 @@ Tests validate query behavior and filtering logic:
 * ensuring only active flag is modified
 * handling non-existent product
 
-### Product Image Service
+#### Product Image Service
 
 * adding single image
 * adding multiple images
@@ -1125,7 +1326,7 @@ Tests validate query behavior and filtering logic:
 * bulk creation behavior
 * handling non-existent product
 
-### Product Image Validation
+#### Product Image Validation
 
 * minimum image requirement enforcement
 * validation failure below minimum threshold
@@ -1133,7 +1334,7 @@ Tests validate query behavior and filtering logic:
 * validation success above minimum threshold
 * validation failure when no images exist
 
-### Product Inventory Service
+#### Product Inventory Service
 
 * decreasing inventory successfully
 * exact inventory depletion (to zero)
@@ -1142,7 +1343,7 @@ Tests validate query behavior and filtering logic:
 * return of updated inventory instance
 * handling missing inventory record
 
-### Product Filters
+#### Product Filters
 
 Tests validate filtering behavior for product listing:
 
@@ -1158,60 +1359,58 @@ Tests validate filtering behavior for product listing:
 
 ### Products API Tests
 
-### Product Creation API
+#### Product Creation API
 
 * successful product creation
 * validation of required fields
 * permission enforcement
 * invalid payload handling
 
-### Product Listing API
+#### Product Listing API
 
 * listing active products
 * pagination behavior
 * filtering integration
 * response structure validation
 
-### Product Detail API
+#### Product Detail API
 
 * retrieving product by ID
 * nested related data (images, inventory)
 * handling non-existent products
 * response structure validation
 
-### Product Update API
+#### Product Update API
 
 * successful product update
 * validation of invalid fields
 * permission enforcement
 * partial update behavior
 
-### Product Deletion API
+#### Product Deletion API
 
 * soft delete via API
 * permission enforcement
 * validation of non-existent product
 * response structure validation
 
-### Product Image API
+#### Product Image API
 
 * image upload workflow
 * multiple image upload handling
 * maximum image limit enforcement
 * response validation
 
+</details>
+
 ---
 
-## Orders
-
-### Tests Coverage Status:
-
-* Domain: 230 tests
-* API: 87 tests
+<details>
+<summary><strong>Orders Module Tests</strong></summary>
 
 ### Orders Domain Tests
 
-### Domain Models
+#### Domain Models
 
 * order creation and relationships
 * order item associations
@@ -1222,7 +1421,7 @@ Tests validate filtering behavior for product listing:
 * model ordering behavior
 * string representations
 
-### Domain Exceptions
+#### Domain Exceptions
 
 * order not found validation
 * permission protection
@@ -1232,7 +1431,7 @@ Tests validate filtering behavior for product listing:
 * inventory validation
 * invalid payment and shipping state protections
 
-### Query Selectors
+#### Query Selectors
 
 Tests validate query optimizations and retrieval logic:
 
@@ -1246,7 +1445,7 @@ Tests validate query optimizations and retrieval logic:
 * management dashboard queries
 * database locking for updates (`select_for_update`)
 
-### Order Creation Service
+#### Order Creation Service
 
 * order creation workflow
 * product availability validation
@@ -1259,7 +1458,7 @@ Tests validate query optimizations and retrieval logic:
 * idempotency key protection
 * transactional rollback validation
 
-### Order Status Service
+#### Order Status Service
 
 * order confirmation
 * processing transition
@@ -1269,7 +1468,7 @@ Tests validate query optimizations and retrieval logic:
 * audit event registration
 * invalid status transition protection
 
-### Order Cancellation Service
+#### Order Cancellation Service
 
 * order cancellation workflow
 * cancellation rule validation
@@ -1279,7 +1478,7 @@ Tests validate query optimizations and retrieval logic:
 * inventory restoration after cancellation
 * cancellation event audit log
 
-### Order Totals Service
+#### Order Totals Service
 
 * totals recalculation from order items
 * discount calculation
@@ -1289,7 +1488,7 @@ Tests validate query optimizations and retrieval logic:
 * recalculation after item changes
 * zero totals when order has no items
 
-### Operational Filters
+#### Operational Filters
 
 Tests validate filtering behavior for operational endpoints:
 
@@ -1302,12 +1501,12 @@ Tests validate filtering behavior for operational endpoints:
 * case-insensitive filtering behavior
 * combined filter queries
 
-### Order Events Domains
+#### Order Events Domains
 
 * dispatch call registered
 * dispatch for cancelled events
 
-### Order Caching
+#### Order Caching
 
 Tests validate caching behavior and consistency for order retrieval:
 
@@ -1319,7 +1518,7 @@ Tests validate caching behavior and consistency for order retrieval:
 * fresh data retrieval after cache invalidation
 * cache isolation between tests (`cache.clear()` usage)
 
-### Cache Invalidation
+#### Cache Invalidation
 
 Tests validate that domain services correctly invalidate cache:
 
@@ -1336,7 +1535,7 @@ Tests validate that domain services correctly invalidate cache:
 
 ### Orders API Tests
 
-### Authentication & Access Control
+#### Authentication & Access Control
 
 * JWT authentication enforcement
 * unauthorized access protection (401)
@@ -1344,7 +1543,7 @@ Tests validate that domain services correctly invalidate cache:
 * customer vs staff access boundaries
 * resource ownership validation (customers can only access their own orders)
 
-### Order Detail API
+#### Order Detail API
 
 * retrieving order details by ID
 * nested related data serialization (items, totals, lifecycle, address)
@@ -1353,7 +1552,7 @@ Tests validate that domain services correctly invalidate cache:
 * handling non-existent orders (404)
 * response structure validation
 
-### Customer Orders List API
+#### Customer Orders List API
 
 * listing orders for authenticated customer
 * ensuring only customer-owned orders are returned
@@ -1361,7 +1560,7 @@ Tests validate that domain services correctly invalidate cache:
 * pagination behavior
 * empty state handling
 
-### Order Management List API (Staff)
+#### Order Management List API (Staff)
 
 * access restricted to staff roles
 * listing all orders for management dashboard
@@ -1376,7 +1575,7 @@ Tests validate that domain services correctly invalidate cache:
   * date range (created_after / created_before)
 * combined filters behavior
 
-### Order Management Detail API (Staff)
+#### Order Management Detail API (Staff)
 
 * retrieving full order detail for staff
 * nested entities validation (items, events, notes, lifecycle)
@@ -1384,7 +1583,7 @@ Tests validate that domain services correctly invalidate cache:
 * handling non-existent orders
 * permission enforcement
 
-### Order Creation API
+#### Order Creation API
 
 * successful order creation
 * validation of empty items payload
@@ -1427,7 +1626,7 @@ Tests validate that domain services correctly invalidate cache:
 * lifecycle timestamp update (`delivered_at`)
 * response payload validation
 
-### Order Cancellation API
+#### Order Cancellation API
 
 * successful cancellation flow
 * validation of cancellation rules
@@ -1438,7 +1637,7 @@ Tests validate that domain services correctly invalidate cache:
 * response payload validation
 * handling service-level exceptions (400 responses)
 
-### Caching Behavior (API Layer)
+#### Caching Behavior (API Layer)
 
 * cache consistency after order mutations
 * cache invalidation after:
@@ -1448,7 +1647,7 @@ Tests validate that domain services correctly invalidate cache:
 * ensuring fresh data is returned after updates
 * preventing stale responses in detail endpoints
 
-### Order Caching (API Layer)
+#### Order Caching (API Layer)
 
 Tests validate caching behavior through API endpoints:
 
@@ -1460,18 +1659,16 @@ Tests validate caching behavior through API endpoints:
 * repeated requests return consistent data (cache stability)
 * prevention of stale data in order detail endpoints
 
+</details>
+
 ---
 
-## Payments
-
-### Tests Coverage Status:
-
-* Domain: 226 tests
-* API: 57 tests
+<details>
+<summary><strong>Payments Module Tests</strong></summary>
 
 ### Payments Domain Tests
 
-### Domain Models
+#### Domain Models
 
 * payment creation and core field validation
 * UUID primary key generation
@@ -1485,7 +1682,7 @@ Tests validate caching behavior through API endpoints:
 * model ordering by `created_at`
 * string representations
 
-### Payment Transaction Model
+#### Payment Transaction Model
 
 * transaction creation and relationships
 * transaction type validation
@@ -1496,7 +1693,7 @@ Tests validate caching behavior through API endpoints:
 * ordering by `created_at`
 * string representation validation
 
-### Payment Refund Model
+#### Payment Refund Model
 
 * refund creation and payment association
 * refund status validation
@@ -1507,14 +1704,14 @@ Tests validate caching behavior through API endpoints:
 * ordering by `created_at`
 * string representation validation
 
-### Payment Lifecycle Model
+#### Payment Lifecycle Model
 
 * lifecycle relationship integrity
 * lifecycle timestamps handling
 * timestamp persistence behavior
 * string representation validation
 
-### Payment Event Model
+#### Payment Event Model
 
 * event creation and lifecycle tracking
 * UUID primary key generation
@@ -1524,7 +1721,7 @@ Tests validate caching behavior through API endpoints:
 * ordering by `created_at`
 * string representation validation
 
-### Domain Exceptions
+#### Domain Exceptions
 
 * base payment exception behavior
 * default vs custom message handling
@@ -1540,7 +1737,7 @@ Tests validate caching behavior through API endpoints:
 * transaction-related exceptions
 * refund lifecycle exceptions
 
-### Query Selectors
+#### Query Selectors
 
 Tests validate query behavior and data retrieval logic:
 
@@ -1561,7 +1758,7 @@ Tests validate query behavior and data retrieval logic:
 * listing pending payment refunds
 * handling non-existent records
 
-### Payment Creation Service
+#### Payment Creation Service
 
 * payment creation workflow
 * validation of order eligibility
@@ -1574,7 +1771,7 @@ Tests validate query behavior and data retrieval logic:
 * creation of initial payment event
 * transactional rollback validation
 
-### Payment Status Service
+#### Payment Status Service
 
 * payment processing start transition
 * payment authorization transition
@@ -1586,7 +1783,7 @@ Tests validate query behavior and data retrieval logic:
 * validation of invalid state transitions
 * protection against invalid payment states
 
-### Payment Processing Service
+#### Payment Processing Service
 
 * payment cancellation workflow
 * cancellation state validation
@@ -1596,7 +1793,7 @@ Tests validate query behavior and data retrieval logic:
 * event dispatch after cancellation
 * consistent payment state updates
 
-### Payment Refund Service
+#### Payment Refund Service
 
 * refund request workflow
 * refund amount validation
@@ -1612,7 +1809,7 @@ Tests validate query behavior and data retrieval logic:
 * transaction record creation
 * event dispatch for refund lifecycle
 
-### Domain Events
+#### Domain Events
 
 Tests validate domain event infrastructure:
 
@@ -1629,7 +1826,7 @@ Tests validate domain event infrastructure:
 * registry handler registration
 * registry idempotency protection
 
-### Payment Caching
+#### Payment Caching
 
 Tests validate caching behavior and consistency:
 
@@ -1647,7 +1844,7 @@ Tests validate caching behavior and consistency:
 * payment refunds caching
 * cache hit vs cache miss behavior
 
-### Cache Invalidation
+#### Cache Invalidation
 
 Tests validate that payment services invalidate cache correctly:
 
@@ -1662,7 +1859,7 @@ Tests validate that payment services invalidate cache correctly:
 * aggregated payment cache invalidation
 * partial invalidation behavior when optional fields are absent
 
-### Payment Filters
+#### Payment Filters
 
 Tests validate filtering behavior for payment listings:
 
@@ -1685,7 +1882,7 @@ Tests validate filtering behavior for payment listings:
 
 ### Payments API Tests
 
-### Authentication & Access Control
+#### Authentication & Access Control
 
 * JWT authentication enforcement
 * unauthorized access protection (401)
@@ -1693,7 +1890,7 @@ Tests validate filtering behavior for payment listings:
 * customer vs staff access boundaries
 * resource ownership validation for customer-facing endpoints
 
-### Payment Creation API
+#### Payment Creation API
 
 * successful payment creation
 * validation of required fields
@@ -1705,7 +1902,7 @@ Tests validate filtering behavior for payment listings:
 * metadata payload handling
 * response persistence validation
 
-### Payment List API
+#### Payment List API
 
 * listing payments for authenticated customer
 * ensuring only customer-owned payments are returned
@@ -1718,14 +1915,14 @@ Tests validate filtering behavior for payment listings:
   * partially refunded payments
 * response structure validation
 
-### Payment Detail API
+#### Payment Detail API
 
 * retrieving payment details for owner
 * access restriction for non-owners
 * handling non-existent payments (404)
 * response payload validation
 
-### Payment Management Detail API (Staff)
+#### Payment Management Detail API (Staff)
 
 * access restricted to payment management roles
 * retrieving full payment detail for staff
@@ -1733,7 +1930,7 @@ Tests validate filtering behavior for payment listings:
 * permission enforcement
 * response structure validation
 
-### Payment Transaction List API
+#### Payment Transaction List API
 
 * retrieving payment transactions for owner
 * staff access to any payment transactions
@@ -1742,7 +1939,7 @@ Tests validate filtering behavior for payment listings:
 * ensuring only transactions for the requested payment are returned
 * paginated response validation
 
-### Payment Processing API
+#### Payment Processing API
 
 * successful processing start flow
 * successful authorization flow
@@ -1755,7 +1952,7 @@ Tests validate filtering behavior for payment listings:
 * handling non-existent payments
 * permission enforcement for staff-only actions
 
-### Payment Cancellation API
+#### Payment Cancellation API
 
 * successful payment cancellation flow
 * cancellation transaction creation
@@ -1787,6 +1984,182 @@ Tests validate filtering behavior for payment listings:
 * handling non-existent refunds
 * permission enforcement for staff-only actions
 
+</details>
+
+---
+
+<details>
+<summary><strong>Shipping Module Tests</strong></summary>
+
+### Shipping Domain Tests
+
+#### Domain Models
+
+* shipment creation and core field validation
+* UUID primary key generation
+* shipment status choices validation
+* shipping method choices validation
+* tracking code uniqueness enforcement
+* external reference behavior
+* shipment cost and currency field handling
+* estimated delivery date behavior
+* return-to-sender flag behavior
+* model ordering by `created_at`
+* string representations
+
+#### Shipment Event Model
+
+* shipment event creation and relationships
+* event type validation
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+#### Shipment Tracking Update Model
+
+* tracking update creation and shipment association
+* tracking status validation
+* optional location handling
+* raw payload storage behavior
+* event timestamp handling
+* ordering by `event_at`
+* string representation validation
+
+#### Domain Exceptions
+
+* base shipping exception behavior
+* default vs custom message handling
+* exception hierarchy validation
+* shipment not found handling
+* access control exceptions
+* duplicate shipment protection
+* invalid shipment status transition validation
+* shipment cancellation rule validation
+* invalid shipping address validation
+* tracking event validation
+
+#### Query Selectors
+
+Tests validate query behavior and retrieval logic:
+
+* retrieving shipment by ID
+* retrieving shipment with related entities
+* retrieving shipment restricted to customer ownership
+* retrieving shipment by order ID
+* listing shipments for customer
+* listing shipments by status
+* listing shipments by shipping method
+* listing shipments by carrier name
+* listing recent shipments
+* handling non-existent records
+
+#### Shipping Creation Service
+
+* shipment creation workflow
+* validation of order eligibility
+* prevention of duplicate shipments for same order
+* shipment status initialization
+* optional metadata handling
+* event dispatch after creation
+* shipment creation logging
+* transactional rollback validation
+
+#### Shipping Update Service
+
+* shipment field updates
+* partial update handling
+* validation of restricted fields
+* address update validation
+* prevention of invalid updates after shipment processing
+* validation of required address fields
+* shipment update logging
+* transactional rollback validation
+
+#### Shipping Status Service
+
+* shipment preparing transition
+* ready-to-ship transition
+* shipped transition
+* in-transit transition
+* out-for-delivery transition
+* delivered transition
+* failed transition
+* returned transition
+* status transition validation
+* prevention of invalid transitions
+* shipment lifecycle event creation
+* shipment status logging
+
+#### Shipping Cancellation Service
+
+* shipment cancellation workflow
+* cancellation rule validation
+* prevention of cancelling delivered shipments
+* prevention of cancelling already cancelled shipments
+* prevention of cancelling returned shipments
+* status transition to cancelled
+* cancellation logging
+* transactional rollback validation
+
+#### Shipping Tracking Service
+
+* tracking update registration workflow
+* tracking event validation
+* tracking description validation
+* tracking timestamp validation
+* invalid tracking status protection
+* shipment tracking metadata updates
+* prevention of unnecessary shipment saves
+* shipment event creation for tracking updates
+* optional shipment status synchronization
+* tracking update logging
+
+#### Domain Events
+
+Tests validate domain event infrastructure:
+
+* base domain event behavior
+* event payload serialization
+* shipment created event payload validation
+* shipment status changed event payload validation
+* handler registration in registry
+* dispatcher handler execution
+* multiple handler dispatch execution
+* safe dispatch when no handlers are registered
+* handler structured logging behavior
+
+#### Operational Filters
+
+Tests validate filtering behavior for shipment listings:
+
+* filtering by shipment status
+* filtering by shipping method
+* filtering by carrier name (case-insensitive)
+* filtering by tracking code
+* filtering by creation date range
+* filtering by estimated delivery date range
+* management filters by customer ID
+* management filters by order ID
+* management filters by external reference
+* combined filter queries
+* empty result handling
+
+#### Shipping Logging
+
+Tests validate structured logging behavior for shipment operations:
+
+* shipment creation logging
+* shipment update logging
+* shipment status transition logging
+* shipment cancellation logging
+* shipment tracking update logging
+* performer identification logging
+* structured payload validation
+* consistent field serialization for identifiers
+
+</details>
+
 ---
 
 Example test execution:
@@ -1814,8 +2187,7 @@ Clone the repository:
 
 ```
 git clone https://github.com/RaphaelReggiani/ecommerce_hub
-cd ech
-cd ech_web
+cd ecommerce_hub
 ```
 
 Create a virtual environment:
@@ -1855,24 +2227,6 @@ Start the development server:
 ```
 python manage.py runserver
 ```
-
----
-
-# Development Roadmap
-
-Planned modules:
-
-* Users module ✔
-* Products module ✔
-* Orders system ✔
-* Payment integration ✔
-* Shipping system (*Current step*)
-* Reviews system
-* Notifications system
-* Analytics system
-* Admin dashboard
-
----
 
 # Purpose of the Project
 

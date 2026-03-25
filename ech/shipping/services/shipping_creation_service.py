@@ -1,8 +1,5 @@
 from django.db import transaction
 
-from ech.shipping.constants.messages import (
-    SHIPMENT_CREATION_SUCCESS,
-)
 from ech.shipping.domain_events.dispatcher import DomainEventDispatcher
 from ech.shipping.domain_events.events import ShipmentCreatedEvent
 from ech.shipping.exceptions import (
