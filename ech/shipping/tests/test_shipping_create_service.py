@@ -4,11 +4,13 @@ from unittest.mock import patch
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
 from ech.orders.models import Order
 from ech.shipping.exceptions import (
+    IdempotencyConflictException,
     InvalidShippingAddressException,
     ShipmentAlreadyExistsException,
 )
@@ -66,6 +68,46 @@ class BaseShippingCreationFactoryMixin:
         data.update(kwargs)
         return data
 
+    def create_existing_shipment(self, **kwargs):
+        data = {
+            "order": kwargs["order"],
+            "customer": kwargs["customer"],
+            "status": Shipment.STATUS_PENDING,
+            "shipping_method": kwargs.get(
+                "shipping_method",
+                Shipment.METHOD_STANDARD,
+            ),
+            "carrier_name": kwargs.get("carrier_name", ""),
+            "tracking_code": kwargs.get(
+                "tracking_code",
+                f"TRACK-{uuid.uuid4().hex[:10].upper()}",
+            ),
+            "external_reference": kwargs.get("external_reference"),
+            "idempotency_key": kwargs.get("idempotency_key"),
+            "shipping_cost": kwargs.get("shipping_cost", Decimal("10.00")),
+            "currency": kwargs.get("currency", "USD"),
+            "estimated_delivery_date": kwargs.get("estimated_delivery_date"),
+        }
+        shipment = Shipment.objects.create(**data)
+
+        ShipmentAddress.objects.create(
+            shipment=shipment,
+            full_name=kwargs.get("full_name", "User Tester"),
+            address_line=kwargs.get("address_line", "Av. Paulista, 1000"),
+            city=kwargs.get("city", "Sao Paulo"),
+            state=kwargs.get("state", "SP"),
+            country=kwargs.get("country", "Brazil"),
+            postal_code=kwargs.get("postal_code", "01310-100"),
+            phone=kwargs.get("phone", "11999999999"),
+            delivery_instructions=kwargs.get(
+                "delivery_instructions",
+                "Leave at concierge.",
+            ),
+        )
+
+        ShipmentLifecycle.objects.create(shipment=shipment)
+        return shipment
+
 
 class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase):
     @patch("ech.shipping.services.shipping_creation_service.DomainEventDispatcher.dispatch")
@@ -86,6 +128,7 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
         )
         order = self.create_order(customer=customer)
         estimated_delivery_date = timezone.now().date() + timedelta(days=5)
+        idempotency_key = uuid.uuid4()
         address_data = self.get_address_data()
 
         shipment = ShippingCreationService.create_shipment(
@@ -99,7 +142,7 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
             tracking_code="TRACK-CREATE-001",
             external_reference="EXT-CREATE-001",
             estimated_delivery_date=estimated_delivery_date,
-            idempotency_key=uuid.uuid4(),
+            idempotency_key=idempotency_key,
             performed_by=performed_by,
         )
 
@@ -118,6 +161,7 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
         self.assertEqual(shipment.tracking_code, "TRACK-CREATE-001")
         self.assertEqual(shipment.external_reference, "EXT-CREATE-001")
         self.assertEqual(shipment.estimated_delivery_date, estimated_delivery_date)
+        self.assertEqual(shipment.idempotency_key, idempotency_key)
 
         address = shipment.address
         self.assertEqual(address.full_name, address_data["full_name"])
@@ -146,6 +190,7 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
                 "tracking_code": "TRACK-CREATE-001",
                 "carrier_name": "DHL",
                 "estimated_delivery_date": estimated_delivery_date.isoformat(),
+                "idempotency_key": str(idempotency_key),
             },
         )
 
@@ -212,6 +257,7 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
                 "tracking_code": None,
                 "carrier_name": "",
                 "estimated_delivery_date": None,
+                "idempotency_key": None,
             },
         )
 
@@ -255,6 +301,106 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
 
         self.assertEqual(address.phone, "")
         self.assertEqual(address.delivery_instructions, "")
+        log_shipment_created_mock.assert_called_once()
+        dispatch_mock.assert_called_once()
+
+    @patch("ech.shipping.services.shipping_creation_service.DomainEventDispatcher.dispatch")
+    @patch("ech.shipping.services.shipping_creation_service.ShippingLogService.log_shipment_created")
+    @patch("ech.shipping.services.shipping_creation_service.ShipmentCreatedEvent")
+    def test_create_shipment_reuses_existing_shipment_for_same_idempotency_and_payload(
+        self,
+        shipment_created_event_mock,
+        log_shipment_created_mock,
+        dispatch_mock,
+    ):
+        """Reuse existing shipment when idempotency key is replayed with same payload."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        idempotency_key = uuid.uuid4()
+        estimated_delivery_date = timezone.now().date() + timedelta(days=3)
+        address_data = self.get_address_data()
+
+        first_shipment = ShippingCreationService.create_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            address_data=address_data,
+            shipping_cost=Decimal("12.50"),
+            currency="USD",
+            carrier_name="DHL",
+            tracking_code="TRACK-IDEMP-001",
+            external_reference="EXT-IDEMP-001",
+            estimated_delivery_date=estimated_delivery_date,
+            idempotency_key=idempotency_key,
+        )
+
+        second_shipment = ShippingCreationService.create_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            address_data=address_data,
+            shipping_cost=Decimal("12.50"),
+            currency="USD",
+            carrier_name="DHL",
+            tracking_code="TRACK-IDEMP-001",
+            external_reference="EXT-IDEMP-001",
+            estimated_delivery_date=estimated_delivery_date,
+            idempotency_key=idempotency_key,
+        )
+
+        self.assertEqual(first_shipment, second_shipment)
+        self.assertEqual(Shipment.objects.count(), 1)
+        self.assertEqual(ShipmentAddress.objects.count(), 1)
+        self.assertEqual(ShipmentLifecycle.objects.count(), 1)
+        self.assertEqual(ShipmentEvent.objects.count(), 1)
+
+        log_shipment_created_mock.assert_called_once()
+        shipment_created_event_mock.assert_called_once()
+        dispatch_mock.assert_called_once()
+
+    @patch("ech.shipping.services.shipping_creation_service.DomainEventDispatcher.dispatch")
+    @patch("ech.shipping.services.shipping_creation_service.ShippingLogService.log_shipment_created")
+    def test_create_shipment_raises_conflict_for_same_idempotency_with_different_payload(
+        self,
+        log_shipment_created_mock,
+        dispatch_mock,
+    ):
+        """Raise IdempotencyConflictException when same key is reused with different payload."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        idempotency_key = uuid.uuid4()
+
+        ShippingCreationService.create_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            address_data=self.get_address_data(city="Sao Paulo"),
+            shipping_cost=Decimal("10.00"),
+            currency="USD",
+            carrier_name="DHL",
+            tracking_code="TRACK-CONFLICT-001",
+            external_reference="EXT-CONFLICT-001",
+            idempotency_key=idempotency_key,
+        )
+
+        with self.assertRaises(IdempotencyConflictException):
+            ShippingCreationService.create_shipment(
+                order=order,
+                customer=customer,
+                shipping_method=Shipment.METHOD_EXPRESS,
+                address_data=self.get_address_data(city="Campinas"),
+                shipping_cost=Decimal("99.99"),
+                currency="BRL",
+                carrier_name="FedEx",
+                tracking_code="TRACK-CONFLICT-999",
+                external_reference="EXT-CONFLICT-999",
+                idempotency_key=idempotency_key,
+            )
+
+        self.assertEqual(Shipment.objects.count(), 1)
+        self.assertEqual(ShipmentAddress.objects.count(), 1)
+        self.assertEqual(ShipmentLifecycle.objects.count(), 1)
+        self.assertEqual(ShipmentEvent.objects.count(), 1)
         log_shipment_created_mock.assert_called_once()
         dispatch_mock.assert_called_once()
 
@@ -348,6 +494,278 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
         log_shipment_created_mock.assert_not_called()
         dispatch_mock.assert_not_called()
 
+    def test_create_shipment_returns_resolved_shipment_after_integrity_conflict(self):
+        """Return resolved shipment when concurrent integrity conflict is recoverable."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        address_data = self.get_address_data()
+
+        resolved_shipment = self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            idempotency_key=uuid.uuid4(),
+        )
+
+        with patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._get_shipment_by_idempotency_key"
+        ) as get_by_idempotency_mock, patch(
+            "ech.shipping.services.shipping_creation_service.Shipment.objects.create"
+        ) as shipment_create_mock, patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._resolve_integrity_conflict"
+        ) as resolve_integrity_conflict_mock, patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._validate_shipment_does_not_exist"
+        ) as validate_does_not_exist_mock:
+            get_by_idempotency_mock.return_value = None
+            validate_does_not_exist_mock.return_value = None
+            shipment_create_mock.side_effect = IntegrityError("unique constraint")
+            resolve_integrity_conflict_mock.return_value = resolved_shipment
+
+            result = ShippingCreationService.create_shipment(
+                order=order,
+                customer=customer,
+                shipping_method=Shipment.METHOD_STANDARD,
+                address_data=address_data,
+                idempotency_key=resolved_shipment.idempotency_key,
+            )
+
+        self.assertEqual(result, resolved_shipment)
+        get_by_idempotency_mock.assert_called_once_with(
+            idempotency_key=resolved_shipment.idempotency_key,
+        )
+        resolve_integrity_conflict_mock.assert_called_once()
+
+    def test_create_shipment_reraises_integrity_error_when_conflict_cannot_be_resolved(self):
+        """Re-raise IntegrityError when concurrent conflict cannot be resolved."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+
+        with patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._get_shipment_by_idempotency_key"
+        ) as get_by_idempotency_mock, patch(
+            "ech.shipping.services.shipping_creation_service.Shipment.objects.create"
+        ) as shipment_create_mock, patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._resolve_integrity_conflict"
+        ) as resolve_integrity_conflict_mock, patch(
+            "ech.shipping.services.shipping_creation_service."
+            "ShippingCreationService._validate_shipment_does_not_exist"
+        ) as validate_does_not_exist_mock:
+            get_by_idempotency_mock.return_value = None
+            validate_does_not_exist_mock.return_value = None
+            shipment_create_mock.side_effect = IntegrityError("unique constraint")
+            resolve_integrity_conflict_mock.return_value = None
+
+            with self.assertRaises(IntegrityError):
+                ShippingCreationService.create_shipment(
+                    order=order,
+                    customer=customer,
+                    shipping_method=Shipment.METHOD_STANDARD,
+                    address_data=self.get_address_data(),
+                    idempotency_key=uuid.uuid4(),
+                )
+
+    def test_get_shipment_by_idempotency_key_returns_matching_shipment(self):
+        """Return existing shipment when idempotency key matches."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        idempotency_key = uuid.uuid4()
+        shipment = self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            idempotency_key=idempotency_key,
+        )
+
+        result = ShippingCreationService._get_shipment_by_idempotency_key(
+            idempotency_key=idempotency_key,
+        )
+
+        self.assertEqual(result, shipment)
+
+    def test_get_shipment_by_idempotency_key_returns_none_for_unknown_key(self):
+        """Return none when idempotency key does not exist."""
+        result = ShippingCreationService._get_shipment_by_idempotency_key(
+            idempotency_key=uuid.uuid4(),
+        )
+
+        self.assertIsNone(result)
+
+    def test_resolve_integrity_conflict_returns_existing_shipment_for_same_idempotent_request(
+        self,
+    ):
+        """Return existing shipment when conflict matches same idempotent payload."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        idempotency_key = uuid.uuid4()
+        estimated_delivery_date = timezone.now().date() + timedelta(days=4)
+        address_data = self.get_address_data()
+
+        shipment = self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_EXPRESS,
+            carrier_name="DHL",
+            tracking_code="TRACK-RESOLVE-001",
+            external_reference="EXT-RESOLVE-001",
+            idempotency_key=idempotency_key,
+            shipping_cost=Decimal("15.50"),
+            currency="USD",
+            estimated_delivery_date=estimated_delivery_date,
+            **address_data,
+        )
+
+        result = ShippingCreationService._resolve_integrity_conflict(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_EXPRESS,
+            address_data=ShippingCreationService._normalized_address_data(
+                address_data=address_data,
+            ),
+            shipping_cost=ShippingCreationService._normalized_decimal("15.50"),
+            currency="USD",
+            carrier_name="DHL",
+            tracking_code="TRACK-RESOLVE-001",
+            external_reference="EXT-RESOLVE-001",
+            estimated_delivery_date=estimated_delivery_date,
+            idempotency_key=idempotency_key,
+        )
+
+        self.assertEqual(result, shipment)
+
+    def test_resolve_integrity_conflict_raises_conflict_for_mismatched_idempotent_payload(
+        self,
+    ):
+        """Raise IdempotencyConflictException when existing idempotent payload differs."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        idempotency_key = uuid.uuid4()
+
+        self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            carrier_name="DHL",
+            tracking_code="TRACK-MISMATCH-001",
+            external_reference="EXT-MISMATCH-001",
+            idempotency_key=idempotency_key,
+            shipping_cost=Decimal("10.00"),
+            currency="USD",
+            estimated_delivery_date=timezone.now().date() + timedelta(days=2),
+            **self.get_address_data(city="Sao Paulo"),
+        )
+
+        with self.assertRaises(IdempotencyConflictException):
+            ShippingCreationService._resolve_integrity_conflict(
+                order=order,
+                customer=customer,
+                shipping_method=Shipment.METHOD_EXPRESS,
+                address_data=ShippingCreationService._normalized_address_data(
+                    address_data=self.get_address_data(city="Campinas"),
+                ),
+                shipping_cost=ShippingCreationService._normalized_decimal("50.00"),
+                currency="BRL",
+                carrier_name="FedEx",
+                tracking_code="TRACK-MISMATCH-999",
+                external_reference="EXT-MISMATCH-999",
+                estimated_delivery_date=timezone.now().date() + timedelta(days=9),
+                idempotency_key=idempotency_key,
+            )
+
+    def test_resolve_integrity_conflict_raises_shipment_already_exists_without_matching_idempotency(
+        self,
+    ):
+        """Raise ShipmentAlreadyExistsException when order already has shipment and no reusable key exists."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        self.create_existing_shipment(order=order, customer=customer)
+
+        with self.assertRaises(ShipmentAlreadyExistsException):
+            ShippingCreationService._resolve_integrity_conflict(
+                order=order,
+                customer=customer,
+                shipping_method=Shipment.METHOD_STANDARD,
+                address_data=ShippingCreationService._normalized_address_data(
+                    address_data=self.get_address_data(),
+                ),
+                shipping_cost=ShippingCreationService._normalized_decimal("10.00"),
+                currency="USD",
+                carrier_name="",
+                tracking_code=None,
+                external_reference=None,
+                estimated_delivery_date=None,
+                idempotency_key=uuid.uuid4(),
+            )
+
+    def test_validate_idempotent_reuse_accepts_equivalent_payload(self):
+        """Accept idempotent reuse when shipment payload matches exactly."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        estimated_delivery_date = timezone.now().date() + timedelta(days=5)
+        address_data = self.get_address_data()
+        shipment = self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            carrier_name="DHL",
+            tracking_code="TRACK-VALIDATE-001",
+            external_reference="EXT-VALIDATE-001",
+            shipping_cost=Decimal("10.00"),
+            currency="USD",
+            estimated_delivery_date=estimated_delivery_date,
+            **address_data,
+        )
+
+        ShippingCreationService._validate_idempotent_reuse(
+            shipment=shipment,
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            address_data=ShippingCreationService._normalized_address_data(
+                address_data=address_data,
+            ),
+            shipping_cost=ShippingCreationService._normalized_decimal("10.00"),
+            currency="USD",
+            carrier_name="DHL",
+            tracking_code="TRACK-VALIDATE-001",
+            external_reference="EXT-VALIDATE-001",
+            estimated_delivery_date=estimated_delivery_date,
+        )
+
+    def test_validate_idempotent_reuse_raises_for_different_payload(self):
+        """Raise IdempotencyConflictException when idempotent reuse payload differs."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+        shipment = self.create_existing_shipment(
+            order=order,
+            customer=customer,
+            shipping_method=Shipment.METHOD_STANDARD,
+            carrier_name="DHL",
+            tracking_code="TRACK-DIFF-001",
+            shipping_cost=Decimal("10.00"),
+            currency="USD",
+            **self.get_address_data(),
+        )
+
+        with self.assertRaises(IdempotencyConflictException):
+            ShippingCreationService._validate_idempotent_reuse(
+                shipment=shipment,
+                order=order,
+                customer=customer,
+                shipping_method=Shipment.METHOD_EXPRESS,
+                address_data=ShippingCreationService._normalized_address_data(
+                    address_data=self.get_address_data(city="Campinas"),
+                ),
+                shipping_cost=ShippingCreationService._normalized_decimal("99.99"),
+                currency="BRL",
+                carrier_name="FedEx",
+                tracking_code="TRACK-DIFF-999",
+                external_reference="EXT-DIFF-999",
+                estimated_delivery_date=timezone.now().date() + timedelta(days=10),
+            )
+
     def test_validate_shipment_does_not_exist_allows_new_order(self):
         """Allow shipment creation validation when order has no shipment."""
         customer = self.create_user()
@@ -387,14 +805,29 @@ class ShippingCreationServiceTestCase(BaseShippingCreationFactoryMixin, TestCase
             "full_name, address_line, country.",
         )
 
-    def create_existing_shipment(self, **kwargs):
-        data = {
-            "order": kwargs["order"],
-            "customer": kwargs["customer"],
-            "status": Shipment.STATUS_PENDING,
-            "shipping_method": Shipment.METHOD_STANDARD,
-            "tracking_code": f"TRACK-{uuid.uuid4().hex[:10].upper()}",
-            "shipping_cost": Decimal("10.00"),
-            "currency": "USD",
-        }
-        return Shipment.objects.create(**data)
+    def test_normalized_address_data_fills_optional_blank_values(self):
+        """Normalize optional address fields to blank strings."""
+        normalized = ShippingCreationService._normalized_address_data(
+            address_data=self.get_address_data(
+                phone=None,
+                delivery_instructions=None,
+            )
+        )
+
+        self.assertEqual(normalized["phone"], "")
+        self.assertEqual(normalized["delivery_instructions"], "")
+
+    def test_normalized_decimal_returns_decimal_instance(self):
+        """Normalize decimal-like values into Decimal for safe comparison."""
+        normalized = ShippingCreationService._normalized_decimal("10.50")
+
+        self.assertEqual(normalized, Decimal("10.50"))
+
+    def test_lock_order_returns_same_persisted_order(self):
+        """Lock and return the same order instance from the database."""
+        customer = self.create_user()
+        order = self.create_order(customer=customer)
+
+        locked_order = ShippingCreationService._lock_order(order=order)
+
+        self.assertEqual(locked_order.pk, order.pk)

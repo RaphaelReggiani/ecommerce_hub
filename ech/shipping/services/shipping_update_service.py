@@ -224,9 +224,8 @@ class ShippingUpdateService:
         }
 
         invalid_required_fields = [
-            field
-            for field in required_fields
-            if field in address_data and not address_data.get(field)
+            field for field in address_data
+            if field in required_fields and not address_data.get(field)
         ]
 
         if invalid_required_fields:

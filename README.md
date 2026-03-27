@@ -1038,6 +1038,29 @@ This approach ensures:
 
 ---
 
+## Shipping (Customer)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/shipping/` | List authenticated customer shipments |
+| GET | `/api/v1/shipping/{shipment_id}/` | Retrieve shipment details |
+
+---
+
+## Shipping (Management)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/shipping/create/` | Create shipment for an order |
+| PATCH | `/api/v1/shipping/{shipment_id}/` | Update shipment information |
+| POST | `/api/v1/shipping/{shipment_id}/process/` | Perform shipment status transition |
+| POST | `/api/v1/shipping/{shipment_id}/cancel/` | Cancel shipment |
+| POST | `/api/v1/shipping/{shipment_id}/tracking/` | Register shipment tracking update |
+| GET | `/api/v1/shipping/management/` | List all shipments (staff) |
+| GET | `/api/v1/shipping/management/{shipment_id}/` | Retrieve shipment management details |
+
+---
+
 # Automated Tests
 
 The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
@@ -1066,8 +1089,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
-| **Shipping** | — | — | — | Logistics, Delivery Lifecycle, Tracking | In Progress |
-| **TOTAL (implemented modules)** | **669** | **197** | **866** | Core Business Logic | — |
+| **Shipping** | 207 | 69 | 276 | Logistics, Delivery Lifecycle, Tracking | ✔ Near Complete **(caching pending)** |
+| **TOTAL (implemented modules)** | **876** | **266** | **1142** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -2158,6 +2181,121 @@ Tests validate structured logging behavior for shipment operations:
 * structured payload validation
 * consistent field serialization for identifiers
 
+---
+
+### Shipping API Tests
+
+#### Authentication & Access Control
+
+* JWT authentication enforcement
+* unauthorized access protection (401)
+* permission-based access control (403)
+* customer vs staff access boundaries
+* role-based restrictions for operational endpoints
+* validation of authenticated request context
+
+#### Shipment Creation API
+
+* successful shipment creation by authorized staff
+* rejection of shipment creation for customer users
+* validation of required payload fields
+* order existence validation
+* prevention of duplicate shipments for same order
+* idempotent shipment creation behavior
+* handling non-existent orders
+* response payload validation
+* transactional consistency on failure
+
+#### Shipment List API (Customer)
+
+* listing shipments for authenticated customer
+* ensuring only customer-owned shipments are returned
+* ordering by `created_at`
+* pagination behavior
+* filtering integration with:
+  * shipment status
+  * shipping method
+  * carrier name
+  * tracking code
+* empty state handling
+* response structure validation
+
+#### Shipment Detail API (Customer)
+
+* retrieving shipment details by ID
+* nested related data serialization (address, lifecycle)
+* UUID serialization consistency
+* access restriction for non-owners
+* handling non-existent shipments (404)
+* response payload validation
+
+#### Shipment Update API
+
+* successful shipment update by authorized staff
+* partial update behavior
+* address snapshot update validation
+* rejection of invalid payload fields
+* prevention of updates when shipment status is locked
+* handling non-existent shipments
+* response payload validation
+
+#### Shipment Processing API
+
+* successful shipment status transition by staff
+* validation of required `new_status` parameter
+* validation of invalid status transitions
+* prevention of transitions from terminal states
+* lifecycle timestamp updates
+* event dispatch after status transition
+* response payload validation
+* handling non-existent shipments
+
+#### Shipment Cancellation API
+
+* successful shipment cancellation by staff
+* prevention of cancelling delivered shipments
+* prevention of cancelling already cancelled shipments
+* prevention of cancelling returned shipments
+* status transition to cancelled
+* response payload validation
+* handling non-existent shipments
+
+#### Shipment Tracking API
+
+* successful tracking update registration
+* shipment status synchronization through tracking updates
+* tracking event creation validation
+* validation of required tracking fields
+* rejection of invalid tracking statuses
+* response payload validation
+* handling non-existent shipments
+* permission enforcement for operational roles
+
+#### Shipment Management List API (Staff)
+
+* access restricted to operational staff roles
+* listing all shipments for management dashboards
+* pagination validation
+* filtering integration with:
+  * shipment status
+  * shipping method
+  * carrier name
+  * tracking code
+  * external reference
+  * customer ID
+  * order ID
+* combined filter queries
+* response structure validation
+
+#### Shipment Management Detail API (Staff)
+
+* retrieving full shipment detail for staff
+* nested entities validation (address, lifecycle, tracking updates)
+* timestamp field validation
+* handling non-existent shipments
+* permission enforcement
+* response payload validation
+
 </details>
 
 ---
@@ -2176,6 +2314,9 @@ pytest ech/orders/api/tests/
 
 pytest ech/payments/tests/
 pytest ech/payments/api/tests/
+
+pytest ech/shipping/tests/
+pytest ech/shipping/api/tests/
 
 ```
 

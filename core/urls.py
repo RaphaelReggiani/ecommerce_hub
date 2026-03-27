@@ -33,6 +33,7 @@ urlpatterns = [
 
     path("api/v1/payments/", include(("ech.payments.api.urls", "payments-api"), namespace="payments-api")),
     
+    path("api/v1/shipping/", include(("ech.shipping.api.urls", "shipping-api"), namespace="shipping-api")),
 ] 
 
 if settings.DEBUG:

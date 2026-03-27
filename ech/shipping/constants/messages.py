@@ -83,3 +83,10 @@ LOG_SHIPMENT_UPDATED = "Shipment updated."
 LOG_SHIPMENT_STATUS_CHANGED = "Shipment status changed."
 LOG_SHIPMENT_CANCELLED = "Shipment cancelled."
 LOG_TRACKING_UPDATED = "Shipment tracking updated."
+
+
+# =============================
+# IDEMPOTENCY
+# =============================
+
+IDEMPOTENCY_KEY_CONFLICT = "This idempotency key has already been used for a different shipment request."

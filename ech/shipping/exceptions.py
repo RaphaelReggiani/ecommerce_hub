@@ -10,6 +10,7 @@ from ech.shipping.constants.messages import (
     INVALID_SHIPPING_ADDRESS,
     TRACKING_CODE_REQUIRED,
     INVALID_TRACKING_EVENT,
+    IDEMPOTENCY_KEY_CONFLICT,
 )
 
 
@@ -116,4 +117,13 @@ class InvalidTrackingEventException(ShippingException):
     """
 
     def __init__(self, message=INVALID_TRACKING_EVENT):
+        super().__init__(message)
+
+
+class IdempotencyConflictException(ShippingException):
+    """
+    Raised when an idempotency key is reused with a different payload.
+    """
+
+    def __init__(self, message=IDEMPOTENCY_KEY_CONFLICT):
         super().__init__(message)
