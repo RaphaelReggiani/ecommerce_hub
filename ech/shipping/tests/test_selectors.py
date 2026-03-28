@@ -30,8 +30,8 @@ from ech.shipping.selectors import (
     list_shipments_by_status,
     list_shipments_by_shipping_method,
     list_shipments_by_carrier,
-    list_shipments_due_for_delivery,
-    list_shipments_with_tracking_code,
+    list_shipments_by_estimated_delivery_date,
+    list_shipments_with_tracking,
     search_shipments,
 )
 
@@ -270,7 +270,7 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
         """List customer shipments filtered by a specific status."""
         result = list_customer_shipments_by_status(
             customer=self.customer_1,
-            status_value=Shipment.STATUS_SHIPPED,
+            status=Shipment.STATUS_SHIPPED,
         )
 
         self.assertEqual(result.count(), 1)
@@ -285,7 +285,7 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
 
     def test_list_shipments_by_status_filters_management_queryset(self):
         """List shipments filtered by status for management use."""
-        result = list_shipments_by_status(status_value=Shipment.STATUS_PENDING)
+        result = list_shipments_by_status(status=Shipment.STATUS_PENDING)
 
         self.assertEqual(result.count(), 1)
         self.assertEqual(result.first(), self.shipment_1)
@@ -310,7 +310,7 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
         """List shipments due for a specific delivery date."""
         target_date = self.shipment_2.estimated_delivery_date
 
-        result = list_shipments_due_for_delivery(delivery_date=target_date)
+        result = list_shipments_by_estimated_delivery_date(estimated_delivery_date=target_date)
 
         self.assertEqual(result.count(), 2)
         self.assertEqual(list(result), [self.shipment_3, self.shipment_2])
@@ -328,7 +328,7 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
             tracking_code="",
         )
 
-        result = list_shipments_with_tracking_code()
+        result = list_shipments_with_tracking()
 
         self.assertIn(self.shipment_1, result)
         self.assertIn(self.shipment_2, result)

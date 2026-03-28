@@ -1,6 +1,8 @@
 import uuid
 from datetime import timedelta
 
+from django.core.cache import cache
+
 from django.urls import reverse
 from django.utils import timezone
 
@@ -18,6 +20,7 @@ from ech.shipping.models import (
 
 class ShipmentProcessApiTestCase(APITestCase):
     def setUp(self):
+        cache.clear()
         self.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",

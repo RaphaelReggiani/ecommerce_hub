@@ -14,6 +14,9 @@ from ech.shipping.services.shipping_log_service import (
 from ech.shipping.services.shipping_status_service import (
     ShippingStatusService,
 )
+from ech.shipping.services.cache_service import (
+    ShippingCacheService,
+)
 
 
 class ShippingTrackingService:
@@ -135,6 +138,14 @@ class ShippingTrackingService:
             shipment=shipment,
             tracking_update=tracking_update,
             performed_by=performed_by,
+        )
+        
+        transaction.on_commit(
+            lambda: ShippingCacheService.invalidate_after_mutation(
+                shipment_id=shipment.id,
+                customer_id=shipment.customer_id,
+                order_id=shipment.order_id,
+            )
         )
 
         return tracking_update

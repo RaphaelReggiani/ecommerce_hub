@@ -15,6 +15,9 @@ from ech.shipping.services.shipping_status_service import (
 from ech.shipping.services.shipping_log_service import (
     ShippingLogService,
 )
+from ech.shipping.services.cache_service import (
+    ShippingCacheService,
+)
 
 
 class ShippingCancellationService:
@@ -73,6 +76,14 @@ class ShippingCancellationService:
         ShippingLogService.log_shipment_cancelled(
             shipment=cancelled_shipment,
             performed_by=performed_by,
+        )
+
+        transaction.on_commit(
+            lambda: ShippingCacheService.invalidate_after_mutation(
+                shipment_id=cancelled_shipment.id,
+                customer_id=cancelled_shipment.customer_id,
+                order_id=cancelled_shipment.order_id,
+            )
         )
 
         return cancelled_shipment

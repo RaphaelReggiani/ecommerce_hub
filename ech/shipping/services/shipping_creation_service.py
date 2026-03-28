@@ -15,7 +15,12 @@ from ech.shipping.models import (
     ShipmentEvent,
     ShipmentLifecycle,
 )
-from ech.shipping.services.shipping_log_service import ShippingLogService
+from ech.shipping.services.shipping_log_service import (
+    ShippingLogService,
+)
+from ech.shipping.services.cache_service import (
+    ShippingCacheService,
+)
 
 
 class ShippingCreationService:
@@ -178,6 +183,14 @@ class ShippingCreationService:
                     order_id=locked_order.id,
                     customer_id=customer.id,
                     performed_by_id=getattr(performed_by, "id", None),
+                )
+            )
+
+            transaction.on_commit(
+                lambda: ShippingCacheService.invalidate_after_mutation(
+                    shipment_id=shipment.id,
+                    customer_id=shipment.customer_id,
+                    order_id=shipment.order_id,
                 )
             )
 

@@ -12,7 +12,13 @@ from ech.shipping.models import (
     Shipment,
     ShipmentEvent,
 )
-from ech.shipping.services.shipping_log_service import ShippingLogService
+from ech.shipping.services.shipping_log_service import (
+    ShippingLogService,
+)
+
+from ech.shipping.services.cache_service import (
+    ShippingCacheService,
+)
 
 
 class ShippingStatusService:
@@ -148,6 +154,14 @@ class ShippingStatusService:
                 previous_status=current_status,
                 new_status=new_status,
                 performed_by_id=getattr(performed_by, "id", None),
+            )
+        )
+
+        transaction.on_commit(
+            lambda: ShippingCacheService.invalidate_after_mutation(
+                shipment_id=shipment.id,
+                customer_id=shipment.customer_id,
+                order_id=shipment.order_id,
             )
         )
 

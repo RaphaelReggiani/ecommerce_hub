@@ -118,8 +118,8 @@ Centralizes system messages and configuration values.
                Cache
         (Django Cache / Redis)
 
-
 ```
+> Note: Domain events are used selectively in modules with more complex lifecycle flows such as orders, payments, shipping, reviews, notifications system and analytics system. Simpler modules such as users, products and admin dashboard follow a service-oriented architecture without a dedicated domain event layer.
 
 ---
 
@@ -131,8 +131,8 @@ Planned modules:
 * Products module ✔
 * Orders system ✔
 * Payment integration ✔
-* Shipping system (**Current step**)
-* Reviews system
+* Shipping system ✔
+* Reviews system (**Current step**)
 * Notifications system
 * Analytics system
 * Admin dashboard
@@ -433,6 +433,67 @@ ecommerce_hub/
 │   │   │   ├── test_shipping_status_service.py
 │   │   │   ├── test_shipping_cancellation_service.py
 │   │   │   ├── test_shipping_tracking_service.py
+│   │   │   ├── test_logging_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
+│   │
+│   ├── reviews/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_reviews_create_api.py
+│   │   │   │   ├── test_reviews_list_api.py
+│   │   │   │   ├── test_reviews_detail_api.py
+│   │   │   │   ├── test_reviews_update_api.py
+│   │   │   │   ├── test_reviews_cancel_api.py
+│   │   │   │   ├── test_reviews_management_list_api.py
+│   │   │   │   └── test_reviews_management_detail_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── reviews_creation_service.py
+│   │   │   ├── reviews_update_service.py
+│   │   │   ├── reviews_status_service.py
+│   │   │   ├── reviews_cancellation_service.py
+│   │   │   ├── reviews_moderation_service.py
+│   │   │   └── reviews_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_reviews_create_service.py
+│   │   │   ├── test_reviews_update_service.py
+│   │   │   ├── test_reviews_status_service.py
+│   │   │   ├── test_reviews_cancellation_service.py
+│   │   │   ├── test_reviews_moderation_service.py
 │   │   │   ├── test_logging_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
@@ -832,6 +893,7 @@ Database queries are optimized using:
 * Shipment cancellation with rule validation
 * Shipment tracking updates with event registration
 * Prevention of duplicate shipments for the same order
+* Idempotency key protection to prevent duplicate shipment creation
 
 ### Shipment Components
 
@@ -866,6 +928,35 @@ CANCELLED
 ```
 
 Lifecycle transitions are validated through the `ShippingStatusService`.
+
+### Shipping Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> Pending
+
+    Pending --> Preparing : start_preparing
+    Pending --> Cancelled : cancel_shipment
+
+    Preparing --> ReadyToShip : ready_to_ship
+    Preparing --> Cancelled : cancel_shipment
+
+    ReadyToShip --> Shipped : ship
+
+    Shipped --> InTransit : carrier_update
+
+    InTransit --> OutForDelivery : out_for_delivery
+
+    OutForDelivery --> Delivered : delivery_confirmed
+
+    InTransit --> Failed : delivery_failed
+    Failed --> Returned : return_to_sender
+
+    Delivered --> [*]
+    Cancelled --> [*]
+    Returned --> [*]
+```
 
 ### Shipment Cancellation Rules
 
@@ -919,6 +1010,34 @@ Handlers are designed to be easily extended for:
 * cache invalidation
 * analytics integrations
 * external notification systems
+
+### Caching Layer
+
+A dedicated caching service improves performance for shipment queries:
+
+* shipment detail caching
+* shipment lookup by order ID caching
+* customer shipment list caching
+* filtered customer shipment lists (status)
+* management shipment list caching
+* filtered shipment lists (status, shipping method, carrier)
+* delivery-due shipment caching
+* tracking-enabled shipment list caching
+* shipment search caching
+
+All cache keys are **versioned**, enabling safe and deterministic cache invalidation.
+
+### Cache Invalidation Strategy
+
+Cache consistency is maintained through automatic invalidation when:
+
+* a shipment is created
+* shipment data is updated
+* shipment status changes
+* shipment is cancelled
+* tracking updates are registered
+
+Cache invalidation is centralized in the `ShippingCacheService`.
 
 ### Filtering and Query Optimization
 
@@ -1089,8 +1208,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
-| **Shipping** | 207 | 69 | 276 | Logistics, Delivery Lifecycle, Tracking | ✔ Near Complete **(caching pending)** |
-| **TOTAL (implemented modules)** | **876** | **266** | **1142** | Core Business Logic | — |
+| **Shipping** | 218 | 69 | 287 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
+| **TOTAL (implemented modules)** | **887** | **266** | **1153** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -2087,6 +2206,10 @@ Tests validate query behavior and retrieval logic:
 * event dispatch after creation
 * shipment creation logging
 * transactional rollback validation
+* idempotency key validation
+* repeated request replay protection
+* idempotency conflict validation for mismatched payloads
+* concurrency-safe shipment creation behavior
 
 #### Shipping Update Service
 
@@ -2180,6 +2303,42 @@ Tests validate structured logging behavior for shipment operations:
 * performer identification logging
 * structured payload validation
 * consistent field serialization for identifiers
+
+#### Shipping Caching
+
+Tests validate caching behavior and consistency:
+
+* versioned cache key generation
+* storing values in cache
+* retrieving cached values
+* `get_or_set` cache pattern behavior
+* shipment detail caching
+* shipment lookup by order ID caching
+* customer shipment list caching
+* customer filtered shipment list caching
+* management shipment list caching
+* filtered shipment list caching (status, shipping method, carrier)
+* delivery-due shipment caching
+* tracking-enabled shipment list caching
+* shipment search caching
+* cache hit vs cache miss behavior
+
+#### Cache Invalidation
+
+Tests validate that shipment services invalidate cache correctly:
+
+* invalidation of shipment detail cache
+* invalidation of shipment lookup by order ID cache
+* invalidation of customer shipment lists
+* invalidation of customer filtered shipment lists
+* invalidation of management shipment lists
+* invalidation of filtered shipment caches
+* invalidation after shipment creation
+* invalidation after shipment update
+* invalidation after shipment status transition
+* invalidation after shipment cancellation
+* invalidation after tracking update
+* fresh data returned after post-mutation reads
 
 ---
 

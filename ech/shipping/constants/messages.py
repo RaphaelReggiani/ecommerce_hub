@@ -62,7 +62,7 @@ SHIPMENT_MARKED_AS_DELIVERED = "Shipment marked as delivered."
 DELIVERY_CONFIRMATION_REQUIRED = "Delivery confirmation information is required."
 
 # =============================
-# Address MANAGEMENT
+# ADDRESS MANAGEMENT
 # =============================
 
 INVALID_SHIPPING_ADDRESS = "Invalid shipping address."
@@ -75,7 +75,7 @@ ADDRESS_UPDATE_NOT_ALLOWED = "Shipping address cannot be updated after shipment 
 SHIPMENT_NOTE_HELP_TEXT = "Internal notes are only visible to operational staff."
 
 # =============================
-# LOGGING
+# SHIPMENT LOGGING
 # =============================
 
 LOG_SHIPMENT_CREATED = "Shipment created."
@@ -86,7 +86,7 @@ LOG_TRACKING_UPDATED = "Shipment tracking updated."
 
 
 # =============================
-# IDEMPOTENCY
+# SHIPMENT IDEMPOTENCY
 # =============================
 
 IDEMPOTENCY_KEY_CONFLICT = "This idempotency key has already been used for a different shipment request."

@@ -1,5 +1,7 @@
-from decimal import Decimal
 import uuid
+from decimal import Decimal
+
+from django.core.cache import cache
 
 from django.urls import reverse
 from rest_framework import status
@@ -17,6 +19,7 @@ from ech.shipping.models import (
 
 class ShipmentCreateApiTestCase(APITestCase):
     def setUp(self):
+        cache.clear()
         self.url = reverse("shipping-api:shipment-create")
 
         self.customer = CustomUser.objects.create_user(
