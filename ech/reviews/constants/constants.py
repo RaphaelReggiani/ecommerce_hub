@@ -1,11 +1,52 @@
 # =========================
-# REVIEWS STATUS
+# REVIEW STATUS LABELS
 # =========================
 
-
-
+LABEL_REVIEW_STATUS_PENDING = "Pending moderation"
+LABEL_REVIEW_STATUS_APPROVED = "Approved"
+LABEL_REVIEW_STATUS_REJECTED = "Rejected"
+LABEL_REVIEW_STATUS_HIDDEN = "Hidden"
+LABEL_REVIEW_STATUS_CANCELLED = "Cancelled"
 
 # =========================
-# REVIEWS EVENTS CHOICES
+# RATING CONSTRAINTS
 # =========================
 
+REVIEW_RATING_MIN = 1
+REVIEW_RATING_MAX = 5
+
+# =========================
+# REVIEW MODERATION ACTIONS
+# =========================
+
+REVIEW_ACTION_APPROVE = "approve"
+REVIEW_ACTION_REJECT = "reject"
+REVIEW_ACTION_HIDE = "hide"
+REVIEW_ACTION_RESTORE = "restore"
+REVIEW_ACTION_CANCEL = "cancel"
+
+
+REVIEW_MODERATION_ACTIONS = [
+    REVIEW_ACTION_APPROVE,
+    REVIEW_ACTION_REJECT,
+    REVIEW_ACTION_HIDE,
+    REVIEW_ACTION_RESTORE,
+    REVIEW_ACTION_CANCEL,
+]
+
+# ==================================================
+# ORDERING OPTIONS (FOR PUBLIC REVIEW LISTINGS)
+# ==================================================
+
+REVIEW_ORDERING_NEWEST = "newest"
+REVIEW_ORDERING_OLDEST = "oldest"
+REVIEW_ORDERING_RATING_HIGH = "rating_high"
+REVIEW_ORDERING_RATING_LOW = "rating_low"
+
+
+REVIEW_ALLOWED_ORDERING = [
+    REVIEW_ORDERING_NEWEST,
+    REVIEW_ORDERING_OLDEST,
+    REVIEW_ORDERING_RATING_HIGH,
+    REVIEW_ORDERING_RATING_LOW,
+]

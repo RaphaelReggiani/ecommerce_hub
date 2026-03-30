@@ -452,6 +452,9 @@ ecommerce_hub/
 │   │   │   │   ├── test_reviews_detail_api.py
 │   │   │   │   ├── test_reviews_update_api.py
 │   │   │   │   ├── test_reviews_cancel_api.py
+│   │   │   │   ├── test_reviews_moderation_api.py
+│   │   │   │   ├── test_product_reviews_public_api.py
+│   │   │   │   ├── test_product_reviews_summary_api.py
 │   │   │   │   ├── test_reviews_management_list_api.py
 │   │   │   │   └── test_reviews_management_detail_api.py
 │   │   │   │
@@ -589,7 +592,7 @@ This provides a full audit trail for product management operations.
 
 ---
 
-# Orders Module
+## Orders Module
 
 ### Order Creation
 
@@ -1080,6 +1083,169 @@ This approach ensures:
 
 ---
 
+## Reviews Module
+
+### Review Creation
+
+* Review creation through a dedicated service layer
+* Validation of rating range (1–5)
+* Prevention of duplicate reviews for the same customer and product
+* Idempotency key protection to prevent duplicate review submissions
+* Automatic initialization of review lifecycle tracking
+
+### Review Components
+
+Reviews are composed of multiple related entities:
+
+* **Review** – main aggregate root representing the customer review
+* **ReviewLifecycle** – timestamps for moderation and lifecycle events
+* **ReviewEvent** – operational event log for review-related actions
+
+This structure ensures traceability of all review operations.
+
+### Review Lifecycle Management
+
+Reviews follow a controlled moderation lifecycle:
+
+```
+PENDING
+→ APPROVED
+→ HIDDEN
+```
+
+Alternative transitions:
+
+```
+PENDING → REJECTED
+PENDING → CANCELLED
+APPROVED → HIDDEN
+HIDDEN → APPROVED (restore)
+```
+
+Lifecycle timestamps are stored in the `ReviewLifecycle` model.
+
+### Moderation System
+
+The moderation system allows staff to manage user reviews safely.
+
+Supported moderation actions:
+
+* approve review
+* reject review
+* hide review
+* restore hidden review
+* cancel review
+
+Moderation operations include:
+
+* staff user identification (`moderated_by`)
+* moderation timestamp tracking (`moderated_at`)
+* moderation reason storage
+* operational event recording
+
+### Operational Event Logging
+
+Every relevant review operation generates a `ReviewEvent`, including:
+
+* review creation
+* review updates
+* moderation actions
+* lifecycle status transitions
+* review cancellation
+
+This ensures a complete operational audit trail for review management.
+
+### Structured Logging
+
+The module includes a dedicated logging service:
+
+* `ReviewsLogService`
+
+Structured logs are generated for:
+
+* review creation
+* review updates
+* moderation actions
+* status transitions
+* review cancellation
+
+Logs include structured metadata such as:
+
+* review ID
+* product ID
+* customer ID
+* moderation context
+* operational metadata
+
+### Domain Event System
+
+The reviews module implements an event-driven architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability
+
+Current domain events include:
+
+* review created
+* review updated
+* review approved
+* review rejected
+* review hidden
+* review restored
+* review cancelled
+
+Handlers are designed to support future integrations such as:
+
+* cache invalidation
+* analytics processing
+* notification services
+* external moderation monitoring systems
+
+### Filtering and Query Optimization
+
+Review queries support filtering by:
+
+* review status
+* rating value
+* rating range
+* product ID
+* customer ID
+* moderation user ID
+* verified purchase flag
+* creation date range
+
+Database queries are optimized using:
+
+* indexed fields
+* efficient filtering strategies
+* optimized selectors for data retrieval
+* paginated query patterns
+
+### Service Layer Architecture
+
+The reviews module follows a service-oriented domain architecture:
+
+* `ReviewsCreationService`
+* `ReviewsUpdateService`
+* `ReviewsStatusService`
+* `ReviewsCancellationService`
+* `ReviewsModerationService`
+* `ReviewsLogService`
+
+This architecture ensures:
+
+* clear separation of responsibilities
+* centralized domain rule enforcement
+* transactional consistency
+* easier testing and maintenance
+* extensibility for future features
+
+---
+
 # API Endpoints
 
 ## Users
@@ -1200,7 +1366,7 @@ This ensures business logic remains stable independently from the API layer.
 
 ## Testing Suite
 
-The testing approach follows a **Domain-First strategy**, ensuring that business rules are validated independently from the API layer.
+The testing approach follows a **Domain-First strategy**, ensuring that business rules are validated independently of the API layer.
 
 | Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
@@ -1208,8 +1374,9 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
-| **Shipping** | 218 | 69 | 287 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
-| **TOTAL (implemented modules)** | **887** | **266** | **1153** | Core Business Logic | — |
+| **Shipping** | 219 | 69 | 287 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
+| **Reviews** | 130 | - | 130 | Review Moderation, Lifecycle, Domain Rules | **API and Caching Pending** |
+| **TOTAL (implemented modules)** | **1018** | **266** | **1284** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -2459,6 +2626,177 @@ Tests validate that shipment services invalidate cache correctly:
 
 ---
 
+<details>
+<summary><strong>Reviews Module Tests</strong></summary>
+
+### Reviews Domain Tests
+
+#### Domain Models
+
+* review creation and core field validation
+* UUID primary key generation
+* review status choices validation
+* unique review constraint per customer and product
+* idempotency key uniqueness enforcement
+* verified purchase flag behavior
+* moderation fields handling
+* model ordering by `created_at`
+* string representations
+
+#### Review Lifecycle Model
+
+* lifecycle relationship integrity
+* moderation and cancellation timestamp handling
+* timestamp persistence behavior
+* string representation validation
+
+#### Review Event Model
+
+* event creation and review association
+* event type persistence
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+#### Domain Exceptions
+
+* base review exception behavior
+* default vs custom message handling
+* exception inheritance hierarchy validation
+* review not found handling
+* permission protection exceptions
+* duplicate review protection
+* invalid review rating validation
+* invalid review status transition validation
+* review cancellation rule validation
+* invalid moderation action handling
+
+#### Query Selectors
+
+Tests validate query behavior and retrieval logic:
+
+* retrieving review by ID
+* retrieving review restricted to customer ownership
+* retrieving review by idempotency key
+* retrieving review by customer and product
+* retrieving review lifecycle object
+* listing reviews for customer
+* listing reviews for management dashboards
+* listing reviews by product
+* listing public reviews by product
+* listing reviews by status
+* listing reviews by rating
+* listing verified purchase reviews
+* listing review events
+* product review summary aggregation
+* handling non-existent records
+
+#### Review Filters
+
+Tests validate filtering behavior for review listings:
+
+* filtering by review status
+* filtering by exact rating
+* filtering by minimum rating
+* filtering by maximum rating
+* filtering by product ID
+* filtering by customer ID
+* filtering by verified purchase flag
+* filtering by moderator ID
+* filtering by creation date range
+* ordering by newest
+* ordering by oldest
+* ordering by highest rating
+* ordering by lowest rating
+* invalid ordering fallback behavior
+* combined filter queries
+* empty result handling
+
+#### Review Creation Service
+
+* review creation workflow
+* validation of rating boundaries
+* prevention of duplicate reviews for same customer and product
+* idempotency key replay protection
+* creation of lifecycle record
+* creation of initial review event
+* structured logging on creation
+* default optional field handling
+
+#### Review Update Service
+
+* review update workflow
+* partial update handling
+* validation of editable fields only
+* invalid rating protection
+* no-op update behavior when no valid fields are provided
+* no-op update behavior when submitted values do not change
+* review event creation on update
+* structured logging on update
+
+#### Review Status Service
+
+* valid review status transitions
+* invalid status transition protection
+* lifecycle timestamp updates for approved, rejected, hidden and cancelled states
+* moderation metadata updates
+* review event creation for status changes
+* structured logging on status transitions
+
+#### Review Cancellation Service
+
+* review cancellation workflow
+* cancellation rule validation
+* prevention of cancelling already cancelled reviews
+* cancellation from allowed non-terminal states
+* lifecycle timestamp update (`cancelled_at`)
+* cancelled event registration
+
+#### Review Moderation Service
+
+* approve review workflow
+* reject review workflow
+* hide review workflow
+* restore review workflow
+* invalid moderation action protection
+* moderation rule validation by current review status
+* event creation through moderation status transitions
+* structured logging through moderation flows
+
+#### Domain Events
+
+Tests validate review domain event infrastructure:
+
+* base domain event behavior
+* event metadata defaults
+* event dispatcher handler registration
+* prevention of duplicate handler registration
+* event dispatch execution
+* multiple handler execution
+* dispatcher clearing behavior
+* registry handler registration
+* registry idempotency protection
+* structured handler logging for all supported review events
+
+#### Reviews Logging
+
+Tests validate structured logging behavior for review operations:
+
+* safe serialization of UUID values
+* safe serialization of datetime values
+* metadata serialization behavior
+* structured payload generation
+* review creation logging
+* review update logging
+* review status transition logging
+* review cancellation logging
+* review moderation logging
+
+</details>
+
+---
+
 Example test execution:
 
 ```
@@ -2476,6 +2814,8 @@ pytest ech/payments/api/tests/
 
 pytest ech/shipping/tests/
 pytest ech/shipping/api/tests/
+
+pytest ech/reviews/tests/
 
 ```
 
@@ -2546,11 +2886,6 @@ This project is part of my backend development portfolio and aims to demonstrate
 
 Raphael Regiani Silva
 
-LinkedIn:
-https://www.linkedin.com/in/raphael-regiani-b1ba73a5/
-
-GitHub:
-https://github.com/RaphaelReggiani
-
-Portfolio:
-https://raphaelreggiani.github.io/portfolio/
+- LinkedIn: [Raphael Regiani Silva](https://www.linkedin.com/in/raphael-regiani-b1ba73a5/)
+- GitHub: [RaphaelReggiani](https://github.com/RaphaelReggiani)
+- Portfolio: [raphaelreggiani.github.io/portfolio](https://raphaelreggiani.github.io/portfolio/)

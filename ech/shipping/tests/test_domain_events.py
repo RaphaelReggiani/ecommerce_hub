@@ -1,7 +1,11 @@
 import uuid
 from unittest.mock import patch
 
+from importlib import import_module
+
 from django.test import SimpleTestCase
+
+from ech.shipping.apps import ShippingConfig
 
 from ech.shipping.domain_events.dispatcher import DomainEventDispatcher
 from ech.shipping.domain_events.events import (
@@ -14,6 +18,15 @@ from ech.shipping.domain_events.handlers import (
     handle_shipment_status_changed,
 )
 from ech.shipping.domain_events.registry import EVENT_HANDLER_REGISTRY
+
+
+class ShippingAppConfigTestCase(SimpleTestCase):
+    def test_ready_imports_domain_event_registry(self):
+        """Import domain event registry when app config is ready."""
+        config = ShippingConfig("ech.shipping", import_module("ech.shipping"))
+
+        with patch("ech.shipping.domain_events.registry.EVENT_HANDLER_REGISTRY", {}) as _:
+            config.ready()
 
 
 class BaseDomainEventTestCase(SimpleTestCase):
