@@ -3,7 +3,7 @@ from rest_framework.pagination import PageNumberPagination
 
 class ReviewsPagination(PageNumberPagination):
     """
-    Default pagination for shipping list endpoints.
+    Default pagination for reviews list endpoints.
     """
 
     page_size = 20

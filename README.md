@@ -1,4 +1,4 @@
-# E-commerce Hub (ECH)
+# ECH (E-commerce Hub)
 
 ### Project Language: EN-US
 
@@ -87,8 +87,7 @@ Centralizes system messages and configuration values.
 
 # Architecture Diagram
 
-```
-
+```text
                           Client (Web / Mobile)
                                   |
                                   v
@@ -117,7 +116,6 @@ Centralizes system messages and configuration values.
                  v
                Cache
         (Django Cache / Redis)
-
 ```
 > Note: Domain events are used selectively in modules with more complex lifecycle flows such as orders, payments, shipping, reviews, notifications system and analytics system. Simpler modules such as users, products and admin dashboard follow a service-oriented architecture without a dedicated domain event layer.
 
@@ -129,12 +127,12 @@ Planned modules:
 
 * Users module ✔
 * Products module ✔
-* Orders system ✔
-* Payment integration ✔
-* Shipping system ✔
-* Reviews system (**Current step**)
-* Notifications system
-* Analytics system
+* Orders module ✔
+* Payment module ✔
+* Shipping module ✔
+* Reviews module (**Current step**)
+* Notifications module
+* Analytics module
 * Admin dashboard
 
 ---
@@ -146,7 +144,7 @@ The backend is organized using a **modular architecture**, where each domain (us
 <details>
 <summary><strong>Structure</strong></summary>
 
-```
+```text
 ecommerce_hub/
 │
 ├── core/
@@ -625,7 +623,7 @@ Orders are composed of multiple related entities:
 
 Orders follow a controlled lifecycle:
 
-```
+```text
 PENDING
 → CONFIRMED
 → PROCESSING
@@ -635,7 +633,7 @@ PENDING
 
 Additional transitions:
 
-```
+```text
 CANCELLED
 REFUNDED
 ```
@@ -730,7 +728,7 @@ This structure ensures traceability of every financial operation.
 
 Payments follow a controlled lifecycle:
 
-```
+```text
 PENDING
 → PROCESSING
 → AUTHORIZED
@@ -739,7 +737,7 @@ PENDING
 
 Additional transitions:
 
-```
+```text
 FAILED
 CANCELLED
 PARTIALLY_REFUNDED
@@ -912,7 +910,7 @@ This structure ensures full traceability of shipping operations.
 
 Shipments follow a controlled lifecycle:
 
-```
+```text
 PENDING
 → PREPARING
 → READY_TO_SHIP
@@ -924,7 +922,7 @@ PENDING
 
 Additional transitions:
 
-```
+```text
 FAILED
 RETURNED
 CANCELLED
@@ -1107,7 +1105,7 @@ This structure ensures traceability of all review operations.
 
 Reviews follow a controlled moderation lifecycle:
 
-```
+```text
 PENDING
 → APPROVED
 → HIDDEN
@@ -1115,7 +1113,7 @@ PENDING
 
 Alternative transitions:
 
-```
+```text
 PENDING → REJECTED
 PENDING → CANCELLED
 APPROVED → HIDDEN
@@ -1123,6 +1121,28 @@ HIDDEN → APPROVED (restore)
 ```
 
 Lifecycle timestamps are stored in the `ReviewLifecycle` model.
+
+### Review Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> Pending
+
+    Pending --> Approved : approve_review
+    Pending --> Rejected : reject_review
+    Pending --> Cancelled : cancel_review
+
+    Approved --> Hidden : hide_review
+
+    Hidden --> Approved : restore_review
+
+    Approved --> Cancelled : cancel_review
+
+    Rejected --> Cancelled : cancel_review
+
+    Cancelled --> [*]
+```
 
 ### Moderation System
 
@@ -1142,6 +1162,8 @@ Moderation operations include:
 * moderation timestamp tracking (`moderated_at`)
 * moderation reason storage
 * operational event recording
+
+Moderation logic is centralized in the ReviewsModerationService.
 
 ### Operational Event Logging
 
@@ -1205,6 +1227,47 @@ Handlers are designed to support future integrations such as:
 * notification services
 * external moderation monitoring systems
 
+### Reviews API
+
+The module exposes a REST API for both customer and management operations.
+
+Customer endpoints include:
+
+* create review
+* update review
+* cancel review
+* list customer reviews
+* retrieve review detail
+
+Public endpoints include:
+
+* public product review listing
+* product review summary
+
+Management endpoints include:
+
+* review moderation actions
+* management review listing
+* review detail for operational dashboards
+
+API responses support:
+
+* filtering
+* pagination
+* structured serialization
+* permission-based access control
+
+### Caching Layer
+
+A dedicated caching service improves performance for review queries:
+
+* review detail caching
+* customer review list caching
+* filtered customer review lists
+* public product review list caching
+* product review summary caching
+* management review list caching
+
 ### Filtering and Query Optimization
 
 Review queries support filtering by:
@@ -1235,6 +1298,7 @@ The reviews module follows a service-oriented domain architecture:
 * `ReviewsCancellationService`
 * `ReviewsModerationService`
 * `ReviewsLogService`
+* `ReviewsCacheService`
 
 This architecture ensures:
 
@@ -1346,6 +1410,37 @@ This architecture ensures:
 
 ---
 
+## Reviews (Customer)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/reviews/create/` | Create a new product review |
+| GET | `/api/v1/reviews/` | List authenticated customer reviews |
+| GET | `/api/v1/reviews/{review_id}/` | Retrieve review details |
+| PATCH | `/api/v1/reviews/{review_id}/update/` | Update review content |
+| POST | `/api/v1/reviews/{review_id}/cancel/` | Cancel review |
+
+---
+
+## Reviews (Public)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/reviews/product/{product_id}/` | List public reviews for a product |
+| GET | `/api/v1/reviews/product/{product_id}/summary/` | Retrieve product review summary |
+
+---
+
+## Reviews (Management)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/reviews/{review_id}/moderate/` | Perform review moderation action |
+| GET | `/api/v1/reviews/management/` | List all reviews (staff) |
+| GET | `/api/v1/reviews/management/{review_id}/` | Retrieve review management details |
+
+---
+
 # Automated Tests
 
 The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
@@ -1374,9 +1469,9 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
-| **Shipping** | 219 | 69 | 287 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
-| **Reviews** | 130 | - | 130 | Review Moderation, Lifecycle, Domain Rules | **API and Caching Pending** |
-| **TOTAL (implemented modules)** | **1018** | **266** | **1284** | Core Business Logic | — |
+| **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
+| **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules | ✔ Stable |
+| **TOTAL (implemented modules)** | **1045** | **354** | **1399** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -2793,13 +2888,165 @@ Tests validate structured logging behavior for review operations:
 * review cancellation logging
 * review moderation logging
 
+#### Reviews Caching
+
+Tests validate caching behavior and consistency:
+
+* versioned cache key generation
+* storing values in cache
+* retrieving cached values
+* `get_or_set` cache pattern behavior
+* review detail caching
+* customer review list caching
+* filtered customer review list caching
+* public product review list caching
+* product review summary caching
+* management review list caching
+* cache hit vs cache miss behavior
+
+#### Cache Invalidation
+
+Tests validate that review services invalidate cache correctly:
+
+* invalidation of review detail cache
+* invalidation of customer review lists
+* invalidation of filtered customer review lists
+* invalidation of management review lists
+* invalidation of public product review lists
+* invalidation of product review summary cache
+* invalidation after review creation
+* invalidation after review update
+* invalidation after review status transition
+* invalidation after review cancellation
+* invalidation after moderation actions
+* fresh data returned after post-mutation reads
+
+---
+
+### Reviews API Tests
+
+#### Authentication & Access Control
+
+* JWT authentication enforcement
+* unauthorized access protection (401)
+* permission-based access control (403)
+* customer vs staff access boundaries
+* owner-only access for customer review endpoints
+* staff-only access for moderation and management endpoints
+
+#### Review Creation API
+
+* successful review creation
+* validation of required payload fields
+* product existence validation
+* duplicate review protection for same customer and product
+* idempotent review creation behavior
+* invalid rating rejection
+* response payload validation
+
+#### Review List API (Customer)
+
+* listing reviews for authenticated customer
+* ensuring only customer-owned reviews are returned
+* pagination behavior
+* empty state handling
+* response structure validation
+
+#### Review Detail API (Customer)
+
+* retrieving review details by ID
+* access restriction for non-owners
+* rejection of staff access on customer-only detail endpoint
+* handling non-existent reviews (404)
+* nested serializer response validation
+
+#### Review Update API
+
+* successful review update by owner
+* partial update support
+* invalid rating rejection
+* no-op update behavior for unchanged values
+* rejection of update by non-owners
+* rejection of staff access on customer-only update endpoint
+* handling non-existent reviews
+* response payload validation
+
+#### Review Cancellation API
+
+* successful review cancellation by owner
+* cancellation with optional reason
+* prevention of cancelling already cancelled reviews
+* rejection of cancellation by non-owners
+* rejection of staff access on customer-only cancellation endpoint
+* handling non-existent reviews
+* response payload validation
+
+#### Review Moderation API
+
+* successful review approval by authorized staff
+* successful review rejection by authorized staff
+* successful review hiding by authorized staff
+* successful hidden review restoration by authorized staff
+* rejection of invalid moderation actions
+* rejection of invalid moderation transitions
+* rejection of moderation attempts by customer users
+* handling non-existent reviews
+* response payload validation
+
+#### Public Product Reviews API
+
+* public access without authentication
+* listing only approved reviews for a product
+* exclusion of pending reviews from public listing
+* exclusion of hidden reviews from public listing
+* pagination behavior
+* empty state handling when no approved reviews exist
+* handling non-existent products
+* response payload validation
+
+#### Product Review Summary API
+
+* public access without authentication
+* aggregation based only on approved reviews
+* average rating calculation
+* total reviews calculation
+* verified reviews calculation
+* rating distribution calculation
+* zeroed summary behavior when no approved reviews exist
+* handling non-existent products
+* response payload validation
+
+#### Review Management List API (Staff)
+
+* access restricted to authorized review staff roles
+* listing all reviews for management dashboards
+* pagination validation
+* filtering integration with:
+  * review status
+  * rating
+  * product ID
+  * customer ID
+  * verified purchase flag
+  * moderator ID
+* combined filter queries
+* response structure validation
+
+#### Review Management Detail API (Staff)
+
+* retrieving full review detail for staff
+* nested entities validation (customer, product, lifecycle, events)
+* timestamp field validation
+* handling non-existent reviews
+* permission enforcement
+* response payload validation
+
 </details>
 
 ---
 
 Example test execution:
 
-```
+```bash
 pytest ech/users/tests/
 pytest ech/users/api/tests/
 
@@ -2816,6 +3063,7 @@ pytest ech/shipping/tests/
 pytest ech/shipping/api/tests/
 
 pytest ech/reviews/tests/
+pytest ech/reviews/api/tests/
 
 ```
 
@@ -2825,14 +3073,14 @@ pytest ech/reviews/tests/
 
 Clone the repository:
 
-```
+```bash
 git clone https://github.com/RaphaelReggiani/ecommerce_hub
 cd ecommerce_hub
 ```
 
 Create a virtual environment:
 
-```
+```bash
 python -m venv venv
 ```
 
@@ -2840,31 +3088,31 @@ Activate the environment:
 
 Windows:
 
-```
+```bash
 venv\Scripts\activate
 ```
 
 Linux / Mac:
 
-```
+```bash
 source venv/bin/activate
 ```
 
 Install dependencies:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
 Run migrations:
 
-```
+```bash
 python manage.py migrate
 ```
 
 Start the development server:
 
-```
+```bash
 python manage.py runserver
 ```
 
@@ -2888,4 +3136,4 @@ Raphael Regiani Silva
 
 - LinkedIn: [Raphael Regiani Silva](https://www.linkedin.com/in/raphael-regiani-b1ba73a5/)
 - GitHub: [RaphaelReggiani](https://github.com/RaphaelReggiani)
-- Portfolio: [raphaelreggiani.github.io/portfolio](https://raphaelreggiani.github.io/portfolio/)
+- Portfolio: [Raphael Regiani Portfolio](https://raphaelreggiani.github.io/portfolio/)

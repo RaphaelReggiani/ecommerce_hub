@@ -1,12 +1,16 @@
 from django.db import transaction
 from django.utils import timezone
 
-from ech.reviews.models import Review, ReviewEvent
+from ech.reviews.models import (
+    Review, 
+    ReviewEvent,
+)
 from ech.reviews.exceptions import (
     InvalidReviewStatusTransitionException,
 )
 from ech.reviews.selectors import get_review_by_id
 from ech.reviews.services.reviews_log_service import ReviewsLogService
+from ech.reviews.services.cache_service import ReviewsCacheService
 from ech.reviews.domain_events.dispatcher import ReviewEventDispatcher
 from ech.reviews.domain_events.events import (
     ReviewApprovedEvent,
@@ -22,7 +26,7 @@ class ReviewsStatusService:
     Service responsible for review status transitions.
 
     Centralizes lifecycle transition validation, lifecycle timestamp updates,
-    audit event creation, and structured logging.
+    audit event creation, structured logging, and cache invalidation.
     """
 
     ALLOWED_TRANSITIONS = {
@@ -104,7 +108,7 @@ class ReviewsStatusService:
     ):
         """
         Change review status with lifecycle tracking,
-        event registration, and structured logging.
+        event registration, structured logging, and cache invalidation.
         """
 
         review = get_review_by_id(review_id)
@@ -186,5 +190,11 @@ class ReviewsStatusService:
                     },
                 )
             )
+
+        ReviewsCacheService.invalidate_review_aggregate(
+            review_id=review.id,
+            customer_id=review.customer_id,
+            product_id=review.product_id,
+        )
 
         return review

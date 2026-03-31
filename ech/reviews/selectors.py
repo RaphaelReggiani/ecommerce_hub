@@ -1,5 +1,4 @@
 from django.db.models import Avg, Count, Q
-from django.shortcuts import get_object_or_404
 
 from ech.reviews.models import Review, ReviewLifecycle, ReviewEvent
 from ech.reviews.exceptions import ReviewNotFoundException

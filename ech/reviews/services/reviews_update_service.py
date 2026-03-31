@@ -6,6 +6,7 @@ from ech.reviews.exceptions import (
 )
 from ech.reviews.selectors import get_review_by_id
 from ech.reviews.services.reviews_log_service import ReviewsLogService
+from ech.reviews.services.cache_service import ReviewsCacheService
 from ech.reviews.domain_events.dispatcher import ReviewEventDispatcher
 from ech.reviews.domain_events.events import ReviewUpdatedEvent
 
@@ -15,6 +16,8 @@ class ReviewsUpdateService:
     Service responsible for updating reviews.
 
     Supports partial updates for customer-editable fields only.
+    Also handles audit event creation, structured logging,
+    domain event dispatch, and cache invalidation.
     """
 
     ALLOWED_UPDATE_FIELDS = {
@@ -32,11 +35,12 @@ class ReviewsUpdateService:
     def _extract_valid_fields(cls, **kwargs):
         """
         Keep only fields allowed for review updates.
+        Ignore omitted fields represented as None.
         """
         return {
             key: value
             for key, value in kwargs.items()
-            if key in cls.ALLOWED_UPDATE_FIELDS
+            if key in cls.ALLOWED_UPDATE_FIELDS and value is not None
         }
 
     @staticmethod
@@ -51,6 +55,7 @@ class ReviewsUpdateService:
         Update a review with partial field support.
 
         Only customer-editable fields are allowed.
+        Omitted fields are ignored.
         """
 
         review = get_review_by_id(review_id)
@@ -102,6 +107,12 @@ class ReviewsUpdateService:
                     ),
                 },
             )
+        )
+
+        ReviewsCacheService.invalidate_review_aggregate(
+            review_id=review.id,
+            customer_id=review.customer_id,
+            product_id=review.product_id,
         )
 
         return review

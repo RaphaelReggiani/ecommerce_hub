@@ -14,6 +14,7 @@ from ech.reviews.selectors import (
     get_review_by_idempotency_key,
 )
 from ech.reviews.services.reviews_log_service import ReviewsLogService
+from ech.reviews.services.cache_service import ReviewsCacheService
 from ech.reviews.domain_events.dispatcher import ReviewEventDispatcher
 from ech.reviews.domain_events.events import ReviewCreatedEvent
 
@@ -28,6 +29,7 @@ class ReviewsCreationService:
     - lifecycle initialization
     - event recording
     - structured logging
+    - cache invalidation for affected read models
     """
 
     @staticmethod
@@ -45,7 +47,7 @@ class ReviewsCreationService:
     @staticmethod
     def _check_idempotency(idempotency_key):
         """
-        Returns an existing review if the idempotency key
+        Return an existing review if the idempotency key
         was already used.
         """
         return get_review_by_idempotency_key(idempotency_key)
@@ -126,6 +128,17 @@ class ReviewsCreationService:
                     "verified_purchase": is_verified_purchase,
                 },
             )
+        )
+
+        ReviewsCacheService.invalidate_customer_review_lists(
+            customer_id=customer.id,
+        )
+        ReviewsCacheService.invalidate_management_review_lists()
+        ReviewsCacheService.invalidate_public_product_review_lists(
+            product_id=product.id,
+        )
+        ReviewsCacheService.invalidate_product_review_summary(
+            product_id=product.id,
         )
 
         return review
