@@ -151,7 +151,7 @@ class ReviewModelTestCase(BaseReviewModelFactoryMixin, TestCase):
         """Configure review indexes correctly."""
         index_names = {index.name for index in Review._meta.indexes}
 
-        self.assertIn("review_product_status_created_idx", index_names)
+        self.assertIn("rev_prod_stat_created_idx", index_names)
         self.assertIn("review_customer_created_idx", index_names)
         self.assertIn("review_product_rating_idx", index_names)
 
