@@ -1,18 +1,16 @@
 from decimal import Decimal
-from django.core.cache import cache
 
-from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.urls import reverse
 
-from rest_framework.test import APITestCase
 from rest_framework import status
+from rest_framework.test import APITestCase
 
 from ech.products.models import Product
-
 from ech.users.constants.constants import (
     CORPORATE_EMAIL_DOMAIN,
 )
-
 from ech.users.models import (
     CustomUser,
 )
@@ -21,10 +19,8 @@ User = get_user_model()
 
 
 class ProductListAPITestCase(APITestCase):
-
-    cache.clear()
-
     def setUp(self):
+        cache.clear()
 
         self.user = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
@@ -58,14 +54,12 @@ class ProductListAPITestCase(APITestCase):
         )
 
     def test_list_products_public(self):
-
+        """Ensure only active products are listed for authenticated users."""
         self.client.force_authenticate(self.user)
 
         url = reverse("products-api:product-list")
 
         response = self.client.get(url)
-
-        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -73,10 +67,8 @@ class ProductListAPITestCase(APITestCase):
 
         self.assertEqual(len(products), 1)
 
-
     def test_product_list_requires_authentication(self):
         """API should require authentication to access the product list."""
-
         url = reverse("products-api:product-list")
 
         response = self.client.get(url)
@@ -85,7 +77,6 @@ class ProductListAPITestCase(APITestCase):
 
     def test_product_list_pagination_consistency(self):
         """Pagination should not duplicate products across pages."""
-
         self.client.force_authenticate(self.user)
 
         for i in range(30):

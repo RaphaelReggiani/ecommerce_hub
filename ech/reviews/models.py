@@ -130,7 +130,7 @@ class Review(models.Model):
         indexes = [
             models.Index(
                 fields=["product", "status", "created_at"],
-                name="review_product_status_created_idx",
+                name="rev_prod_stat_created_idx",
             ),
             models.Index(
                 fields=["customer", "created_at"],

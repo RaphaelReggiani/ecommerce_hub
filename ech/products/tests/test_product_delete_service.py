@@ -1,12 +1,14 @@
 import uuid
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from ech.users.models import CustomUser
+from ech.products.domain_events.events import ProductDeletedEvent
 from ech.products.exceptions import ProductNotFoundError
 from ech.products.models import Product
 from ech.products.services.product_delete_service import delete_product
+from ech.users.models import CustomUser
 
 
 class ProductDeleteServiceTestCase(TestCase):
@@ -46,6 +48,21 @@ class ProductDeleteServiceTestCase(TestCase):
 
         self.assertEqual(deleted_product.id, self.product.id)
         self.assertFalse(deleted_product.is_active)
+
+    @patch("ech.products.services.product_delete_service.EventDispatcher.dispatch")
+    def test_delete_product_dispatches_product_deleted_event(self, dispatch_mock):
+        """Ensure delete_product dispatches ProductDeletedEvent after successful soft delete."""
+        deleted_product = delete_product(
+            product_id=self.product.id,
+            performed_by=self.user,
+        )
+
+        dispatch_mock.assert_called_once()
+        dispatched_event = dispatch_mock.call_args[0][0]
+
+        self.assertIsInstance(dispatched_event, ProductDeletedEvent)
+        self.assertEqual(dispatched_event.product.id, deleted_product.id)
+        self.assertEqual(dispatched_event.performed_by, self.user)
 
     def test_delete_product_raises_product_not_found_error_when_missing(self):
         """Ensure delete_product raises ProductNotFoundError for missing product."""

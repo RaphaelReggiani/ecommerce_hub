@@ -1,9 +1,12 @@
 from django.db import transaction
 
-from ech.products.models import ProductInventory
-
 from ech.products.constants.messages import (
     MSG_ERROR_STOCK_NOT_ENOUGH_STOCK_AVAILABLE,
+)
+from ech.products.models import ProductInventory
+from ech.products.utils.cache_keys import (
+    invalidate_product_cache,
+    invalidate_product_list_cache,
 )
 
 
@@ -31,7 +34,6 @@ def reserve_stock(product_id, quantity):
     """
 
     with transaction.atomic():
-
         inventory = (
             ProductInventory.objects
             .select_for_update()
@@ -42,8 +44,10 @@ def reserve_stock(product_id, quantity):
             raise OutOfStockError(MSG_ERROR_STOCK_NOT_ENOUGH_STOCK_AVAILABLE)
 
         inventory.quantity -= quantity
-
         inventory.save(update_fields=["quantity"])
+
+        invalidate_product_cache(product_id)
+        invalidate_product_list_cache()
 
         return inventory
 
@@ -55,7 +59,6 @@ def release_stock(product_id, quantity):
     """
 
     with transaction.atomic():
-
         inventory = (
             ProductInventory.objects
             .select_for_update()
@@ -63,7 +66,9 @@ def release_stock(product_id, quantity):
         )
 
         inventory.quantity += quantity
-
         inventory.save(update_fields=["quantity"])
+
+        invalidate_product_cache(product_id)
+        invalidate_product_list_cache()
 
         return inventory

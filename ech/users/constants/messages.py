@@ -28,6 +28,7 @@ MSG_ERROR_PASSWORDS_DO_NOT_MATCH = "Passwords do not match."
 MSG_ERROR_RESTRICTED_ACCESS = "Access restricted."
 MSG_ERROR_NO_USER_LOGGED = "You need to be logged in."
 MSG_ERROR_USER_ALREADY_EXISTS = "There is already a user with this email."
+MSG_ERROR_IDEMPOTENCY_CONFLICT = "This idempotency key has already been used for a different request."
 
 # =========================
 # VALUE ERRORS

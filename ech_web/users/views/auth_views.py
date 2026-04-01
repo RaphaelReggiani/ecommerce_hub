@@ -37,7 +37,7 @@ from ech_web.users.forms.forms import (
 )
 
 from ech.users.models import CustomUser
-from ech.users.services.registration_service import UserRegistrationService
+from ech.users.services.users_registration_service import UserRegistrationService
 
 
 @require_http_methods(["GET", "POST"])

@@ -1,36 +1,36 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
 from django.core.validators import (
-    MinValueValidator, 
     FileExtensionValidator,
+    MinValueValidator,
 )
+from django.db import models
 
 from ech.products.constants.constants import (
-    LABEL_PHONE,
     LABEL_EARPHONE,
-    LABEL_HEADSET,
-    LABEL_MOUSE,
-    LABEL_KEYBOARD,
-    LABEL_MICROPHONE,
     LABEL_EVENT_PRODUCT_CREATED,
-    LABEL_EVENT_PRODUCT_UPDATED,
     LABEL_EVENT_PRODUCT_DELETED,
     LABEL_EVENT_PRODUCT_IMAGE_UPLOADED,
+    LABEL_EVENT_PRODUCT_UPDATED,
+    LABEL_HEADSET,
+    LABEL_KEYBOARD,
+    LABEL_MICROPHONE,
+    LABEL_MOUSE,
+    LABEL_PHONE,
+)
+from ech.products.constants.inventory import (
+    DEFAULT_PRODUCT_INVENTORY,
 )
 from ech.products.constants.storage import (
     PRODUCT_IMAGES_UPLOAD_PATH,
-)
-
-from ech.products.constants.inventory import (
-    DEFAULT_PRODUCT_INVENTORY,
 )
 
 
 class Product(models.Model):
     """
     Main product model.
-    Stores the core product information used across the application.[
+    Stores the core product information used across the application.
     """
 
     PHONE = "PHONE"
@@ -49,32 +49,30 @@ class Product(models.Model):
         (MICROPHONE, LABEL_MICROPHONE),
     ]
 
-
-
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
-        editable=False
+        editable=False,
     )
 
     name = models.CharField(
-        max_length=255
+        max_length=255,
     )
 
     product_type = models.CharField(
         max_length=20,
         choices=PRODUCT_CHOICES,
-        db_index=True
+        db_index=True,
     )
 
     brand = models.CharField(
-        max_length=120
+        max_length=120,
     )
 
     sold_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name="products_created"
+        related_name="products_created",
     )
 
     description = models.TextField()
@@ -83,26 +81,40 @@ class Product(models.Model):
 
     price = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
     )
 
     discount_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
-        blank=True
+        blank=True,
+    )
+
+    idempotency_key = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+    )
+
+    idempotency_request_hash = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
     )
 
     is_active = models.BooleanField(
-        default=True
+        default=True,
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
     )
 
     updated_at = models.DateTimeField(
-        auto_now=True
+        auto_now=True,
     )
 
     class Meta:
@@ -111,19 +123,27 @@ class Product(models.Model):
         indexes = [
             models.Index(
                 fields=["is_active", "-created_at"],
-                name="product_active_created_idx"
+                name="product_active_created_idx",
             ),
             models.Index(
                 fields=["sold_by"],
-                name="product_seller_idx"
+                name="product_seller_idx",
             ),
             models.Index(
                 fields=["product_type", "is_active"],
-                name="product_type_active_idx"
+                name="product_type_active_idx",
             ),
             models.Index(
                 fields=["brand"],
-                name="product_brand_idx"
+                name="product_brand_idx",
+            ),
+            models.Index(
+                fields=["idempotency_key"],
+                name="product_idempotency_idx",
+            ),
+            models.Index(
+                fields=["idempotency_request_hash"],
+                name="product_idem_hash_idx",
             ),
         ]
 
@@ -167,28 +187,28 @@ class ProductInventory(models.Model):
     product = models.OneToOneField(
         Product,
         on_delete=models.CASCADE,
-        related_name="inventory_record"
+        related_name="inventory_record",
     )
 
     quantity = models.PositiveIntegerField(
-        default=DEFAULT_PRODUCT_INVENTORY
+        default=DEFAULT_PRODUCT_INVENTORY,
     )
 
     updated_at = models.DateTimeField(
-        auto_now=True
+        auto_now=True,
     )
-    
+
     class Meta:
         indexes = [
             models.Index(
                 fields=["product"],
-                name="inventory_product_idx"
+                name="inventory_product_idx",
             )
         ]
 
     def __str__(self):
         return f"{self.product_id} inventory: {self.quantity}"
-    
+
 
 class ProductImage(models.Model):
     """
@@ -198,7 +218,7 @@ class ProductImage(models.Model):
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name="images"
+        related_name="images",
     )
 
     image = models.ImageField(
@@ -207,16 +227,16 @@ class ProductImage(models.Model):
             FileExtensionValidator(
                 allowed_extensions=["jpg", "jpeg", "png", "webp"]
             )
-        ]
+        ],
     )
 
     order = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
-        help_text="Defines the display order of the image."
+        help_text="Defines the display order of the image.",
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
     )
 
     class Meta:
@@ -225,13 +245,13 @@ class ProductImage(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["product", "order"],
-                name="unique_product_image_order"
+                name="unique_product_image_order",
             )
         ]
 
     def __str__(self):
         return f"{self.product.name} - Image {self.order}"
-    
+
 
 class ProductEventLog(models.Model):
     """
@@ -254,19 +274,19 @@ class ProductEventLog(models.Model):
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
-        editable=False
+        editable=False,
     )
 
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name="event_logs"
+        related_name="event_logs",
     )
 
     event_type = models.CharField(
         max_length=40,
         choices=EVENT_CHOICES,
-        db_index=True
+        db_index=True,
     )
 
     performed_by = models.ForeignKey(
@@ -274,17 +294,17 @@ class ProductEventLog(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="product_events"
+        related_name="product_events",
     )
 
     metadata = models.JSONField(
         null=True,
-        blank=True
+        blank=True,
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True,
-        db_index=True
+        db_index=True,
     )
 
     class Meta:
@@ -293,7 +313,7 @@ class ProductEventLog(models.Model):
         indexes = [
             models.Index(
                 fields=["product", "created_at"],
-                name="prod_evt_prod_created_idx"
+                name="prod_evt_prod_created_idx",
             )
         ]
 

@@ -7,7 +7,7 @@ from django.utils import timezone
 from ech.users.constants.constants import PASSWORD_RESET_EXPIRATION_HOURS
 from ech.users.exceptions import TokenExpiredError, TokenInvalidError
 from ech.users.models import CustomUser, UserToken
-from ech.users.services.password_reset_service import PasswordResetService
+from ech.users.services.users_password_reset_service import PasswordResetService
 
 
 class PasswordResetRequestTestCase(TestCase):
@@ -40,7 +40,7 @@ class PasswordResetRequestTestCase(TestCase):
         user.save()
 
         with patch(
-            "ech.users.services.password_reset_service.PasswordResetService._send_reset_email"
+            "ech.users.services.users_password_reset_service.PasswordResetService._send_reset_email"
         ):
             PasswordResetService.request_password_reset(user.user_email)
 
@@ -71,7 +71,7 @@ class PasswordResetRequestTestCase(TestCase):
         )
 
         with patch(
-            "ech.users.services.password_reset_service.PasswordResetService._send_reset_email"
+            "ech.users.services.users_password_reset_service.PasswordResetService._send_reset_email"
         ):
             PasswordResetService.request_password_reset(user.user_email)
 
@@ -81,7 +81,7 @@ class PasswordResetRequestTestCase(TestCase):
             1,
         )
 
-    @patch("ech.users.services.password_reset_service.transaction.on_commit")
+    @patch("ech.users.services.users_password_reset_service.transaction.on_commit")
     def test_request_password_reset_schedules_email_on_commit(self, mock_on_commit):
         """Ensure reset email is scheduled via transaction.on_commit."""
         user = CustomUser.objects.create_user(
@@ -97,7 +97,7 @@ class PasswordResetRequestTestCase(TestCase):
         self.assertTrue(mock_on_commit.called)
 
     @patch(
-        "ech.users.services.password_reset_service.PasswordResetService._send_reset_email"
+        "ech.users.services.users_password_reset_service.PasswordResetService._send_reset_email"
     )
     def test_request_password_reset_executes_email_callback(self, mock_send_email):
         """Ensure on_commit callback sends reset email."""
@@ -116,7 +116,7 @@ class PasswordResetRequestTestCase(TestCase):
         user.save()
 
         with patch(
-            "ech.users.services.password_reset_service.transaction.on_commit",
+            "ech.users.services.users_password_reset_service.transaction.on_commit",
             side_effect=store_callback,
         ):
             PasswordResetService.request_password_reset(user.user_email)
@@ -182,7 +182,7 @@ class PasswordResetExecutionTestCase(TestCase):
         )
 
         with patch(
-            "ech.users.services.password_reset_service.get_valid_token",
+            "ech.users.services.users_password_reset_service.get_valid_token",
             return_value=token,
         ), patch.object(token, "is_expired", return_value=True):
             with self.assertRaises(TokenExpiredError):
@@ -199,8 +199,8 @@ class PasswordResetEmailTestCase(TestCase):
         SITE_URL="https://example.com",
         DEFAULT_FROM_EMAIL="noreply@example.com",
     )
-    @patch("ech.users.services.password_reset_service.send_mail")
-    @patch("ech.users.services.password_reset_service.reverse")
+    @patch("ech.users.services.users_password_reset_service.send_mail")
+    @patch("ech.users.services.users_password_reset_service.reverse")
     def test_send_reset_email_sends_expected_email(
         self,
         mock_reverse,

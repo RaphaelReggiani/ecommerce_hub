@@ -1,12 +1,14 @@
 from decimal import Decimal
 import uuid
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from ech.users.models import CustomUser
-from ech.products.models import Product
+from ech.products.domain_events.events import ProductUpdatedEvent
 from ech.products.exceptions import ProductNotFoundError
+from ech.products.models import Product
 from ech.products.services.product_update_service import update_product
+from ech.users.models import CustomUser
 
 
 class ProductUpdateServiceTestCase(TestCase):
@@ -93,6 +95,22 @@ class ProductUpdateServiceTestCase(TestCase):
         self.assertEqual(updated_product.id, self.product.id)
         self.assertEqual(updated_product.name, "Returned Updated Product")
 
+    @patch("ech.products.services.product_update_service.EventDispatcher.dispatch")
+    def test_update_product_dispatches_product_updated_event(self, dispatch_mock):
+        """Ensure update_product dispatches ProductUpdatedEvent after successful update."""
+        updated_product = update_product(
+            product_id=self.product.id,
+            performed_by=self.user,
+            name="Event Updated Product",
+        )
+
+        dispatch_mock.assert_called_once()
+        dispatched_event = dispatch_mock.call_args[0][0]
+
+        self.assertIsInstance(dispatched_event, ProductUpdatedEvent)
+        self.assertEqual(dispatched_event.product.id, updated_product.id)
+        self.assertEqual(dispatched_event.performed_by, self.user)
+
     def test_update_product_raises_product_not_found_error_for_missing_product(self):
         """Ensure update_product raises ProductNotFoundError when product does not exist."""
         with self.assertRaises(ProductNotFoundError):
@@ -101,8 +119,12 @@ class ProductUpdateServiceTestCase(TestCase):
                 name="Missing Product",
             )
 
-    def test_update_product_with_no_fields_keeps_existing_values(self):
-        """Ensure update_product with no fields keeps existing values unchanged."""
+    @patch("ech.products.services.product_update_service.EventDispatcher.dispatch")
+    def test_update_product_with_no_fields_keeps_existing_values_and_does_not_dispatch_event(
+        self,
+        dispatch_mock,
+    ):
+        """Ensure update_product with no fields keeps values unchanged and does not dispatch event."""
         original_name = self.product.name
         original_brand = self.product.brand
         original_price = self.product.price
@@ -119,3 +141,4 @@ class ProductUpdateServiceTestCase(TestCase):
         self.assertEqual(self.product.price, original_price)
         self.assertEqual(self.product.discount_price, original_discount_price)
         self.assertEqual(self.product.is_active, original_is_active)
+        dispatch_mock.assert_not_called()

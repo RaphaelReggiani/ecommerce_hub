@@ -38,7 +38,7 @@ This project demonstrates several backend engineering concepts used in productio
 * Domain-driven design principles
 * Transactional consistency using `transaction.atomic`
 * Concurrency protection using `select_for_update`
-* Idempotent operations for order creation
+* Idempotent operations
 * Inventory consistency in concurrent environments
 * Audit event logging for operational monitoring
 * Modular Django architecture
@@ -117,7 +117,7 @@ Centralizes system messages and configuration values.
                Cache
         (Django Cache / Redis)
 ```
-> Note: Domain events are used selectively in modules with more complex lifecycle flows such as orders, payments, shipping, reviews, notifications system and analytics system. Simpler modules such as users, products and admin dashboard follow a service-oriented architecture without a dedicated domain event layer.
+> Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, such as products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as users and admin dashboard follow a service-oriented architecture without a dedicated domain event layer.
 
 ---
 
@@ -128,7 +128,7 @@ Planned modules:
 * Users module ✔
 * Products module ✔
 * Orders module ✔
-* Payment module ✔
+* Payments module ✔
 * Shipping module ✔
 * Reviews module (**Current step**)
 * Notifications module
@@ -185,8 +185,8 @@ ecommerce_hub/
 │   │   │   └── security_events.py
 │   │   │
 │   │   ├── services/
-│   │   │   ├── registration_service.py
-│   │   │   └── password_reset_service.py
+│   │   │   ├── users_registration_service.py
+│   │   │   └── users_password_reset_service.py
 │   │   │
 │   │   ├── utils/
 │   │   │   └── request_metadata.py
@@ -224,14 +224,20 @@ ecommerce_hub/
 │   │   ├── services/
 │   │   │   ├── product_creation_service.py
 │   │   │   ├── product_delete_service.py
-│   │   │   ├── product_event_service.py
+│   │   │   ├── product_log_service.py
 │   │   │   ├── product_image_service.py
 │   │   │   ├── product_inventory_service.py
 │   │   │   ├── product_update_service.py
 │   │   │   └── stock_service.py
 │   │   │
 │   │   ├── utils/
-│   │   │   └── cache.py
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
 │   │   │
 │   │   ├── constants/
 │   │   │   ├── cache.py
@@ -251,7 +257,9 @@ ecommerce_hub/
 │   │   │   ├── test_product_image_service.py
 │   │   │   ├── test_product_update_service.py
 │   │   │   ├── test_product_delete_service.py
-│   │   │   └── test_product_inventory_service.py
+│   │   │   ├── test_product_inventory_service.py
+│   │   │   ├── test_product_log_service.py
+│   │   │   └── test_product_stock_service.py
 │   │   │
 │   │   ├── filters.py
 │   │   ├── models.py
@@ -532,10 +540,20 @@ ecommerce_hub/
 ### User Management
 
 * User registration
+* Idempotent user registration with `Idempotency-Key` support
+* Request fingerprint validation for idempotent replay protection
+* Conflict detection for reused idempotency keys with mismatched payloads
 * Email confirmation system
 * Password reset via email
 * Protection against inactive accounts
 * Role-based permission system
+
+### Registration Idempotency
+
+* Support for `Idempotency-Key` header in the registration endpoint
+* Request fingerprint hashing for replay validation
+* Safe replay of repeated registration requests with the same payload
+* `409 Conflict` response for reused idempotency keys with different payloads
 
 ### Security Features
 
@@ -543,6 +561,7 @@ ecommerce_hub/
 * Invalid token protections
 * Email verification requirement
 * Security-focused API responses
+* Global conflict handling for idempotency violations (`409 Conflict`)
 * Security logging
 
 ---
@@ -552,26 +571,86 @@ ecommerce_hub/
 ### Product Management
 
 * Product creation with validation rules
+* Idempotent product creation with `Idempotency-Key` support
+* Request fingerprint validation for idempotent replay protection
+* Conflict detection for reused idempotency keys with mismatched payloads
 * Product update with partial updates
 * Soft deletion for products
-* Product image upload with ordering
+* Product image upload with automatic ordering
 * Separate inventory model for stock management
+
+### Product Idempotency
+
+* Support for `Idempotency-Key` header in the product creation endpoint
+* Request fingerprint hashing for replay validation
+* Safe replay of repeated product creation requests with the same payload
+* `409 Conflict` response for reused idempotency keys with different payloads
+
+### Product Components
+
+Products are composed of multiple related entities:
+
+* **Product** – main aggregate root
+* **ProductInventory** – dedicated stock record
+* **ProductImage** – product media with sequential display ordering
+* **ProductEventLog** – audit trail for product lifecycle operations
 
 ### Inventory Control
 
 * Dedicated inventory table (`ProductInventory`)
 * Atomic stock operations
 * Database-level locking to prevent overselling
+* Reserved stock and released stock workflows
+* Cache invalidation after inventory mutations
 
-### Performance Optimization
+### Domain Event System
 
-* Product detail caching
-* Smart caching for product list endpoints
-* Optimized database queries using `select_related` and `prefetch_related`
-* Indexed fields for faster filtering and sorting
+The products module implements a lightweight event-driven architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability and cache consistency
+
+Current domain events include:
+
+* product created
+* product updated
+* product deleted
+* product image uploaded
+
+Handlers are responsible for:
+
+* audit event registration
+* cache invalidation
+* product detail cache refresh when applicable
+
+### Caching Layer
+
+A dedicated caching utility improves performance for product retrieval operations:
+
+* product detail caching
+* paginated product list caching
+* filtered list cache key generation
+* backend-agnostic cache versioning for list invalidation
+
+### Cache Invalidation Strategy
+
+Cache consistency is maintained through automatic invalidation when:
+
+* a product is created
+* a product is updated
+* a product is soft deleted
+* product images are uploaded
+* inventory is decreased
+* stock is reserved
+* stock is released
 
 ### Audit Logging
 
+* Dedicated product logging service
 * Event logging for product actions
 * Logged events include:
   * product creation
@@ -587,6 +666,36 @@ This provides a full audit trail for product management operations.
 * Full-text search on product fields
 * Ordering by price, creation date and name
 * Paginated product listings
+
+### Query Optimization
+
+Database queries are optimized using:
+
+* `select_related`
+* `prefetch_related`
+* indexed fields for faster filtering and sorting
+* cached read patterns for list and detail endpoints
+
+### Service Layer Architecture
+
+The products module follows a service-oriented domain architecture:
+
+* `create_product`
+* `update_product`
+* `delete_product`
+* `add_product_image`
+* `decrease_inventory`
+* `reserve_stock`
+* `release_stock`
+* `log_product_event`
+
+This architecture ensures:
+
+* clear separation of concerns
+* transactional consistency
+* centralized domain rule enforcement
+* easier testing and maintenance
+* extensibility for future integrations
 
 ---
 
@@ -1316,7 +1425,7 @@ This architecture ensures:
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/users/register/` | User registration |
+| POST | `/api/v1/users/register/` | User registration with `Idempotency-Key` support |
 | POST | `/api/v1/users/login/` | JWT authentication |
 | POST | `/api/v1/users/token/refresh/` | Refresh access token |
 | POST | `/api/v1/users/logout/` | Logout and invalidate refresh token |
@@ -1330,7 +1439,7 @@ This architecture ensures:
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/products/` | Create product |
+| POST | `/api/v1/products/` | Create product with `Idempotency-Key` support |
 | GET | `/api/v1/products/list/` | List products (paginated) |
 | GET | `/api/v1/products/{product_id}/` | Retrieve product details |
 | POST | `/api/v1/products/{product_id}/images/` | Upload product images |
@@ -1465,13 +1574,13 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 
 | Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **Users** | 99 | 29 | 128 | Authentication, JWT, Permissions | ✔ Stable |
-| **Products** | 114 | 24 | 138 | Inventory Management, Caching, Audit Logs | ✔ Stable |
+| **Users** | 105 | 33 | 138 | Authentication, JWT, Permissions | ✔ Stable |
+| **Products** | 142 | 27 | 169 | Inventory Management, Idempotency, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
-| **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules | ✔ Stable |
-| **TOTAL (implemented modules)** | **1045** | **354** | **1399** | Core Business Logic | — |
+| **Reviews** | 161 | 91 | 252 | Review Moderation, Lifecycle, Domain Rules | ✔ Stable |
+| **TOTAL (implemented modules)** | **1083** | **364** | **1447** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -1497,6 +1606,7 @@ The sections below summarize the main areas validated by the automated test suit
 * default field values (`is_active`, `email_confirmed`)
 * model properties (`is_superadmin`, `can_create_staff`)
 * string representation consistency
+* idempotency key and request hash field behavior
 
 #### User Token Model
 
@@ -1514,6 +1624,7 @@ The sections below summarize the main areas validated by the automated test suit
 * exception hierarchy validation
 * authentication and token-related exceptions
 * role and access-related exceptions
+* idempotency conflict exception handling
 
 #### Query Selectors
 
@@ -1534,9 +1645,14 @@ Tests validate database query behavior and filtering logic:
 * default role assignment
 * duplicate email protection (domain-level validation)
 * inactive and unconfirmed user initialization
+* idempotency key persistence during registration
+* request fingerprint persistence for idempotent registration
+* idempotent replay protection for repeated registration requests
+* idempotency conflict validation for mismatched payload reuse
+* prevention of duplicate confirmation token generation on idempotent replay
+* transaction-safe email scheduling (`on_commit`)
 * email confirmation token generation
 * replacement of existing confirmation tokens
-* transaction-safe email scheduling (`on_commit`)
 * email confirmation flow
 * activation and confirmation state updates
 * invalid and expired token handling
@@ -1580,6 +1696,10 @@ Tests validate security event logging behavior:
 #### Registration API
 
 * successful user registration
+* successful user registration with `Idempotency-Key`
+* idempotent replay returning the same user
+* duplicate prevention for repeated requests with the same idempotency key
+* conflict response for mismatched payload reuse with the same idempotency key
 * validation of required fields
 * duplicate email protection
 * response structure validation
@@ -1636,6 +1756,8 @@ Tests validate security event logging behavior:
 * discount logic validation (`has_discount`)
 * main image resolution logic
 * inventory shortcut property behavior
+* idempotency key field behavior
+* request fingerprint field behavior
 * model ordering by `created_at`
 * string representations
 
@@ -1669,9 +1791,10 @@ Tests validate security event logging behavior:
 
 #### Domain Exceptions
 
-* validation error inheritance consistency
+* base domain exception behavior
+* default vs custom message handling
 * permission error inheritance consistency
-* default message validation
+* idempotency conflict exception handling
 * formatted message validation (min/max images)
 * exception hierarchy consistency
 
@@ -1699,6 +1822,11 @@ Tests validate query behavior and filtering logic:
 * inventory validation (negative values)
 * creation of inventory record
 * handling of optional discount
+* idempotency key persistence during product creation
+* request fingerprint persistence for idempotent product creation
+* idempotent replay protection for repeated product creation requests
+* idempotency conflict validation for mismatched payload reuse
+* event dispatch after successful product creation
 * transactional rollback on failure
 
 #### Product Update Service
@@ -1710,6 +1838,8 @@ Tests validate query behavior and filtering logic:
 * return of updated product instance
 * handling non-existent product
 * no-op update (no fields provided)
+* event dispatch after successful product update
+* no event dispatch on no-op update
 
 #### Product Delete Service
 
@@ -1718,6 +1848,7 @@ Tests validate query behavior and filtering logic:
 * record retention in database
 * ensuring only active flag is modified
 * handling non-existent product
+* event dispatch after successful soft delete
 
 #### Product Image Service
 
@@ -1729,6 +1860,7 @@ Tests validate query behavior and filtering logic:
 * continuation of order after existing images
 * bulk creation behavior
 * handling non-existent product
+* event dispatch after successful image upload
 
 #### Product Image Validation
 
@@ -1745,7 +1877,39 @@ Tests validate query behavior and filtering logic:
 * insufficient inventory protection
 * persistence of inventory updates
 * return of updated inventory instance
+* cache invalidation after inventory mutation
 * handling missing inventory record
+
+#### Product Stock Service
+
+* retrieving available stock
+* reserving stock successfully
+* exact stock reservation to zero
+* insufficient stock protection
+* releasing stock successfully
+* cache invalidation after stock reservation
+* cache invalidation after stock release
+* handling missing inventory record
+
+#### Product Logging Service
+
+* audit log creation for product events
+* default timestamp injection into metadata
+* metadata merge behavior
+* nullable performer handling
+* multiple log persistence for the same product
+
+#### Product Domain Events
+
+* product created event payload validation
+* product updated event payload validation
+* product deleted event payload validation
+* product image uploaded event payload validation
+* dispatcher handler registration
+* dispatcher execution for registered handlers
+* registry-based handler registration
+* cache invalidation through event handlers
+* audit logging through event handlers
 
 #### Product Filters
 
@@ -1766,6 +1930,10 @@ Tests validate filtering behavior for product listing:
 #### Product Creation API
 
 * successful product creation
+* successful product creation with `Idempotency-Key`
+* idempotent replay returning the same product
+* duplicate prevention for repeated requests with the same idempotency key
+* conflict response for mismatched payload reuse with the same idempotency key
 * validation of required fields
 * permission enforcement
 * invalid payload handling

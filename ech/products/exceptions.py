@@ -1,5 +1,5 @@
 from django.core.exceptions import (
-    ValidationError, 
+    ValidationError,
     PermissionDenied,
 )
 
@@ -15,91 +15,118 @@ from ech.products.constants.messages import (
     MSG_PRODUCT_DISCOUNT_INVALID,
     MSG_PRODUCT_INVENTORY_INVALID,
     MSG_PRODUCT_OUT_OF_STOCK,
+    MSG_IDEMPOTENCY_CONFLICT,
 )
 
 
-class ProductNotFoundError(ValidationError):
+class ProductDomainError(Exception):
+    """
+    Base exception for all product domain-related errors.
+    """
+
+    default_message = "Product domain error."
+
+    def __init__(self, message=None):
+        self.message = message or self.default_message
+        super().__init__(self.message)
+
+
+class IdempotencyConflictError(ProductDomainError):
+    """
+    Raised when the same idempotency key is reused
+    with a different request payload.
+    """
+
+    default_message = MSG_IDEMPOTENCY_CONFLICT
+
+
+class ProductNotFoundError(ProductDomainError):
     """
     Raised when a product cannot be found.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_NOT_FOUND)
+
+    default_message = MSG_PRODUCT_NOT_FOUND
 
 
-class ProductInactiveError(ValidationError):
+class ProductInactiveError(ProductDomainError):
     """
     Raised when attempting to interact with an inactive product.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_INACTIVE)
+
+    default_message = MSG_PRODUCT_INACTIVE
 
 
 class ProductPermissionDeniedError(PermissionDenied):
     """
-    Raised when a user does not have permission to perform an action on a product.
+    Raised when a user does not have permission
+    to perform an action on a product.
     """
+
     def __init__(self):
         super().__init__(MSG_PRODUCT_UPDATE_PERMISSION_DENIED)
 
 
 class ProductCreationPermissionDeniedError(PermissionDenied):
     """
-    Raised when a user tries to create a product without proper permissions.
+    Raised when a user tries to create a product
+    without proper permissions.
     """
+
     def __init__(self):
         super().__init__(MSG_PRODUCT_CREATION_PERMISSION_DENIED)
 
 
-class InvalidProductTypeError(ValidationError):
+class InvalidProductTypeError(ProductDomainError):
     """
     Raised when an invalid product type is provided.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_INVALID_TYPE)
+
+    default_message = MSG_PRODUCT_INVALID_TYPE
 
 
-class InvalidProductPriceError(ValidationError):
+class InvalidProductPriceError(ProductDomainError):
     """
     Raised when an invalid price is provided.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_INVALID_PRICE)
+
+    default_message = MSG_PRODUCT_INVALID_PRICE
 
 
-class InvalidDiscountPriceError(ValidationError):
+class InvalidDiscountPriceError(ProductDomainError):
     """
     Raised when the discount price is greater than or equal to the regular price.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_DISCOUNT_INVALID)
+
+    default_message = MSG_PRODUCT_DISCOUNT_INVALID
 
 
-class InvalidInventoryValueError(ValidationError):
+class InvalidInventoryValueError(ProductDomainError):
     """
     Raised when an invalid inventory value is provided.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_INVENTORY_INVALID)
+
+    default_message = MSG_PRODUCT_INVENTORY_INVALID
 
 
-class ProductOutOfStockError(ValidationError):
+class ProductOutOfStockError(ProductDomainError):
     """
     Raised when attempting to purchase a product with no inventory available.
     """
-    def __init__(self):
-        super().__init__(MSG_PRODUCT_OUT_OF_STOCK)
+
+    default_message = MSG_PRODUCT_OUT_OF_STOCK
 
 
-class ProductMinimumImagesError(ValidationError):
+class ProductMinimumImagesError(ProductDomainError):
     """
     Raised when a product does not meet the minimum required number of images.
     """
+
     def __init__(self, min_images):
         message = MSG_PRODUCT_MIN_IMAGES_REQUIRED.format(min_images=min_images)
         super().__init__(message)
 
 
-class ProductMaximumImagesError(Exception):
+class ProductMaximumImagesError(ProductDomainError):
     """
     Raised when the maximum number of product images is exceeded.
     """

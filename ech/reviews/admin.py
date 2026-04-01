@@ -57,7 +57,7 @@ class ReviewAdmin(admin.ModelAdmin):
         "title",
         "comment",
         "product__name",
-        "customer__email",
+        "customer__user_email",
         "customer__user_name",
     )
     readonly_fields = (
@@ -109,7 +109,7 @@ class ReviewEventAdmin(admin.ModelAdmin):
     search_fields = (
         "id",
         "review__id",
-        "performed_by__email",
+        "performed_by__user_email",
         "performed_by__user_name",
     )
     readonly_fields = (

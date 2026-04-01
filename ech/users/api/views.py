@@ -1,34 +1,18 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
-
-from rest_framework.permissions import AllowAny
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
-
-from ech.users.models import CustomUser
-
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from ech.users.services.registration_service import UserRegistrationService
 from ech.users.api.throttles import LoginRateThrottle
-
-from .serializers import (
-    UserRegisterInputSerializer,
-    UserOutputSerializer,
-    UserLoginInputSerializer,
-    UserProfileSerializer,
-    UserLogoutSerializer,
-    PasswordResetRequestSerializer,
-)
-
 from ech.users.constants.messages import (
     MSG_SUCCESFULL_LOGOUT,
     MSG_RESPONSE_SUCCESFULL_RESET_LINK_SENT,
@@ -37,29 +21,40 @@ from ech.users.constants.messages import (
     MSG_VALIDATION_ERROR_UID,
     MSG_VALUE_ERROR_INVALID_OR_EXPIRED_TOKEN,
 )
-
 from ech.users.logs.security_events import (
-    log_login_success,
-    log_login_failed,
-    log_user_registered,
     log_email_confirmed,
+    log_login_failed,
+    log_login_success,
     log_password_changed,
-    log_token_invalid,
     log_password_reset_requested,
+    log_token_invalid,
+    log_user_registered,
+)
+from ech.users.models import CustomUser
+from ech.users.services.users_registration_service import UserRegistrationService
+
+from .serializers import (
+    PasswordResetRequestSerializer,
+    UserLoginInputSerializer,
+    UserLogoutSerializer,
+    UserOutputSerializer,
+    UserProfileSerializer,
+    UserRegisterInputSerializer,
 )
 
 
 class UserRegisterApi(APIView):
-
     def post(self, request):
-
         serializer = UserRegisterInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        idempotency_key = request.headers.get("Idempotency-Key")
 
         user = UserRegistrationService.register_user(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             user_name=serializer.validated_data["user_name"],
+            idempotency_key=idempotency_key,
         )
 
         log_user_registered(request, user)
@@ -68,14 +63,12 @@ class UserRegisterApi(APIView):
 
         return Response(
             output.data,
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
 
 
 class ConfirmEmailApi(APIView):
-
     def post(self, request, token):
-
         try:
             user = UserRegistrationService.confirm_email(token)
         except Exception:
@@ -88,16 +81,14 @@ class ConfirmEmailApi(APIView):
 
         return Response(
             output.data,
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
 
 class UserLoginApi(APIView):
-
     throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
-
         serializer = UserLoginInputSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -109,7 +100,6 @@ class UserLoginApi(APIView):
         log_login_success(request, user)
 
         user = serializer.validated_data["user"]
-
         log_login_success(request, user)
 
         refresh = RefreshToken.for_user(user)
@@ -124,11 +114,9 @@ class UserLoginApi(APIView):
 
 
 class UserLogoutApi(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-
         serializer = UserLogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -136,20 +124,17 @@ class UserLogoutApi(APIView):
 
         return Response(
             {"detail": MSG_SUCCESFULL_LOGOUT},
-            status=status.HTTP_205_RESET_CONTENT
+            status=status.HTTP_205_RESET_CONTENT,
         )
 
 
 class UserProfileApi(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
         serializer = UserProfileSerializer(request.user)
-
         return Response(serializer.data)
-    
+
 
 class PasswordResetRequestApi(APIView):
     permission_classes = [AllowAny]
@@ -180,14 +165,12 @@ class PasswordResetRequestApi(APIView):
             {"detail": MSG_RESPONSE_SUCCESFULL_RESET_LINK_SENT},
             status=status.HTTP_200_OK,
         )
-    
+
 
 class PasswordResetConfirmApi(APIView):
-
     permission_classes = [AllowAny]
 
     def post(self, request):
-
         uid = request.data.get("uid")
         token = request.data.get("token")
         new_password = request.data.get("new_password")
@@ -218,5 +201,5 @@ class PasswordResetConfirmApi(APIView):
 
         return Response(
             {"detail": MSG_RESPONSE_SUCCESFULL_PASSWORD_RESET},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )

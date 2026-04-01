@@ -3,6 +3,7 @@ from ech.users.constants.messages import (
     MSG_ERROR_RESTRICTED_ACCESS,
     MSG_ERROR_TOKEN_EXPIRED,
     MSG_ERROR_INVALID_TOKEN,
+    MSG_ERROR_IDEMPOTENCY_CONFLICT,
     MSG_AUTHENTICATION_FAILED_INACTIVE_ACCOUNT,
 )
 
@@ -59,6 +60,14 @@ class TokenError(UserDomainError):
     Base exception for all token-related errors.
     """
     default_message = MSG_ERROR_INVALID_TOKEN
+
+
+class IdempotencyConflictError(UserDomainError):
+    """
+    Raised when the same idempotency key is reused
+    with a different request payload.
+    """
+    default_message = MSG_ERROR_IDEMPOTENCY_CONFLICT
 
 
 class TokenExpiredError(TokenError):

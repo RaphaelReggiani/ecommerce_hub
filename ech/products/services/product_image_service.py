@@ -1,20 +1,21 @@
 from django.db import transaction
 from django.db.models import Max
 
-from ech.products.models import ProductImage
-from ech.products.selectors import get_product_by_id
-from ech.products.exceptions import (
-    ProductNotFoundError,
-    ProductMaximumImagesError
-)
-
 from ech.products.constants.rules import (
     ProductImageRules,
 )
+from ech.products.domain_events.dispatcher import EventDispatcher
+from ech.products.domain_events.events import ProductImageUploadedEvent
+from ech.products.exceptions import (
+    ProductMaximumImagesError,
+    ProductNotFoundError,
+)
+from ech.products.models import ProductImage
+from ech.products.selectors import get_product_by_id
 
 
 @transaction.atomic
-def add_product_image(*, product_id, images):
+def add_product_image(*, product_id, images, performed_by=None):
     """
     Adds one or multiple images to a product.
 
@@ -24,6 +25,7 @@ def add_product_image(*, product_id, images):
     - Automatic sequential ordering
     - Atomic database operation
     - Efficient bulk insert
+    - Domain event dispatch after successful upload
     """
 
     product = get_product_by_id(product_id)
@@ -35,6 +37,7 @@ def add_product_image(*, product_id, images):
 
     if images_count == 0:
         return []
+
     existing_images_count = ProductImage.objects.filter(
         product_id=product_id
     ).count()
@@ -58,7 +61,6 @@ def add_product_image(*, product_id, images):
     product_images_to_create = []
 
     for index, image in enumerate(images):
-
         product_images_to_create.append(
             ProductImage(
                 product=product,
@@ -69,6 +71,13 @@ def add_product_image(*, product_id, images):
 
     created_images = ProductImage.objects.bulk_create(
         product_images_to_create
+    )
+
+    EventDispatcher.dispatch(
+        ProductImageUploadedEvent(
+            product=product,
+            performed_by=performed_by,
+        )
     )
 
     return created_images

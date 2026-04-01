@@ -4,7 +4,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from ech.users.services.password_reset_service import PasswordResetService
+from ech.users.services.users_password_reset_service import PasswordResetService
 from ech.users.exceptions import (
     TokenExpiredError,
     TokenInvalidError,

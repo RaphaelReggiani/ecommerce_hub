@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+from ech.products.constants.messages import (
+    MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER,
+)
 from ech.products.models import (
     Product,
     ProductImage,
@@ -10,13 +13,8 @@ from ech.products.services.product_creation_service import (
 from ech.products.services.product_image_service import (
     add_product_image,
 )
-
 from ech.products.services.product_update_service import (
     update_product,
-)
-
-from ech.products.constants.messages import (
-    MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER,
 )
 
 
@@ -34,18 +32,18 @@ class ProductCreateSerializer(serializers.Serializer):
 
     price = serializers.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
     )
 
     discount_price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         required=False,
-        allow_null=True
+        allow_null=True,
     )
 
     inventory = serializers.IntegerField(
-        min_value=0
+        min_value=0,
     )
 
     def create(self, validated_data):
@@ -54,21 +52,22 @@ class ProductCreateSerializer(serializers.Serializer):
         """
 
         user = self.context["request"].user
+        idempotency_key = self.context.get("idempotency_key")
 
-        product = create_product(
+        return create_product(
             user=user,
-            **validated_data
+            idempotency_key=idempotency_key,
+            **validated_data,
         )
 
-        return product
-    
     def validate(self, attrs):
-
         price = attrs.get("price")
         discount = attrs.get("discount_price")
 
         if price is not None and discount is not None and discount >= price:
-            raise serializers.ValidationError(MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER)
+            raise serializers.ValidationError(
+                MSG_ERROR_DISCOUNT_PRICE_MUST_BE_LOWER
+            )
 
         return attrs
 
@@ -86,12 +85,13 @@ class ProductImageUploadSerializer(serializers.Serializer):
         """
 
         product = self.context["product"]
-
         image = validated_data["image"]
+        request = self.context.get("request")
 
         images = add_product_image(
             product_id=product.id,
             images=[image],
+            performed_by=request.user if request else None,
         )
 
         return images[0]
@@ -118,20 +118,20 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     images = ProductImageSerializer(
         many=True,
-        read_only=True
+        read_only=True,
     )
 
     inventory = serializers.IntegerField(
-        source="inventory_record.quantity", 
-        read_only=True
+        source="inventory_record.quantity",
+        read_only=True,
     )
 
     main_image = serializers.CharField(
-        read_only=True
+        read_only=True,
     )
 
     has_discount = serializers.BooleanField(
-        read_only=True
+        read_only=True,
     )
 
     class Meta:
@@ -173,18 +173,19 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_main_image(self, obj):
-
         images = getattr(obj, "images", None)
 
         if not images:
             return None
 
-        image = sorted(images.all(), key=lambda i: i.order)[0] if images.all() else None
+        all_images = images.all()
+        image = sorted(all_images, key=lambda i: i.order)[0] if all_images else None
 
         if image:
             return image.image.url
 
         return None
+
 
 class ProductUpdateSerializer(serializers.Serializer):
     """
@@ -199,18 +200,17 @@ class ProductUpdateSerializer(serializers.Serializer):
     price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
-        required=False
+        required=False,
     )
 
     discount_price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         required=False,
-        allow_null=True
+        allow_null=True,
     )
 
     def validate(self, attrs):
-
         price = attrs.get("price")
         discount = attrs.get("discount_price")
 
@@ -222,8 +222,10 @@ class ProductUpdateSerializer(serializers.Serializer):
         return attrs
 
     def update(self, instance, validated_data):
+        request = self.context.get("request")
 
         return update_product(
             product_id=instance.id,
-            **validated_data
+            performed_by=request.user if request else None,
+            **validated_data,
         )

@@ -1,12 +1,12 @@
 from decimal import Decimal
-import uuid
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from ech.users.models import CustomUser
-from ech.products.models import Product, ProductInventory
 from ech.products.exceptions import ProductOutOfStockError
+from ech.products.models import Product, ProductInventory
 from ech.products.services.product_inventory_service import decrease_inventory
+from ech.users.models import CustomUser
 
 
 class ProductInventoryServiceTestCase(TestCase):
@@ -89,6 +89,22 @@ class ProductInventoryServiceTestCase(TestCase):
         refreshed_inventory = ProductInventory.objects.get(product=self.product)
 
         self.assertEqual(refreshed_inventory.quantity, 6)
+
+    @patch("ech.products.services.product_inventory_service.invalidate_product_list_cache")
+    @patch("ech.products.services.product_inventory_service.invalidate_product_cache")
+    def test_decrease_inventory_invalidates_related_caches(
+        self,
+        invalidate_product_cache_mock,
+        invalidate_product_list_cache_mock,
+    ):
+        """Ensure decrease_inventory invalidates product and list caches after stock mutation."""
+        decrease_inventory(
+            product_id=self.product.id,
+            quantity=2,
+        )
+
+        invalidate_product_cache_mock.assert_called_once_with(self.product.id)
+        invalidate_product_list_cache_mock.assert_called_once()
 
     def test_decrease_inventory_raises_error_when_inventory_does_not_exist(self):
         """Ensure decrease_inventory raises DoesNotExist when inventory is missing."""

@@ -15,6 +15,12 @@ MSG_PRODUCT_INVENTORY_INVALID = "Inventory cannot be negative."
 MSG_PRODUCT_OUT_OF_STOCK = "This product is out of stock."
 
 # =========================
+# IDEMPOTENCY
+# =========================
+
+MSG_IDEMPOTENCY_CONFLICT = "This idempotency key has already been used with a different request payload."
+
+# =========================
 # API PERMISSIONS MESSAGES
 # =========================
 

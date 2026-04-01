@@ -1,15 +1,17 @@
+import uuid
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
-from datetime import timedelta
 from django.utils.crypto import get_random_string
-from django.core.exceptions import ValidationError
-from django.conf import settings
 
 from ech.users.constants.constants import (
     MAX_LENGTH_NAME,
@@ -44,7 +46,6 @@ from ech.users.constants.messages import (
 
 
 class CustomUserManager(BaseUserManager):
-
     def create_user(self, email, password=None, role=None, **extra_fields):
         if not email:
             raise ValueError(MSG_VALUE_ERROR_INFORM_EMAIL)
@@ -80,16 +81,18 @@ class CustomUserManager(BaseUserManager):
         user.is_superuser = True
         user.is_active = True
         user.email_confirmed = True
-        user.save(update_fields=[
-            "is_staff",
-            "is_superuser",
-            "is_active",
-            "email_confirmed",
-        ])
+        user.save(
+            update_fields=[
+                "is_staff",
+                "is_superuser",
+                "is_active",
+                "email_confirmed",
+            ]
+        )
         return user
 
-class CustomUser(AbstractBaseUser, PermissionsMixin):
 
+class CustomUser(AbstractBaseUser, PermissionsMixin):
     ROLE_SUPERADMIN = "superadmin"
     ROLE_ADMIN = "admin"
     ROLE_PAYMENT_STAFF = "payment_staff"
@@ -105,7 +108,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         (ROLE_ADMIN, LABEL_ADMIN),
         (ROLE_SUPERADMIN, LABEL_SUPERADMIN),
     ]
-
 
     user_name = models.CharField(max_length=MAX_LENGTH_NAME)
     user_email = models.EmailField(unique=True)
@@ -130,7 +132,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     user_state = models.CharField(max_length=MAX_LENGTH_STATE, blank=True)
     user_address = models.CharField(max_length=MAX_LENGTH_ADDRESS, blank=True)
 
+    idempotency_key = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+    )
 
+    idempotency_request_hash = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+    
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     email_confirmed = models.BooleanField(default=False)
@@ -146,6 +161,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         indexes = [
             models.Index(fields=["user_email"]),
             models.Index(fields=["user_role"]),
+            models.Index(fields=["idempotency_key"]),
+            models.Index(fields=["idempotency_request_hash"]),
         ]
 
     def clean(self):
@@ -157,7 +174,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
             if email_domain != corporate_domain:
                 raise ValidationError(MSG_VALIDATION_ERROR_STAFF_EMAIL)
-            
+
     @property
     def is_superadmin(self):
         return self.user_role == self.ROLE_SUPERADMIN
@@ -170,7 +187,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         }
 
     def save(self, *args, **kwargs):
-
         if self.user_email:
             self.user_email = self.user_email.lower()
 
@@ -188,10 +204,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.user_name} ({self.user_email})"
-    
+
 
 class UserToken(models.Model):
-
     TYPE_EMAIL_CONFIRMATION = "email_confirmation"
     TYPE_PASSWORD_RESET = "password_reset"
     TYPE_MAGIC_LOGIN = "magic_login"

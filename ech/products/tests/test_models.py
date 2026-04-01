@@ -1,20 +1,20 @@
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.test import TestCase
-from django.core.files.uploadedfile import SimpleUploadedFile
 
-from ech.users.models import CustomUser
 from ech.products.constants.inventory import DEFAULT_PRODUCT_INVENTORY
 from ech.products.constants.storage import PRODUCT_IMAGES_UPLOAD_PATH
 from ech.products.models import (
     Product,
-    ProductInventory,
-    ProductImage,
     ProductEventLog,
+    ProductImage,
+    ProductInventory,
 )
+from ech.users.models import CustomUser
 
 
 class ProductModelTestCase(TestCase):
@@ -130,6 +130,31 @@ class ProductModelTestCase(TestCase):
         )
 
         self.assertTrue(product.is_active)
+
+    def test_product_idempotency_fields_default_to_none(self):
+        """Ensure idempotency fields default to None when not provided."""
+        self.assertIsNone(self.product.idempotency_key)
+        self.assertIsNone(self.product.idempotency_request_hash)
+
+    def test_product_persists_idempotency_fields_when_provided(self):
+        """Ensure idempotency key and request hash are persisted correctly."""
+        idempotency_key = uuid4()
+        request_hash = "a" * 64
+
+        product = Product.objects.create(
+            name="Idempotent Keyboard",
+            product_type=Product.KEYBOARD,
+            brand="Keychron",
+            sold_by=self.staff_user,
+            description="Keyboard with idempotency metadata.",
+            technical_information="Wireless, RGB.",
+            price=Decimal("499.90"),
+            idempotency_key=idempotency_key,
+            idempotency_request_hash=request_hash,
+        )
+
+        self.assertEqual(product.idempotency_key, idempotency_key)
+        self.assertEqual(product.idempotency_request_hash, request_hash)
 
     def test_product_ordering_is_descending_by_created_at(self):
         """Ensure products are ordered by created_at descending."""

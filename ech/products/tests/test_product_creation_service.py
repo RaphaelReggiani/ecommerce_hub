@@ -1,17 +1,21 @@
 from decimal import Decimal
+from uuid import uuid4
+from unittest.mock import patch
 
 from django.test import TestCase
 
-from ech.users.models import CustomUser
-from ech.products.models import Product, ProductInventory
-from ech.products.services.product_creation_service import create_product
+from ech.products.domain_events.events import ProductCreatedEvent
 from ech.products.exceptions import (
-    ProductCreationPermissionDeniedError,
-    InvalidProductTypeError,
-    InvalidProductPriceError,
+    IdempotencyConflictError,
     InvalidDiscountPriceError,
     InvalidInventoryValueError,
+    InvalidProductPriceError,
+    InvalidProductTypeError,
+    ProductCreationPermissionDeniedError,
 )
+from ech.products.models import Product, ProductInventory
+from ech.products.services.product_creation_service import create_product
+from ech.users.models import CustomUser
 
 
 class ProductCreationServiceTestCase(TestCase):
@@ -79,6 +83,75 @@ class ProductCreationServiceTestCase(TestCase):
 
         inventory = ProductInventory.objects.get(product=product)
         self.assertEqual(inventory.quantity, 0)
+
+    def test_create_product_persists_idempotency_fields(self):
+        """Ensure create_product persists idempotency key and request hash."""
+        idempotency_key = uuid4()
+
+        product = create_product(
+            user=self.allowed_user,
+            idempotency_key=idempotency_key,
+            **self.valid_payload,
+        )
+
+        self.assertEqual(product.idempotency_key, idempotency_key)
+        self.assertIsNotNone(product.idempotency_request_hash)
+        self.assertEqual(len(product.idempotency_request_hash), 64)
+
+    def test_create_product_with_same_idempotency_key_and_same_payload_returns_same_product(self):
+        """Ensure repeated requests with same idempotency key return the same product."""
+        idempotency_key = uuid4()
+
+        first_product = create_product(
+            user=self.allowed_user,
+            idempotency_key=idempotency_key,
+            **self.valid_payload,
+        )
+
+        second_product = create_product(
+            user=self.allowed_user,
+            idempotency_key=idempotency_key,
+            **self.valid_payload,
+        )
+
+        self.assertEqual(first_product.id, second_product.id)
+        self.assertEqual(Product.objects.count(), 1)
+        self.assertEqual(ProductInventory.objects.count(), 1)
+
+    def test_create_product_with_same_idempotency_key_and_different_payload_raises_conflict(self):
+        """Ensure reused idempotency key with different payload raises conflict."""
+        idempotency_key = uuid4()
+
+        create_product(
+            user=self.allowed_user,
+            idempotency_key=idempotency_key,
+            **self.valid_payload,
+        )
+
+        conflicting_payload = self.valid_payload.copy()
+        conflicting_payload["name"] = "Different Mouse"
+
+        with self.assertRaises(IdempotencyConflictError):
+            create_product(
+                user=self.allowed_user,
+                idempotency_key=idempotency_key,
+                **conflicting_payload,
+            )
+
+    @patch("ech.products.services.product_creation_service.EventDispatcher.dispatch")
+    def test_create_product_dispatches_product_created_event(self, dispatch_mock):
+        """Ensure create_product dispatches ProductCreatedEvent after success."""
+        product = create_product(
+            user=self.allowed_user,
+            **self.valid_payload,
+        )
+
+        dispatch_mock.assert_called_once()
+        dispatched_event = dispatch_mock.call_args[0][0]
+
+        self.assertIsInstance(dispatched_event, ProductCreatedEvent)
+        self.assertEqual(dispatched_event.product.id, product.id)
+        self.assertEqual(dispatched_event.performed_by, self.allowed_user)
 
     def test_create_product_raises_permission_error_for_invalid_user(self):
         """Ensure create_product raises error when user has no permission."""
@@ -159,7 +232,7 @@ class ProductCreationServiceTestCase(TestCase):
     def test_create_product_does_not_create_anything_on_failure(self):
         """Ensure transaction is rolled back when validation fails."""
         payload = self.valid_payload.copy()
-        payload["inventory"] = -5  # vai falhar
+        payload["inventory"] = -5
 
         initial_product_count = Product.objects.count()
         initial_inventory_count = ProductInventory.objects.count()
