@@ -1,3 +1,3 @@
 """
-Shipping domain events package.
+Reviews domain events package.
 """

@@ -1,0 +1,3 @@
+"""
+Payments domain events package.
+"""

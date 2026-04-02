@@ -13,7 +13,7 @@ from ech.reviews.models import (
     Review, 
     ReviewLifecycle,
 )
-from ech.reviews.services.reviews_log_service import ReviewsLogService
+from ech.reviews.services.review_log_service import ReviewsLogService
 
 
 User = get_user_model()
@@ -176,7 +176,7 @@ class ReviewsLogServiceTestCase(
         self.assertIsNone(payload["status"])
         self.assertEqual(payload["metadata"], {"source": "unit-test"})
 
-    @patch("ech.reviews.services.reviews_log_service.logger.info")
+    @patch("ech.reviews.services.review_log_service.logger.info")
     def test_log_review_created_calls_logger(self, logger_mock):
         """Log review creation with structured payload."""
         review = self.create_review()
@@ -196,7 +196,7 @@ class ReviewsLogServiceTestCase(
             "review_created",
         )
 
-    @patch("ech.reviews.services.reviews_log_service.logger.info")
+    @patch("ech.reviews.services.review_log_service.logger.info")
     def test_log_review_updated_calls_logger(self, logger_mock):
         """Log review update with structured payload."""
         review = self.create_review()
@@ -216,7 +216,7 @@ class ReviewsLogServiceTestCase(
             "review_updated",
         )
 
-    @patch("ech.reviews.services.reviews_log_service.logger.info")
+    @patch("ech.reviews.services.review_log_service.logger.info")
     def test_log_review_status_changed_calls_logger(self, logger_mock):
         """Log review status changes with structured payload."""
         review = self.create_review(
@@ -238,7 +238,7 @@ class ReviewsLogServiceTestCase(
             "review_status_changed",
         )
 
-    @patch("ech.reviews.services.reviews_log_service.logger.info")
+    @patch("ech.reviews.services.review_log_service.logger.info")
     def test_log_review_cancelled_calls_logger(self, logger_mock):
         """Log review cancellation with structured payload."""
         review = self.create_review(
@@ -260,7 +260,7 @@ class ReviewsLogServiceTestCase(
             "review_cancelled",
         )
 
-    @patch("ech.reviews.services.reviews_log_service.logger.info")
+    @patch("ech.reviews.services.review_log_service.logger.info")
     def test_log_review_moderated_calls_logger(self, logger_mock):
         """Log review moderation with structured payload."""
         review = self.create_review(

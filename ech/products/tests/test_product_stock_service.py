@@ -7,7 +7,7 @@ from ech.products.constants.messages import (
     MSG_ERROR_STOCK_NOT_ENOUGH_STOCK_AVAILABLE,
 )
 from ech.products.models import Product, ProductInventory
-from ech.products.services.stock_service import (
+from ech.products.services.product_stock_service import (
     OutOfStockError,
     get_available_stock,
     release_stock,
@@ -82,8 +82,8 @@ class ProductStockServiceTestCase(TestCase):
         self.assertEqual(updated_inventory.product, self.product)
         self.assertEqual(updated_inventory.quantity, 8)
 
-    @patch("ech.products.services.stock_service.invalidate_product_list_cache")
-    @patch("ech.products.services.stock_service.invalidate_product_cache")
+    @patch("ech.products.services.product_stock_service.invalidate_product_list_cache")
+    @patch("ech.products.services.product_stock_service.invalidate_product_cache")
     def test_reserve_stock_invalidates_related_caches(
         self,
         invalidate_product_cache_mock,
@@ -111,8 +111,8 @@ class ProductStockServiceTestCase(TestCase):
         self.assertEqual(updated_inventory.product, self.product)
         self.assertEqual(updated_inventory.quantity, 15)
 
-    @patch("ech.products.services.stock_service.invalidate_product_list_cache")
-    @patch("ech.products.services.stock_service.invalidate_product_cache")
+    @patch("ech.products.services.product_stock_service.invalidate_product_list_cache")
+    @patch("ech.products.services.product_stock_service.invalidate_product_cache")
     def test_release_stock_invalidates_related_caches(
         self,
         invalidate_product_cache_mock,

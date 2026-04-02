@@ -2,16 +2,16 @@ from rest_framework.throttling import SimpleRateThrottle
 
 
 class LoginRateThrottle(SimpleRateThrottle):
+    """
+    Rate limit login attempts per client IP.
+    """
+
     scope = "login"
 
     def get_cache_key(self, request, view):
-        """
-        Rate limit login attempts per IP address.
-        """
+        ip_address = self.get_ident(request)
 
-        ip = self.get_ident(request)
-
-        if not ip:
+        if not ip_address:
             return None
 
-        return f"login_rate_{ip}"
+        return f"login_rate_{ip_address}"

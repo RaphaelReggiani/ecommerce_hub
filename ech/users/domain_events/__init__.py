@@ -1,0 +1,3 @@
+"""
+Users domain events package.
+"""

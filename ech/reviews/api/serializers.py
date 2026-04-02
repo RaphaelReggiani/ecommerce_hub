@@ -8,16 +8,16 @@ from ech.reviews.models import (
     ReviewLifecycle,
     ReviewEvent,
 )
-from ech.reviews.services.reviews_creation_service import (
+from ech.reviews.services.review_creation_service import (
     ReviewsCreationService,
 )
-from ech.reviews.services.reviews_update_service import (
+from ech.reviews.services.review_update_service import (
     ReviewsUpdateService,
 )
-from ech.reviews.services.reviews_cancellation_service import (
+from ech.reviews.services.review_cancellation_service import (
     ReviewsCancellationService,
 )
-from ech.reviews.services.reviews_moderation_service import (
+from ech.reviews.services.review_moderation_service import (
     ReviewsModerationService,
 )
 from ech.reviews.constants.constants import (

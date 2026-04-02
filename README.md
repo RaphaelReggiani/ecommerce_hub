@@ -70,6 +70,7 @@ Examples:
 * user registration
 * email confirmation
 * password reset flow
+Architecture Overview
 
 ### Selector Layer
 
@@ -117,7 +118,7 @@ Centralizes system messages and configuration values.
                Cache
         (Django Cache / Redis)
 ```
-> Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, such as products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as users and admin dashboard follow a service-oriented architecture without a dedicated domain event layer.
+> Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, including users, products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as the admin dashboard may still follow a service-oriented architecture without a dedicated domain event layer.
 
 ---
 
@@ -161,17 +162,18 @@ ecommerce_hub/
 │   ├── users/
 │   │   ├── api/
 │   │   │   ├── tests/
-│   │   │   │   ├── test_login_api.py
-│   │   │   │   ├── test_logout_invalid_refresh_token_api.py
-│   │   │   │   ├── test_confirm_email_api.py
-│   │   │   │   ├── test_email_protections_api.py
-│   │   │   │   ├── test_password_reset_confirm_api.py
-│   │   │   │   ├── test_password_reset_confirm_invalid_token_api.py
-│   │   │   │   ├── test_password_reset_request_api.py
-│   │   │   │   ├── test_register_api.py
-│   │   │   │   └── test_token_refresh_api.py
+│   │   │   │   ├── test_user_login_api.py
+│   │   │   │   ├── test_user_logout_invalid_refresh_token_api.py
+│   │   │   │   ├── test_user_confirm_email_api.py
+│   │   │   │   ├── test_user_email_protections_api.py
+│   │   │   │   ├── test_user_password_reset_confirm_api.py
+│   │   │   │   ├── test_user_password_reset_request_api.py
+│   │   │   │   ├── test_user_register_api.py
+│   │   │   │   ├── test_user_profile_update_api.py
+│   │   │   │   └── test_user_token_refresh_api.py
 │   │   │   │
 │   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
 │   │   │   ├── throttles.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
@@ -180,26 +182,34 @@ ecommerce_hub/
 │   │   │   ├── constants.py
 │   │   │   └── messages.py
 │   │   │
-│   │   ├── logs/
-│   │   │   ├── logger.py
-│   │   │   └── security_events.py
-│   │   │
 │   │   ├── services/
-│   │   │   ├── users_registration_service.py
-│   │   │   └── users_password_reset_service.py
+│   │   │   ├── user_registration_service.py
+│   │   │   ├── user_password_reset_service.py
+│   │   │   ├── user_update_service.py
+│   │   │   ├── user_email_confirmation_service.py
+│   │   │   └── user_log_service.py
 │   │   │
 │   │   ├── utils/
 │   │   │   └── request_metadata.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
 │   │   │
 │   │   ├── tests/
 │   │   │   ├── test_models.py
 │   │   │   ├── test_exceptions.py
 │   │   │   ├── test_selectors.py
-│   │   │   ├── test_registration_service.py
-│   │   │   ├── test_password_reset_service.py
-│   │   │   └── test_security_events.py
+│   │   │   ├── test_user_registration_service.py
+│   │   │   ├── test_user_password_reset_service.py
+│   │   │   ├── test_user_update_service.py
+│   │   │   ├── test_user_email_confirmation_service.py
+│   │   │   ├── test_user_log_service.py
+│   │   │   └── test_domain_events.py
 │   │   │
-│   │   ├── decorators.py
+│   │   ├── admin.py
 │   │   ├── models.py
 │   │   ├── selectors.py
 │   │   ├── exceptions.py
@@ -228,7 +238,7 @@ ecommerce_hub/
 │   │   │   ├── product_image_service.py
 │   │   │   ├── product_inventory_service.py
 │   │   │   ├── product_update_service.py
-│   │   │   └── stock_service.py
+│   │   │   └── product_stock_service.py
 │   │   │
 │   │   ├── utils/
 │   │   │   └── cache_keys.py
@@ -261,8 +271,10 @@ ecommerce_hub/
 │   │   │   ├── test_product_log_service.py
 │   │   │   └── test_product_stock_service.py
 │   │   │
+│   │   ├── admin.py
 │   │   ├── filters.py
 │   │   ├── models.py
+│   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
 │   │
@@ -313,17 +325,19 @@ ecommerce_hub/
 │   │   │   ├── test_models.py
 │   │   │   ├── test_exceptions.py
 │   │   │   ├── test_selectors.py
-│   │   │   ├── test_create_order_service.py
+│   │   │   ├── test_order_create_service.py
 │   │   │   ├── test_order_status_service.py
-│   │   │   ├── test_cancel_order_service.py
+│   │   │   ├── test_order_cancel_service.py
 │   │   │   ├── test_order_totals_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
 │   │   │   └── test_filters.py
 │   │   │
+│   │   ├── admin.py
 │   │   ├── filters.py
 │   │   ├── models.py
+│   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
 │   │
@@ -381,6 +395,7 @@ ecommerce_hub/
 │   │   │   ├── test_cache_invalidation.py
 │   │   │   └── test_filters.py
 │   │   │
+│   │   ├── admin.py
 │   │   ├── filters.py
 │   │   ├── models.py
 │   │   ├── exceptions.py
@@ -439,30 +454,32 @@ ecommerce_hub/
 │   │   │   ├── test_shipping_status_service.py
 │   │   │   ├── test_shipping_cancellation_service.py
 │   │   │   ├── test_shipping_tracking_service.py
-│   │   │   ├── test_logging_service.py
+│   │   │   ├── test_shipping_log_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
 │   │   │   └── test_filters.py
 │   │   │
+│   │   ├── admin.py
 │   │   ├── filters.py
 │   │   ├── models.py
+│   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
 │   │
 │   ├── reviews/
 │   │   ├── api/
 │   │   │   ├── tests/
-│   │   │   │   ├── test_reviews_create_api.py
-│   │   │   │   ├── test_reviews_list_api.py
-│   │   │   │   ├── test_reviews_detail_api.py
-│   │   │   │   ├── test_reviews_update_api.py
-│   │   │   │   ├── test_reviews_cancel_api.py
-│   │   │   │   ├── test_reviews_moderation_api.py
-│   │   │   │   ├── test_product_reviews_public_api.py
-│   │   │   │   ├── test_product_reviews_summary_api.py
-│   │   │   │   ├── test_reviews_management_list_api.py
-│   │   │   │   └── test_reviews_management_detail_api.py
+│   │   │   │   ├── test_review_create_api.py
+│   │   │   │   ├── test_review_list_api.py
+│   │   │   │   ├── test_review_detail_api.py
+│   │   │   │   ├── test_review_update_api.py
+│   │   │   │   ├── test_review_cancel_api.py
+│   │   │   │   ├── test_review_moderation_api.py
+│   │   │   │   ├── test_product_review_public_api.py
+│   │   │   │   ├── test_product_review_summary_api.py
+│   │   │   │   ├── test_review_management_list_api.py
+│   │   │   │   └── test_review_management_detail_api.py
 │   │   │   │
 │   │   │   ├── serializers.py
 │   │   │   ├── permissions.py
@@ -472,12 +489,12 @@ ecommerce_hub/
 │   │   │
 │   │   ├── services/
 │   │   │   ├── cache_service.py
-│   │   │   ├── reviews_creation_service.py
-│   │   │   ├── reviews_update_service.py
-│   │   │   ├── reviews_status_service.py
-│   │   │   ├── reviews_cancellation_service.py
-│   │   │   ├── reviews_moderation_service.py
-│   │   │   └── reviews_log_service.py
+│   │   │   ├── review_creation_service.py
+│   │   │   ├── review_update_service.py
+│   │   │   ├── review_status_service.py
+│   │   │   ├── review_cancellation_service.py
+│   │   │   ├── review_moderation_service.py
+│   │   │   └── review_log_service.py
 │   │   │ 
 │   │   ├── utils/
 │   │   │   └── cache_keys.py
@@ -498,19 +515,21 @@ ecommerce_hub/
 │   │   │   ├── test_models.py
 │   │   │   ├── test_exceptions.py
 │   │   │   ├── test_selectors.py
-│   │   │   ├── test_reviews_create_service.py
-│   │   │   ├── test_reviews_update_service.py
-│   │   │   ├── test_reviews_status_service.py
-│   │   │   ├── test_reviews_cancellation_service.py
-│   │   │   ├── test_reviews_moderation_service.py
+│   │   │   ├── test_review_create_service.py
+│   │   │   ├── test_review_update_service.py
+│   │   │   ├── test_review_status_service.py
+│   │   │   ├── test_review_cancellation_service.py
+│   │   │   ├── test_review_moderation_service.py
 │   │   │   ├── test_logging_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
 │   │   │   └── test_filters.py
 │   │   │
+│   │   ├── admin.py
 │   │   ├── filters.py
 │   │   ├── models.py
+│   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
 │   └── ...
@@ -547,6 +566,9 @@ ecommerce_hub/
 * Password reset via email
 * Protection against inactive accounts
 * Role-based permission system
+* Authenticated user profile retrieval
+* Partial user profile update
+* Confirmed-email protection for profile access
 
 ### Registration Idempotency
 
@@ -555,14 +577,59 @@ ecommerce_hub/
 * Safe replay of repeated registration requests with the same payload
 * `409 Conflict` response for reused idempotency keys with different payloads
 
+### Profile Management
+
+* Authenticated profile retrieval endpoint
+* Partial profile update support via `PATCH`
+* Controlled update of editable profile fields
+* Protection of non-editable fields such as email and role
+* Domain service for user profile updates
+
 ### Security Features
 
 * Token expiration validation
 * Invalid token protections
-* Email verification requirement
+* Email verification requirement for protected profile endpoints
+* Brute-force mitigation through login throttling
 * Security-focused API responses
 * Global conflict handling for idempotency violations (`409 Conflict`)
-* Security logging
+* Structured security and authentication logging
+
+### Domain Event System
+
+The users module now includes a lightweight domain event architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability
+
+Current domain events include:
+
+* user registered
+* user email confirmed
+* password reset requested
+* password changed
+* login succeeded
+* login failed
+* invalid token detected
+
+### Structured Logging
+
+The users module includes a dedicated logging service:
+
+* `UserLogService`
+
+Structured logs are generated for:
+
+* user registration
+* email confirmation
+* profile updates
+* password changes
+* successful login attempts
+* failed login attempts
 
 ---
 
@@ -1429,7 +1496,9 @@ This architecture ensures:
 | POST | `/api/v1/users/login/` | JWT authentication |
 | POST | `/api/v1/users/token/refresh/` | Refresh access token |
 | POST | `/api/v1/users/logout/` | Logout and invalidate refresh token |
-| POST | `/api/v1/users/confirm-email/` | Email confirmation |
+| POST | `/api/v1/users/confirm-email/{token}/` | Email confirmation |
+| GET | `/api/v1/users/profile/` | Retrieve authenticated user profile |
+| PATCH | `/api/v1/users/profile/` | Partially update authenticated user profile |
 | POST | `/api/v1/users/password-reset/` | Request password reset |
 | POST | `/api/v1/users/password-reset-confirm/` | Confirm password reset |
 
@@ -1574,13 +1643,13 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 
 | Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **Users** | 105 | 33 | 138 | Authentication, JWT, Permissions | ✔ Stable |
+| **Users** | 149 | 50 | 199 | Authentication, JWT, Permissions | ✔ Stable |
 | **Products** | 142 | 27 | 169 | Inventory Management, Idempotency, Caching, Audit Logs | ✔ Stable |
 | **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
 | **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
 | **Reviews** | 161 | 91 | 252 | Review Moderation, Lifecycle, Domain Rules | ✔ Stable |
-| **TOTAL (implemented modules)** | **1083** | **364** | **1447** | Core Business Logic | — |
+| **TOTAL (implemented modules)** | **1127** | **381** | **1508** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -1653,9 +1722,14 @@ Tests validate database query behavior and filtering logic:
 * transaction-safe email scheduling (`on_commit`)
 * email confirmation token generation
 * replacement of existing confirmation tokens
+
+#### Email Confirmation Service
+
 * email confirmation flow
 * activation and confirmation state updates
-* invalid and expired token handling
+* invalid token handling
+* expired token handling
+* confirmation token invalidation after successful use
 
 #### Password Reset Service
 
@@ -1668,19 +1742,47 @@ Tests validate database query behavior and filtering logic:
 * password update and hashing validation
 * token invalidation and usage tracking
 * invalid and expired token handling
+* weak password rejection through password validators
+* single-use reset token enforcement
 
-#### Security Logging
+#### User Update Service
+
+* profile field update workflow
+* partial update handling
+* ignoring unsupported fields
+* no-op behavior when no valid changes are provided
+* role update permission validation
+* corporate email validation for staff role assignment
+* persistence of role-derived permission flags
+
+#### User Logging Service
 
 Tests validate security event logging behavior:
 
-* login success and failure events
 * user registration logging
 * email confirmation logging
+* profile update logging
 * password change logging
-* invalid token logging
-* password reset request logging
-* structured logging payload validation
-* request metadata integration (IP, user agent, request ID)
+* login success logging
+* login failure logging
+* structured payload validation
+
+#### Users Domain Events
+
+* base domain event behavior
+* event payload serialization
+* user registered event payload validation
+* user email confirmed event payload validation
+* password reset requested event payload validation
+* password changed event payload validation
+* login succeeded event payload validation
+* login failed event payload validation
+* invalid token event payload validation
+* event handler registry validation
+* dispatcher execution for registered handlers
+* multiple handler dispatch execution
+* safe dispatch when no handlers are registered
+* structured handler logging behavior
 
 ---
 
@@ -1736,6 +1838,23 @@ Tests validate security event logging behavior:
 * access restrictions for unconfirmed users
 * validation of protected endpoints
 * enforcement of authentication and confirmation rules
+
+### Profile API
+
+#### Profile Retrieval
+
+* authenticated profile retrieval
+* rejection of unauthenticated access
+* rejection of unconfirmed users
+
+#### Profile Update
+
+* successful partial profile update
+* update restricted to editable fields
+* rejection of unauthenticated update attempts
+* rejection of unconfirmed users
+* invalid payload validation
+* no-op update behavior with empty payload
 
 </details>
 

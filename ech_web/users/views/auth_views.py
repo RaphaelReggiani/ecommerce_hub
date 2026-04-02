@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from ech.users.decorators import role_required
+from ech_web.users.decorators import role_required
 from django.http import Http404
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
@@ -37,7 +37,7 @@ from ech_web.users.forms.forms import (
 )
 
 from ech.users.models import CustomUser
-from ech.users.services.users_registration_service import UserRegistrationService
+from ech.users.services.user_registration_service import UserRegistrationService
 
 
 @require_http_methods(["GET", "POST"])
