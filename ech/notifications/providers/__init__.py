@@ -1,0 +1,3 @@
+"""
+Notifications domain events package.
+"""

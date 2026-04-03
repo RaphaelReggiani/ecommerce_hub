@@ -578,3 +578,168 @@ class CreateOrderServiceTestCase(BaseCreateOrderFactoryMixin, TestCase):
 
         self.assertEqual(inventory_1.quantity, 10)
         self.assertEqual(inventory_2.quantity, 1)
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_order_creation_failed")
+    def test_execute_logs_failure_when_items_is_empty(self, log_failed_mock):
+        customer = self.create_user()
+        address = self.build_address()
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[],
+            address=address,
+        )
+
+        with self.assertRaises(EmptyOrderError):
+            service.execute()
+
+        log_failed_mock.assert_called_once_with(
+            customer=customer,
+            idempotency_key=None,
+            reason="empty_order_items",
+        )
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_idempotency_replay")
+    def test_execute_logs_idempotency_replay_when_existing_order_is_returned(
+        self,
+        log_replay_mock,
+    ):
+        customer = self.create_user()
+        existing_order = Order.objects.create(
+            customer=customer,
+            idempotency_key=uuid.uuid4(),
+            status=Order.ORDER_STATUS_PENDING,
+            payment_status=Order.PAYMENT_STATUS_PENDING,
+            shipping_status=Order.SHIPPING_STATUS_PENDING,
+        )
+
+        product = self.create_product()
+        self.create_inventory(product=product, quantity=10)
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[{"product_id": product.id, "quantity": 2}],
+            address=self.build_address(),
+            idempotency_key=existing_order.idempotency_key,
+        )
+
+        result = service.execute()
+
+        self.assertEqual(result.id, existing_order.id)
+
+        log_replay_mock.assert_called_once_with(
+            order=existing_order,
+            idempotency_key=existing_order.idempotency_key,
+            metadata={
+                "replayed_by_customer_id": customer.id,
+            },
+        )
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_order_creation_failed")
+    def test_execute_logs_failure_when_product_is_not_available(
+        self,
+        log_failed_mock,
+    ):
+        customer = self.create_user()
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[{"product_id": uuid.uuid4(), "quantity": 1}],
+            address=self.build_address(),
+        )
+
+        with patch(
+            "ech.orders.services.order_create_service.get_active_product_by_id",
+            return_value=None,
+        ):
+            with self.assertRaises(ProductNotAvailableError):
+                service.execute()
+
+        log_failed_mock.assert_called_once()
+        _, kwargs = log_failed_mock.call_args
+
+        self.assertEqual(kwargs["customer"], customer)
+        self.assertIsNone(kwargs["idempotency_key"])
+        self.assertEqual(kwargs["reason"], "ProductNotAvailableError")
+        self.assertEqual(kwargs["metadata"]["items_count"], 1)
+        self.assertIn("error_message", kwargs["metadata"])
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_order_creation_failed")
+    def test_execute_logs_failure_when_inventory_is_insufficient(
+        self,
+        log_failed_mock,
+    ):
+        customer = self.create_user()
+        product = self.create_product()
+        self.create_inventory(product=product, quantity=1)
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[{"product_id": product.id, "quantity": 2}],
+            address=self.build_address(),
+        )
+
+        with self.assertRaises(InsufficientInventoryError):
+            service.execute()
+
+        log_failed_mock.assert_called_once()
+        _, kwargs = log_failed_mock.call_args
+
+        self.assertEqual(kwargs["customer"], customer)
+        self.assertIsNone(kwargs["idempotency_key"])
+        self.assertEqual(kwargs["reason"], "InsufficientInventoryError")
+        self.assertEqual(kwargs["metadata"]["items_count"], 1)
+        self.assertIn("error_message", kwargs["metadata"])
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_order_creation_failed")
+    def test_execute_logs_failure_when_address_is_invalid(
+        self,
+        log_failed_mock,
+    ):
+        customer = self.create_user()
+        product = self.create_product()
+        self.create_inventory(product=product, quantity=10)
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[{"product_id": product.id, "quantity": 1}],
+            address=None,
+        )
+
+        with self.assertRaises(InvalidOrderAddressError):
+            service.execute()
+
+        log_failed_mock.assert_called_once()
+        _, kwargs = log_failed_mock.call_args
+
+        self.assertEqual(kwargs["customer"], customer)
+        self.assertIsNone(kwargs["idempotency_key"])
+        self.assertEqual(kwargs["reason"], "InvalidOrderAddressError")
+        self.assertEqual(kwargs["metadata"]["items_count"], 1)
+        self.assertIn("error_message", kwargs["metadata"])
+
+    @patch("ech.orders.services.order_create_service.OrderLogService.log_order_created")
+    def test_execute_logs_order_created_on_success(self, log_created_mock):
+        customer = self.create_user()
+        product = self.create_product(
+            price=Decimal("100.00"),
+            discount_price=Decimal("80.00"),
+        )
+        self.create_inventory(product=product, quantity=10)
+
+        service = CreateOrderService(
+            customer=customer,
+            items=[{"product_id": product.id, "quantity": 2}],
+            address=self.build_address(),
+        )
+
+        order = service.execute()
+
+        log_created_mock.assert_called_once()
+        _, kwargs = log_created_mock.call_args
+
+        self.assertEqual(kwargs["order"], order)
+        self.assertEqual(kwargs["metadata"]["items_count"], 1)
+        self.assertEqual(kwargs["metadata"]["subtotal"], Decimal("200.00"))
+        self.assertEqual(kwargs["metadata"]["discount_total"], Decimal("40.00"))
+        self.assertEqual(kwargs["metadata"]["grand_total"], Decimal("160.00"))

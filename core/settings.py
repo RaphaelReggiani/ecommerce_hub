@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'ech.payments.apps.PaymentsConfig',
     'ech.shipping.apps.ShippingConfig',
     'ech.reviews.apps.ReviewsConfig',
+    'ech.notifications.apps.NotificationsConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',

@@ -14,6 +14,7 @@ from ech.orders.domain_events.events import OrderCancelledEvent
 from ech.orders.selectors import get_order_for_update
 
 from ech.orders.services.cache_service import invalidate_order_related_caches
+from ech.orders.services.order_log_service import OrderLogService
 
 from ech.orders.constants.messages import (
     MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED,
@@ -42,16 +43,14 @@ class CancelOrderService:
         self.performed_by = performed_by
 
     def execute(self):
-
         with transaction.atomic():
-
             self.order = get_order_for_update(self.order.id)
 
             self._validate_cancellation()
 
             now = timezone.now()
 
-            self._restore_inventory()
+            restored_items_summary = self._restore_inventory()
 
             self._update_status(now)
 
@@ -60,6 +59,16 @@ class CancelOrderService:
             self._register_event()
 
         invalidate_order_related_caches(self.order)
+
+        OrderLogService.log_order_cancelled(
+            order=self.order,
+            performed_by=self.performed_by,
+            metadata={
+                "cancelled_at": now,
+                "restored_items_count": len(restored_items_summary),
+                "restored_inventory": restored_items_summary,
+            },
+        )
 
         return self.order
 
@@ -72,11 +81,27 @@ class CancelOrderService:
             Order.ORDER_STATUS_SHIPPED,
             Order.ORDER_STATUS_DELIVERED,
         ]:
+            OrderLogService.log_cancellation_rejected(
+                order=self.order,
+                performed_by=self.performed_by,
+                reason=MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED,
+                metadata={
+                    "current_status": self.order.status,
+                },
+            )
             raise OrderCancellationNotAllowedError(
                 MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED
             )
 
         if self.order.status == Order.ORDER_STATUS_CANCELLED:
+            OrderLogService.log_cancellation_rejected(
+                order=self.order,
+                performed_by=self.performed_by,
+                reason=MSG_ERROR_ORDER_ALREADY_CANCELLED,
+                metadata={
+                    "current_status": self.order.status,
+                },
+            )
             raise OrderAlreadyCancelledError(
                 MSG_ERROR_ORDER_ALREADY_CANCELLED
             )
@@ -124,6 +149,8 @@ class CancelOrderService:
         Restores inventory quantities for all cancelled order items.
         """
 
+        restored_items = []
+
         for item in self.order.items.select_related("product").only(
             "product",
             "quantity",
@@ -139,5 +166,12 @@ class CancelOrderService:
             if inventory:
                 inventory.quantity = F("quantity") + item.quantity
                 inventory.save(update_fields=["quantity", "updated_at"])
+
+                restored_items.append({
+                    "product_id": item.product_id,
+                    "quantity_restored": item.quantity,
+                })
+
+        return restored_items
 
 

@@ -1,7 +1,6 @@
 from decimal import Decimal
 
 from django.db import transaction
-
 from django.db.models import F
 
 from ech.products.models import ProductInventory
@@ -27,6 +26,7 @@ from ech.orders.exceptions import (
 from ech.products.selectors import get_active_product_by_id
 
 from ech.orders.services.cache_service import invalidate_order_related_caches
+from ech.orders.services.order_log_service import OrderLogService
 
 
 class CreateOrderService:
@@ -77,37 +77,73 @@ class CreateOrderService:
         """
 
         if not self.items:
+            OrderLogService.log_order_creation_failed(
+                customer=self.customer,
+                idempotency_key=self.idempotency_key,
+                reason="empty_order_items",
+            )
             raise EmptyOrderError()
 
         if self.idempotency_key:
-
             existing_order = Order.objects.filter(
                 idempotency_key=self.idempotency_key
             ).first()
 
             if existing_order:
+                OrderLogService.log_idempotency_replay(
+                    order=existing_order,
+                    idempotency_key=self.idempotency_key,
+                    metadata={
+                        "replayed_by_customer_id": self.customer.id,
+                    },
+                )
                 return existing_order
 
-        with transaction.atomic():
+        try:
+            with transaction.atomic():
+                self._create_order()
 
-            self._create_order()
+                self._create_items()
 
-            self._create_items()
+                self._create_totals()
 
-            self._create_totals()
+                self._create_address()
 
-            self._create_address()
+                self._create_lifecycle()
 
-            self._create_lifecycle()
+                self._register_event()
 
-            self._register_event()
+            invalidate_order_related_caches(self.order)
 
-        invalidate_order_related_caches(self.order)
+            OrderLogService.log_order_created(
+                order=self.order,
+                metadata={
+                    "items_count": len(self.items),
+                    "subtotal": self.subtotal,
+                    "discount_total": self.discount_total,
+                    "grand_total": self.order.totals.grand_total,
+                },
+            )
 
-        return self.order
+            return self.order
+
+        except (
+            ProductNotAvailableError,
+            InsufficientInventoryError,
+            InvalidOrderAddressError,
+        ) as exc:
+            OrderLogService.log_order_creation_failed(
+                customer=self.customer,
+                idempotency_key=self.idempotency_key,
+                reason=exc.__class__.__name__,
+                metadata={
+                    "error_message": str(exc),
+                    "items_count": len(self.items),
+                },
+            )
+            raise
 
     def _create_order(self):
-
         self.order = Order.objects.create(
             customer=self.customer,
             idempotency_key=self.idempotency_key,
@@ -117,9 +153,7 @@ class CreateOrderService:
         )
 
     def _create_items(self):
-
         for item in self.items:
-
             product = get_active_product_by_id(item["product_id"])
 
             if not product:
@@ -141,7 +175,6 @@ class CreateOrderService:
             discount_price = product.discount_price
 
             final_price = discount_price or unit_price
-
             total_price = final_price * quantity
 
             self.subtotal += unit_price * quantity
@@ -156,7 +189,6 @@ class CreateOrderService:
                 unit_price=unit_price,
                 discount_price=discount_price,
                 total_price=total_price,
-
                 product_name_snapshot=product.name,
                 brand_snapshot=product.brand,
                 product_type_snapshot=product.product_type,
@@ -167,7 +199,6 @@ class CreateOrderService:
             inventory.refresh_from_db(fields=["quantity"])
 
     def _create_totals(self):
-
         tax_total = Decimal("0.00")
         shipping_total = Decimal("0.00")
 
@@ -188,7 +219,6 @@ class CreateOrderService:
         )
 
     def _create_lifecycle(self):
-
         OrderLifecycle.objects.create(
             order=self.order,
             confirmed_at=None,

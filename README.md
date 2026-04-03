@@ -7,6 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.
+> **Note:** This project contains 1560+ automated tests covering domain logic, services, selectors and API endpoints.
 
 **This project is currently under active development.**
 
@@ -38,11 +39,127 @@ This project demonstrates several backend engineering concepts used in productio
 * Domain-driven design principles
 * Transactional consistency using `transaction.atomic`
 * Concurrency protection using `select_for_update`
-* Idempotent operations
+* Idempotent API operations with replay protection
 * Inventory consistency in concurrent environments
 * Audit event logging for operational monitoring
 * Modular Django architecture
 * Automated testing with pytest
+
+---
+
+# Architectural Patterns Used
+
+The system applies several architectural patterns commonly used in production-grade backend systems.
+
+### Service Layer Pattern
+
+Business logic is implemented in dedicated domain services instead of being embedded in views or models.
+
+Examples:
+
+* `UserRegistrationService`
+* `ProductCreationService`
+* `OrderCreateService`
+* `PaymentProcessingService`
+* `ShippingCreationService`
+* `ReviewsModerationService`
+
+This approach ensures:
+
+* separation between HTTP layer and business logic
+* easier testing of domain rules
+* transactional orchestration inside services
+* maintainable and extensible domain workflows
+
+---
+
+### Domain Events Pattern
+
+The system implements lightweight domain events to decouple domain operations from secondary side effects.
+
+Each module includes:
+
+* domain event classes
+* an in-memory event dispatcher
+* a handler registry executed at application startup
+
+Events are used for:
+
+* audit logging
+* cache invalidation
+* lifecycle tracking
+* future integrations (notifications, analytics, etc.)
+
+---
+
+### Event Logging Pattern
+
+Important domain operations are persisted as operational events.
+
+Examples include:
+
+* `OrderEvent`
+* `PaymentEvent`
+* `ShipmentEvent`
+* `ReviewEvent`
+* `ProductEventLog`
+
+These event logs provide a complete operational audit trail and support future observability and analytics integrations.
+
+Structured application logging is handled separately by dedicated logging services.
+
+---
+
+### Cache Versioning Pattern
+
+The system implements versioned cache keys to allow deterministic cache invalidation across list endpoints.
+
+Examples:
+
+* product list caching
+* order detail caching
+* payment list caching
+* shipment list caching
+* review summary caching
+
+Cache versioning allows safe invalidation without requiring wildcard cache deletion.
+
+---
+
+### Idempotent API Design
+
+Several write operations in the system support **idempotent execution** using the `Idempotency-Key` request header.
+
+Idempotency is used to ensure safe retries in distributed environments where network failures, timeouts, or client retries may cause the same request to be executed multiple times.
+
+The implementation includes:
+
+* unique `Idempotency-Key` per request
+* request fingerprint hashing for payload verification
+* safe replay of previously completed operations
+* conflict detection for mismatched payload reuse
+* persistence of idempotency metadata in the database
+
+When a request with the same `Idempotency-Key` is received:
+
+* if the payload matches the original request, the previous result is safely replayed
+* if the payload differs, the system returns a `409 Conflict` response
+
+This strategy prevents duplicate resource creation in scenarios such as:
+
+* repeated payment attempts
+* repeated order submissions
+* repeated product creation requests
+* client retries after network failures
+
+Idempotency is implemented across multiple modules including:
+
+* user registration
+* product creation
+* order creation
+* payment creation
+* shipment creation
+* review creation
 
 ---
 
@@ -70,7 +187,6 @@ Examples:
 * user registration
 * email confirmation
 * password reset flow
-Architecture Overview
 
 ### Selector Layer
 
@@ -131,8 +247,8 @@ Planned modules:
 * Orders module ✔
 * Payments module ✔
 * Shipping module ✔
-* Reviews module (**Current step**)
-* Notifications module
+* Reviews module ✔
+* Notifications module (**Current step**)
 * Analytics module
 * Admin dashboard
 
@@ -234,10 +350,10 @@ ecommerce_hub/
 │   │   ├── services/
 │   │   │   ├── product_creation_service.py
 │   │   │   ├── product_delete_service.py
-│   │   │   ├── product_log_service.py
 │   │   │   ├── product_image_service.py
 │   │   │   ├── product_inventory_service.py
 │   │   │   ├── product_update_service.py
+│   │   │   ├── product_log_service.py
 │   │   │   └── product_stock_service.py
 │   │   │
 │   │   ├── utils/
@@ -269,7 +385,8 @@ ecommerce_hub/
 │   │   │   ├── test_product_delete_service.py
 │   │   │   ├── test_product_inventory_service.py
 │   │   │   ├── test_product_log_service.py
-│   │   │   └── test_product_stock_service.py
+│   │   │   ├── test_product_stock_service.py
+│   │   │   └── test_domain_events.py
 │   │   │
 │   │   ├── admin.py
 │   │   ├── filters.py
@@ -304,7 +421,8 @@ ecommerce_hub/
 │   │   │   ├── order_create_service.py
 │   │   │   ├── order_status_service.py
 │   │   │   ├── order_cancel_service.py
-│   │   │   └── order_totals_service.py
+│   │   │   ├── order_totals_service.py
+│   │   │   └── order_log_service.py
 │   │   │ 
 │   │   ├── utils/
 │   │   │   └── cache_keys.py
@@ -329,6 +447,7 @@ ecommerce_hub/
 │   │   │   ├── test_order_status_service.py
 │   │   │   ├── test_order_cancel_service.py
 │   │   │   ├── test_order_totals_service.py
+│   │   │   ├── test_order_log_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
@@ -390,6 +509,7 @@ ecommerce_hub/
 │   │   │   ├── test_payment_status_service.py
 │   │   │   ├── test_payment_processing_service.py
 │   │   │   ├── test_payment_refund_service.py
+│   │   │   ├── test_payment_log_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
@@ -520,7 +640,76 @@ ecommerce_hub/
 │   │   │   ├── test_review_status_service.py
 │   │   │   ├── test_review_cancellation_service.py
 │   │   │   ├── test_review_moderation_service.py
-│   │   │   ├── test_logging_service.py
+│   │   │   ├── test_review_log_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── admin.py
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── selectors.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
+│   │
+│   ├── notifications/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_notification_create_api.py
+│   │   │   │   ├── test_notification_list_api.py
+│   │   │   │   ├── test_notification_detail_api.py
+│   │   │   │   ├── test_notification_mark_read_api.py
+│   │   │   │   ├── test_notification_archive_api.py
+│   │   │   │   ├── test_notification_cancel_api.py
+│   │   │   │   ├── test_notification_dispatch_api.py
+│   │   │   │   ├── test_notification_management_list_api.py
+│   │   │   │   └── test_notification_management_detail_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── notification_creation_service.py
+│   │   │   ├── notification_status_service.py
+│   │   │   ├── notification_cancellation_service.py
+│   │   │   ├── notification_delivery_service.py
+│   │   │   └── notification_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── providers/
+│   │   │   ├── email_provider.py.py
+│   │   │   └── in_app_provider.py
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_notification_create_service.py
+│   │   │   ├── test_notification_status_service.py
+│   │   │   ├── test_notification_cancellation_service.py
+│   │   │   ├── test_notification_delivery_service.py
+│   │   │   ├── test_notification_log_service.py
+│   │   │   ├── test_email_provider.py
+│   │   │   ├── test_in_app_provider.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
@@ -774,6 +963,8 @@ This architecture ensures:
 * Support for multiple order items
 * Product snapshot storage for historical accuracy
 * Idempotency key support to prevent duplicate orders
+* Request fingerprint validation for safe idempotent replay
+* Conflict detection for mismatched idempotency key reuse
 * Automatic calculation of order totals
 
 ### Order Components
@@ -851,7 +1042,41 @@ Every important order action creates an `OrderEvent`, including:
 * delivery
 * cancellation
 
-This ensures a full operational audit trail.
+This ensures a full persistent operational audit trail for order lifecycle actions.
+
+Structured application logging is handled separately through the `OrderLogService`, allowing observability without coupling runtime logs to database event persistence.
+
+### Structured Logging
+
+The orders module includes a dedicated structured logging service:
+
+* `OrderLogService`
+
+Structured logs are generated for:
+
+* order creation
+* order creation failures
+* idempotent replay detection
+* order confirmation
+* processing start
+* shipping transition
+* delivery transition
+* invalid status transition attempts
+* order cancellation
+* cancellation rejection
+* payment status updates
+
+Logs include operational context such as:
+
+* order ID
+* customer ID
+* performer ID
+* order status
+* payment status
+* shipping status
+* idempotency key
+* rejection reason
+* structured metadata
 
 ### Concurrency Protection
 
@@ -987,6 +1212,28 @@ Every payment operation creates a `PaymentTransaction`, including:
 
 This guarantees a complete financial audit trail.
 
+### Structured Logging
+
+The payments module includes a dedicated structured logging service:
+
+* `PaymentLogService`
+
+Structured logs are generated for:
+
+* payment creation
+* processing start
+* authorization
+* capture
+* failure events
+* cancellation
+* refund request creation
+* partial refund processing
+* full refund processing
+* refund failure
+* refund cancellation
+
+Logs include structured metadata for operational observability and payment lifecycle traceability.
+
 ### Domain Event System
 
 The payments module uses an event-driven architecture:
@@ -1058,6 +1305,24 @@ Database queries are optimized using:
 * `prefetch_related`
 * indexed fields
 * paginated query patterns
+
+### Service Layer Architecture
+
+The payments module follows a service-oriented domain architecture:
+
+* `PaymentCreationService`
+* `PaymentProcessingService`
+* `PaymentStatusService`
+* `PaymentRefundService`
+* `PaymentLogService`
+
+This architecture ensures:
+
+* clear separation of concerns
+* transactional consistency
+* centralized payment lifecycle rules
+* easier testing and maintenance
+* extensibility for future gateway integrations
 
 ---
 
@@ -1488,11 +1753,17 @@ This architecture ensures:
 
 # API Endpoints
 
+All write operations that create resources support the `Idempotency-Key` header.
+
+Clients may safely retry requests using the same key to avoid duplicate resource creation.
+
+Endpoints that support idempotency are explicitly marked in the API tables below.
+
 ## Users
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/users/register/` | User registration with `Idempotency-Key` support |
+| POST | `/api/v1/users/register/` | User registration (supports `Idempotency-Key`) |
 | POST | `/api/v1/users/login/` | JWT authentication |
 | POST | `/api/v1/users/token/refresh/` | Refresh access token |
 | POST | `/api/v1/users/logout/` | Logout and invalidate refresh token |
@@ -1508,7 +1779,7 @@ This architecture ensures:
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/products/` | Create product with `Idempotency-Key` support |
+| POST | `/api/v1/products/` | Create product (supports `Idempotency-Key`) |
 | GET | `/api/v1/products/list/` | List products (paginated) |
 | GET | `/api/v1/products/{product_id}/` | Retrieve product details |
 | POST | `/api/v1/products/{product_id}/images/` | Upload product images |
@@ -1522,7 +1793,7 @@ This architecture ensures:
 | Method | Endpoint | Description |
 |------|------|------|
 | GET | `/api/v1/orders/` | List authenticated customer orders |
-| POST | `/api/v1/orders/create/` | Create new order |
+| POST | `/api/v1/orders/create/` | Create new order (supports `Idempotency-Key`) |
 | GET | `/api/v1/orders/{order_id}/` | Retrieve order details |
 | POST | `/api/v1/orders/{order_id}/cancel/` | Cancel order |
 
@@ -1547,7 +1818,7 @@ This architecture ensures:
 | Method | Endpoint | Description |
 |------|------|------|
 | GET | `/api/v1/payments/` | List authenticated customer payments |
-| POST | `/api/v1/payments/create/` | Create payment for an order |
+| POST | `/api/v1/payments/create/` | Create payment for an order (supports `Idempotency-Key`) |
 | GET | `/api/v1/payments/{payment_id}/` | Retrieve payment details |
 | GET | `/api/v1/payments/{payment_id}/transactions/` | List payment transactions |
 
@@ -1560,7 +1831,7 @@ This architecture ensures:
 | GET | `/api/v1/payments/management/{payment_id}/` | Retrieve payment details (staff) |
 | POST | `/api/v1/payments/{payment_id}/process/` | Execute payment processing action (authorize, capture, charge, fail) |
 | POST | `/api/v1/payments/{payment_id}/cancel/` | Cancel payment |
-| POST | `/api/v1/payments/{payment_id}/refund/` | Create refund request |
+| POST | `/api/v1/payments/{payment_id}/refund/` | Create refund request (supports `Idempotency-Key`) |
 | POST | `/api/v1/payments/refund/{refund_id}/manage/` | Manage refund lifecycle (process, fail, cancel) |
 
 ---
@@ -1578,7 +1849,7 @@ This architecture ensures:
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/shipping/create/` | Create shipment for an order |
+| POST | `/api/v1/shipping/create/` | Create shipment for an order (supports `Idempotency-Key`) |
 | PATCH | `/api/v1/shipping/{shipment_id}/` | Update shipment information |
 | POST | `/api/v1/shipping/{shipment_id}/process/` | Perform shipment status transition |
 | POST | `/api/v1/shipping/{shipment_id}/cancel/` | Cancel shipment |
@@ -1592,7 +1863,7 @@ This architecture ensures:
 
 | Method | Endpoint | Description |
 |------|------|------|
-| POST | `/api/v1/reviews/create/` | Create a new product review |
+| POST | `/api/v1/reviews/create/` | Create a new product review (supports `Idempotency-Key`) |
 | GET | `/api/v1/reviews/` | List authenticated customer reviews |
 | GET | `/api/v1/reviews/{review_id}/` | Retrieve review details |
 | PATCH | `/api/v1/reviews/{review_id}/update/` | Update review content |
@@ -1643,13 +1914,13 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 
 | Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **Users** | 149 | 50 | 199 | Authentication, JWT, Permissions | ✔ Stable |
-| **Products** | 142 | 27 | 169 | Inventory Management, Idempotency, Caching, Audit Logs | ✔ Stable |
-| **Orders** | 230 | 87 | 317 | Order Lifecycle, Concurrency, Idempotency | ✔ Stable |
-| **Payments** | 226 | 57 | 283 | Payment Lifecycle, Refund Logic, Transactions | ✔ Stable |
-| **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking | ✔ Stable |
-| **Reviews** | 161 | 91 | 252 | Review Moderation, Lifecycle, Domain Rules | ✔ Stable |
-| **TOTAL (implemented modules)** | **1127** | **381** | **1508** | Core Business Logic | — |
+| **Users** | 149 | 50 | 199 | Authentication, JWT, Permissions, Logging, Idempotency | ✔ Stable |
+| **Products** | 169 | 27 | 196 | Inventory Management, Audit Logs, Caching, Logging, Idempotency | ✔ Stable |
+| **Orders** | 240 | 87 | 327 | Order Lifecycle, Concurrency, Caching, Logging, Idempotency | ✔ Stable |
+| **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
+| **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
+| **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
+| **TOTAL (implemented modules)** | **1174** | **378** | **1552** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -2020,15 +2291,27 @@ Tests validate query behavior and filtering logic:
 
 #### Product Domain Events
 
+Tests validate product domain event infrastructure and side effects:
+
 * product created event payload validation
 * product updated event payload validation
 * product deleted event payload validation
+* default deletion reason handling
 * product image uploaded event payload validation
+* frozen event immutability validation
 * dispatcher handler registration
 * dispatcher execution for registered handlers
+* multiple handler dispatch execution
+* safe dispatch when no handlers are registered
+* dispatcher resilience when one handler raises an exception
+* dispatcher clearing behavior
 * registry-based handler registration
+* registry reset before re-registration
+* registry idempotency protection for repeated setup
+* audit log creation through product event handlers
 * cache invalidation through event handlers
-* audit logging through event handlers
+* product detail cache refresh through event handlers
+* integration dispatch execution for registered product handlers
 
 #### Product Filters
 
@@ -2178,6 +2461,23 @@ Tests validate query optimizations and retrieval logic:
 * creating totals when missing
 * recalculation after item changes
 * zero totals when order has no items
+
+#### Order Logging
+
+Tests validate structured logging behavior for order operations:
+
+* order creation logging
+* order creation failure logging
+* idempotency replay logging
+* order confirmation logging
+* processing start logging
+* shipping transition logging
+* delivery transition logging
+* invalid status transition logging
+* order cancellation logging
+* cancellation rejection logging
+* payment status update logging
+* structured payload validation for operational context
 
 #### Operational Filters
 
@@ -2499,6 +2799,24 @@ Tests validate query behavior and data retrieval logic:
 * lifecycle timestamp updates
 * transaction record creation
 * event dispatch for refund lifecycle
+
+#### Payment Logging
+
+Tests validate structured logging behavior for payment operations:
+
+* payment creation logging
+* processing start logging
+* authorization logging
+* capture logging
+* failure logging
+* cancellation logging
+* refund request logging
+* partial refund logging
+* full refund logging
+* refund failure logging
+* refund cancellation logging
+* default metadata handling
+* persistent event creation across multiple log calls
 
 #### Domain Events
 
