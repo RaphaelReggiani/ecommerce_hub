@@ -7,7 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **1560+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **1760+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
 **This project is currently under active development.**
 
@@ -63,6 +63,7 @@ Examples:
 * `PaymentProcessingService`
 * `ShippingCreationService`
 * `ReviewsModerationService`
+* `NotificationCreationService`
 
 This approach ensures:
 
@@ -98,11 +99,13 @@ Important domain operations are persisted as operational events.
 
 Examples include:
 
+* `UserEvent`
+* `ProductEventLog`
 * `OrderEvent`
 * `PaymentEvent`
 * `ShipmentEvent`
 * `ReviewEvent`
-* `ProductEventLog`
+* `NotificationEvent`
 
 These event logs provide a complete operational audit trail and support future observability and analytics integrations.
 
@@ -160,6 +163,7 @@ Idempotency is implemented across multiple modules including:
 * payment creation
 * shipment creation
 * review creation
+* notification creation
 
 ---
 
@@ -235,6 +239,49 @@ Centralizes system messages and configuration values.
         (Django Cache / Redis)
 ```
 > Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, including users, products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as the admin dashboard may still follow a service-oriented architecture without a dedicated domain event layer.
+
+---
+
+## Cross-Module Event Flow
+
+The platform uses domain events to propagate important state transitions between modules in a decoupled way.
+
+For example, when an order is created, domain events can trigger actions in other modules such as notifications or analytics.
+
+### Example Event Flow
+
+```mermaid
+flowchart TD
+
+    UserAction[Customer places order]
+
+    UserAction --> OrderService[OrderCreateService]
+
+    OrderService --> OrderCreatedEvent[OrderCreated Domain Event]
+
+    OrderCreatedEvent --> NotificationModule[Notifications Module]
+
+    NotificationModule --> EmailProvider[Email Provider]
+    NotificationModule --> InAppProvider[In-App Notification Provider]
+
+    EmailProvider --> CustomerEmail[Customer receives email notification]
+    InAppProvider --> UserDashboard[User dashboard notification]
+
+    OrderCreatedEvent --> Analytics[Analytics / Monitoring Systems]
+```
+
+### Event-Driven Architecture
+
+The system uses domain events to decouple modules and allow asynchronous or cross-module reactions to important business operations.
+
+Examples include:
+
+* order creation triggering customer notifications
+* payment state transitions triggering shipping preparation
+* notification events generating structured logs
+* domain events enabling analytics pipelines
+
+This approach allows the platform to evolve towards more advanced event-driven or message-based architectures without tightly coupling domain modules.
 
 ---
 
@@ -690,7 +737,7 @@ ecommerce_hub/
 │   │   │   └── registry.py
 │   │   │
 │   │   ├── providers/
-│   │   │   ├── email_provider.py.py
+│   │   │   ├── email_provider.py
 │   │   │   └── in_app_provider.py
 │   │   │
 │   │   ├── constants/
@@ -727,7 +774,6 @@ ecommerce_hub/
 │   └── ...
 │
 └── manage.py
-
 ```
 
 </details>
@@ -804,6 +850,55 @@ Current domain events include:
 * login succeeded
 * login failed
 * invalid token detected
+
+### User Lifecycle Management
+
+The users module implements a controlled lifecycle that governs the state transitions of user accounts throughout their existence in the system.
+
+User accounts transition through several operational states including:
+
+* registration and account creation
+* email confirmation
+* account activation
+* authentication and session lifecycle
+* password recovery and credential updates
+* account deactivation or reactivation
+
+These lifecycle transitions ensure proper validation, security enforcement, and account integrity across the authentication system.
+
+### User Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> RegistrationRequested
+
+    RegistrationRequested --> Registered : create_account
+
+    Registered --> EmailConfirmationPending
+
+    EmailConfirmationPending --> EmailConfirmed : confirm_email
+    EmailConfirmationPending --> Cancelled : invalidate_registration
+
+    EmailConfirmed --> Active : activate_account
+
+    Active --> PasswordResetRequested : request_password_reset
+    PasswordResetRequested --> PasswordChanged : reset_password
+    PasswordChanged --> Active : continue_using_account
+
+    Active --> ProfileUpdated : update_profile
+    ProfileUpdated --> Active : continue_using_account
+
+    Active --> LoginSucceeded : login_success
+    Active --> LoginFailed : login_failure
+    LoginFailed --> Active : retry_login
+    LoginSucceeded --> Active : authenticated_session
+
+    Active --> Inactive : deactivate_account
+    Inactive --> Active : reactivate_account
+
+    Cancelled --> [*]
+```
 
 ### Structured Logging
 
@@ -953,6 +1048,61 @@ This architecture ensures:
 * easier testing and maintenance
 * extensibility for future integrations
 
+### Product Lifecycle Management
+
+Products follow a controlled lifecycle that governs their availability and operational state within the catalog.
+
+Product lifecycle states include:
+
+* product creation and draft state
+* product activation and publication
+* inventory adjustments and stock state transitions
+* product updates and media synchronization
+* inventory depletion and out-of-stock handling
+* product soft deletion
+
+These lifecycle transitions ensure catalog integrity, inventory consistency, and controlled product availability across the platform.
+
+### Product Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> ProductCreated
+
+    ProductCreated --> Draft
+
+    Draft --> Active : publish_product
+    Draft --> Deleted : soft_delete
+
+    Active --> Updated : update_product
+    Updated --> Active : persist_changes
+
+    Active --> ImageUploaded : add_product_image
+    ImageUploaded --> Active : sync_media
+
+    Active --> InventoryAdjusted : decrease_inventory
+    Active --> StockReserved : reserve_stock
+    Active --> StockReleased : release_stock
+
+    InventoryAdjusted --> InStock : inventory_available
+    InventoryAdjusted --> OutOfStock : inventory_depleted
+
+    StockReserved --> InStock : stock_remaining
+    StockReserved --> OutOfStock : no_stock_remaining
+
+    StockReleased --> InStock : stock_replenished
+
+    InStock --> Updated : update_product
+    OutOfStock --> Updated : update_product
+
+    InStock --> Deleted : soft_delete
+    OutOfStock --> Deleted : soft_delete
+    Active --> Deleted : soft_delete
+
+    Deleted --> [*]
+```
+
 ---
 
 ## Orders Module
@@ -1028,8 +1178,6 @@ stateDiagram-v2
     Delivered --> [*]
     Refunded --> [*]
 ```
-
-Lifecycle timestamps are tracked in the `OrderLifecycle` model.
 
 ### Operational Event Logging
 
@@ -1751,6 +1899,221 @@ This architecture ensures:
 
 ---
 
+## Notifications Module
+
+### Notification Management
+
+* Notification creation through a dedicated service layer
+* Support for multiple delivery channels:
+  * in-app notifications
+  * email notifications
+* Idempotency protection to prevent duplicate notification creation
+* Notification lifecycle management
+* Delivery tracking for each notification
+* Pluggable provider architecture for multiple notification channels
+
+### Notification Components
+
+Notifications are composed of multiple related entities:
+
+* **Notification** – main aggregate root representing a notification event
+* **NotificationLifecycle** – lifecycle timestamps and state tracking
+* **NotificationDelivery** – delivery attempt tracking for each channel
+* **NotificationEvent** – operational event log for notification lifecycle actions
+
+This structure ensures full traceability of notification operations and delivery attempts.
+
+### Notification Lifecycle Management
+
+Notifications follow a controlled lifecycle:
+
+```text
+CREATED
+→ DISPATCHED
+→ DELIVERED
+```
+
+Alternative transitions:
+
+```text
+CREATED → CANCELLED
+DISPATCHED → FAILED
+DISPATCHED → CANCELLED
+```
+
+Lifecycle timestamps are tracked in the `NotificationLifecycle` model.
+
+### Notification Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> NotificationCreated
+
+    NotificationCreated --> Pending
+
+    Pending --> Queued : enqueue_dispatch
+    Pending --> Cancelled : cancel
+
+    Queued --> Dispatching : start_dispatch
+    Queued --> Cancelled : cancel
+
+    Dispatching --> Dispatched : provider_accepted
+    Dispatching --> Failed : provider_error
+    Dispatching --> Cancelled : cancel
+
+    Dispatched --> Delivered : delivery_confirmed
+    Dispatched --> Read : mark_as_read
+    Dispatched --> Archived : archive
+    Dispatched --> Failed : delivery_failed
+    Dispatched --> Cancelled : cancel
+
+    Delivered --> Read : mark_as_read
+    Delivered --> Archived : archive
+
+    Read --> Archived : archive
+
+    Failed --> [*]
+    Cancelled --> [*]
+    Archived --> [*]
+```
+
+### Notification Delivery Channels
+
+The module supports a provider-based delivery architecture.
+
+Current providers include:
+
+* **EmailProvider**
+* **InAppProvider**
+
+Providers implement a standardized interface responsible for:
+
+* sending the notification payload
+* returning a delivery identifier
+* raising delivery exceptions when failures occur
+
+This design allows future integration with additional channels such as:
+
+* SMS
+* push notifications
+* third-party messaging services
+
+### Domain Event System
+
+The notifications module implements a lightweight event-driven architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability
+
+Current domain events include:
+
+* notification created
+* notification dispatched
+* notification delivered
+* notification cancelled
+* notification failed
+
+Handlers can be extended for integrations such as:
+
+* analytics pipelines
+* external messaging services
+* monitoring and alerting systems
+
+### Structured Logging
+
+The module includes a dedicated logging service:
+
+* `NotificationLogService`
+
+Structured logs are generated for:
+
+* notification creation
+* notification dispatch
+* delivery success
+* delivery failures
+* notification cancellation
+* invalid notification operations
+
+Logs include structured metadata such as:
+
+* notification ID
+* recipient ID
+* delivery channel
+* delivery status
+* provider identifier
+* error metadata (when applicable)
+
+### Caching Layer
+
+A dedicated caching utility improves performance for notification retrieval operations:
+
+* recipient notification list caching
+* unread notification caching
+* archived notification caching
+* notification detail caching
+* management notification list caching
+
+All cache keys are versioned to allow safe invalidation strategies.
+
+### Cache Invalidation Strategy
+
+Cache consistency is maintained through automatic invalidation when:
+
+* a notification is created
+* notification status changes
+* a notification is marked as read
+* a notification is archived
+* a notification is cancelled
+* a notification delivery status changes
+
+Cache invalidation is centralized in the `NotificationCacheService`.
+
+### Filtering and Query Optimization
+
+Notification queries support filtering by:
+
+* notification status
+* notification channel
+* notification priority
+* recipient ID
+* creation date range
+* read status
+* archived status
+
+Database queries are optimized using:
+
+* indexed fields
+* `select_related`
+* efficient filtering patterns
+* paginated query support
+
+
+### Service Layer Architecture
+
+The notifications module follows a service-oriented domain architecture:
+
+* `NotificationCreationService`
+* `NotificationStatusService`
+* `NotificationCancellationService`
+* `NotificationDeliveryService`
+* `NotificationLogService`
+* `NotificationCacheService`
+
+This architecture ensures:
+
+* separation of concerns
+* transactional consistency
+* centralized notification lifecycle rules
+* easier testing and maintenance
+* extensibility for new notification channels
+
+---
+
 # API Endpoints
 
 All write operations that create resources support the `Idempotency-Key` header.
@@ -1920,7 +2283,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
-| **TOTAL (implemented modules)** | **1174** | **378** | **1552** | Core Business Logic | — |
+| **Notification** | 201| - | 201 | Notification lifecycle, delivery providers, logging, caching, idempotency | **API PENDING** |
+| **TOTAL (implemented modules)** | **1375** | **378** | **1753** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -3649,6 +4013,212 @@ Tests validate that review services invalidate cache correctly:
 
 ---
 
+<details>
+<summary><strong>Notifications Module Tests</strong></summary>
+
+### Notifications Domain Tests
+
+#### Domain Models
+
+* notification creation and core field validation
+* UUID primary key generation
+* notification status choices validation
+* notification channel choices validation
+* notification priority choices validation
+* notification lifecycle one-to-one integrity
+* notification delivery tracking relationships
+* model ordering behavior
+* string representations
+
+#### Notification Lifecycle Model
+
+* lifecycle relationship integrity
+* dispatch timestamp handling
+* delivery timestamp handling
+* read timestamp handling
+* archive timestamp handling
+* cancellation timestamp handling
+* failure timestamp handling
+* timestamp persistence behavior
+* string representation validation
+
+#### Notification Event Model
+
+* event creation and notification association
+* event type validation
+* optional performer handling
+* metadata storage behavior
+* ordering by `created_at`
+* string representation validation
+
+#### Domain Exceptions
+
+* notification not found validation
+* notification creation failure handling
+* duplicate idempotency key protection
+* permission protection for notification management
+* already read validation
+* already archived validation
+* already cancelled validation
+* already processed validation
+* invalid notification state transition handling
+* invalid notification operation protection
+* notification dispatch failure validation
+* notification delivery failure validation
+* unsupported delivery channel protection
+* provider failure handling
+
+#### Query Selectors
+
+Tests validate query optimizations and retrieval logic:
+
+* retrieving notification by ID
+* retrieving notification details with related lifecycle
+* retrieving recipient notification lists
+* retrieving notifications filtered by status
+* retrieving notifications filtered by channel
+* retrieving notifications filtered by priority
+* retrieving unread notifications
+* retrieving archived notifications
+* management notification queries
+* notification search queries
+* database locking using `select_for_update`
+
+#### Notification Filters
+
+Tests validate filtering behavior for notification listings:
+
+* filtering by notification status
+* filtering by notification channel
+* filtering by notification priority
+* filtering by recipient ID
+* filtering by unread notifications
+* filtering by archived notifications
+* filtering by creation date range
+* ordering by newest
+* ordering by oldest
+* invalid ordering fallback behavior
+* combined filter queries
+* empty result handling
+
+#### Notification Creation Service
+
+* successful notification creation
+* idempotent creation protection
+* duplicate idempotency key detection
+* lifecycle initialization
+* event dispatch on creation
+
+#### Notification Status Service
+
+* marking notification as read
+* preventing double read operations
+* archiving notifications
+* preventing invalid archive operations
+* status transition validation
+* lifecycle update behavior
+
+#### Notification Cancellation Service
+
+* successful notification cancellation
+* preventing cancellation of already cancelled notifications
+* preventing invalid cancellation states
+* lifecycle update behavior
+
+#### Notification Delivery Service
+
+* successful in-app notification dispatch
+* successful email notification dispatch
+* provider invocation validation
+* delivery lifecycle updates
+* delivery failure handling
+* invalid delivery state protection
+
+#### Notification Log Service
+
+* notification event creation
+* event payload integrity validation
+* lifecycle event tracking
+* audit logging consistency
+
+#### Providers
+
+##### Email Provider
+
+* successful email delivery flow
+* provider response validation
+* failure handling when email is missing
+* provider exception handling
+
+##### In-App Provider
+
+* successful in-app delivery
+* message identifier generation
+* lifecycle integration
+* payload validation
+
+#### Domain Events
+
+Tests validate the internal domain event system:
+
+* event payload serialization
+* event handler registry registration
+* dispatcher invocation of registered handlers
+* dispatch with multiple handlers
+* safe dispatch when no handlers are registered
+* notification created event handling
+* notification status changed event handling
+* structured event logging
+
+#### Notifications Logging
+
+Tests validate structured logging behavior for notification operations:
+
+* safe serialization of UUID values
+* safe serialization of datetime values
+* metadata serialization behavior
+* structured payload generation
+* notification creation logging
+* notification dispatch logging
+* notification delivery logging
+* notification failure logging
+* notification cancellation logging
+* notification status transition logging
+
+#### Notifications Caching
+
+Tests validate caching behavior and consistency:
+
+* versioned cache key generation
+* storing values in cache
+* retrieving cached values
+* `get_or_set` cache pattern behavior
+* notification detail caching
+* recipient notification list caching
+* unread notification list caching
+* archived notification list caching
+* management notification list caching
+* cache hit vs cache miss behavior
+
+#### Cache Invalidation
+
+Tests validate that notification services invalidate cache correctly:
+
+* invalidation of notification detail cache
+* invalidation of recipient notification lists
+* invalidation of unread notification lists
+* invalidation of archived notification lists
+* invalidation of management notification lists
+* invalidation after notification creation
+* invalidation after notification status transition
+* invalidation after notification cancellation
+* invalidation after notification delivery updates
+* fresh data returned after post-mutation reads
+
+</details>
+
+---
+
 Example test execution:
 
 ```bash
@@ -3669,6 +4239,8 @@ pytest ech/shipping/api/tests/
 
 pytest ech/reviews/tests/
 pytest ech/reviews/api/tests/
+
+pytest ech/notifications/tests/
 
 ```
 
