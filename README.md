@@ -7,7 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **1760+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **1850+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
 **This project is currently under active development.**
 
@@ -39,7 +39,7 @@ This project demonstrates several backend engineering concepts used in productio
 * Domain-driven design principles
 * Transactional consistency using `transaction.atomic`
 * Concurrency protection using `select_for_update`
-* Idempotent API operations with replay protection
+* Idempotent API operations with request replay protection
 * Inventory consistency in concurrent environments
 * Audit event logging for operational monitoring
 * Modular Django architecture
@@ -295,8 +295,8 @@ Planned modules:
 * Payments module ✔
 * Shipping module ✔
 * Reviews module ✔
-* Notifications module (**Current step**)
-* Analytics module
+* Notifications module ✔
+* Analytics module (**Current step**)
 * Admin dashboard
 
 ---
@@ -1928,48 +1928,45 @@ This structure ensures full traceability of notification operations and delivery
 Notifications follow a controlled lifecycle:
 
 ```text
-CREATED
-→ DISPATCHED
-→ DELIVERED
+PENDING
+→ PROCESSED
+→ READ
+→ ARCHIVED
 ```
 
 Alternative transitions:
 
 ```text
-CREATED → CANCELLED
-DISPATCHED → FAILED
-DISPATCHED → CANCELLED
+PENDING → CANCELLED
+PROCESSED → CANCELLED
+PROCESSED → FAILED
 ```
 
-Lifecycle timestamps are tracked in the `NotificationLifecycle` model.
+Key rules enforced by the domain layer:
+
+* Notifications are created with status PENDING.
+* Dispatching a notification moves it to PROCESSED.
+* Users can mark notifications as READ.
+* Read notifications can be archived (ARCHIVED).
+* Notifications can be cancelled before user interaction.
+* Failed delivery attempts move notifications to FAILED.
+
+Lifecycle timestamps are tracked in the NotificationLifecycle model.
 
 ### Notification Lifecycle Flow
 
 ```mermaid
 stateDiagram-v2
 
-    [*] --> NotificationCreated
+    [*] --> Pending
 
-    NotificationCreated --> Pending
-
-    Pending --> Queued : enqueue_dispatch
+    Pending --> Processed : dispatch
     Pending --> Cancelled : cancel
 
-    Queued --> Dispatching : start_dispatch
-    Queued --> Cancelled : cancel
-
-    Dispatching --> Dispatched : provider_accepted
-    Dispatching --> Failed : provider_error
-    Dispatching --> Cancelled : cancel
-
-    Dispatched --> Delivered : delivery_confirmed
-    Dispatched --> Read : mark_as_read
-    Dispatched --> Archived : archive
-    Dispatched --> Failed : delivery_failed
-    Dispatched --> Cancelled : cancel
-
-    Delivered --> Read : mark_as_read
-    Delivered --> Archived : archive
+    Processed --> Read : mark_as_read
+    Processed --> Archived : archive
+    Processed --> Failed : delivery_failure
+    Processed --> Cancelled : cancel
 
     Read --> Archived : archive
 
@@ -2253,6 +2250,22 @@ Endpoints that support idempotency are explicitly marked in the API tables below
 
 ---
 
+## Notifications
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/notifications/` | Retrieve authenticated user notifications |
+| GET | `/api/v1/notifications/{notification_id}/` | Retrieve notification details |
+| POST | `/api/v1/notifications/{notification_id}/read/` | Mark notification as read |
+| POST | `/api/v1/notifications/{notification_id}/archive/` | Archive notification |
+| POST | `/api/v1/notifications/{notification_id}/dispatch/` | Dispatch notification (staff roles only) |
+| POST | `/api/v1/notifications/{notification_id}/cancel/` | Cancel notification (staff roles only) |
+| POST | `/api/v1/notifications/create/` | Create notification (management roles) (supports `Idempotency-Key`) |
+| GET | `/api/v1/notifications/management/` | Management notification list (staff roles) |
+| GET | `/api/v1/notifications/management/{notification_id}/` | Management notification detail |
+
+---
+
 # Automated Tests
 
 The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
@@ -2261,13 +2274,46 @@ The project includes an extensive automated test suite covering domain logic and
 
 ## Testing Strategy
 
-The project follows a domain-first testing strategy.
+This project follows a layered testing strategy designed to validate both business rules and external API behavior.
 
-1. Domain layer tests validate business rules and services
-2. Selector tests validate database queries
-3. API tests validate endpoint behavior and permissions
+### Domain Layer Tests
 
-This ensures business logic remains stable independently from the API layer.
+Domain tests focus on validating the internal business logic of each module. These tests cover:
+
+* domain models and relationships
+* service layer business rules
+* selectors and query logic
+* filters and pagination consistency
+* domain exceptions and rule enforcement
+* domain events and event dispatching
+* caching behavior and cache invalidation
+* idempotency protections for critical operations
+* structured logging for lifecycle actions
+
+These tests ensure that core business rules remain correct independently from the API layer.
+
+### API Layer Tests
+
+API tests validate the external contract of the system and integration with the domain layer. These tests cover:
+
+* authentication and authorization
+* permission enforcement
+* request payload validation
+* response structure and status codes
+* pagination and filtering
+* protected operations
+* idempotent endpoints
+* management and staff-only workflows
+
+### Test Design Principles
+
+The test suite follows several engineering principles:
+
+* domain rules are validated primarily at the service/domain layer
+* API tests focus on transport behavior and endpoint contracts
+* edge cases and failure scenarios are explicitly tested
+* cache-related behavior is validated where applicable
+* critical flows include idempotency and concurrency protection
 
 ---
 
@@ -2283,8 +2329,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
-| **Notification** | 201| - | 201 | Notification lifecycle, delivery providers, logging, caching, idempotency | **API PENDING** |
-| **TOTAL (implemented modules)** | **1375** | **378** | **1753** | Core Business Logic | — |
+| **Notifications** | 205| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
+| **TOTAL (implemented modules)** | **1379** | **440** | **1819** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -4215,6 +4261,72 @@ Tests validate that notification services invalidate cache correctly:
 * invalidation after notification delivery updates
 * fresh data returned after post-mutation reads
 
+---
+
+### Notifications API Tests
+
+#### Notification Create API
+
+* successful notification creation by management roles
+* rejection of customer users
+* idempotent creation protection
+* validation of required fields
+* validation of recipient existence
+* unauthorized request protection
+
+#### Notification List API
+
+* retrieving notifications for authenticated users
+* filtering by status
+* filtering by channel
+* pagination behavior validation
+* response payload validation
+* authentication enforcement
+
+#### Notification Detail API
+
+* retrieving notification details for owner
+* staff access to any notification
+* access restriction for non-owners
+* handling non-existent notifications (404)
+* response payload validation
+
+#### Notification Mark Read API
+
+* successful mark-as-read for notification owner
+* staff override access
+* rejection for non-owner customers
+* idempotent behavior when notification is already read
+* authentication enforcement
+* handling non-existent notifications
+
+#### Notification Archive API
+
+* successful archive operation for owner
+* staff override access
+* rejection for non-owner customers
+* idempotent archive behavior
+* authentication enforcement
+* handling non-existent notifications
+
+#### Notification Dispatch API
+
+* dispatch allowed for operational roles
+* rejection for customer users
+* idempotent dispatch behavior
+* invocation of notification delivery service
+* authentication enforcement
+* handling non-existent notifications
+
+#### Notification Cancel API
+
+* successful notification cancellation by operational roles
+* lifecycle update validation
+* prevention of invalid cancellation states
+* idempotent cancellation behavior
+* authentication enforcement
+* handling non-existent notifications
+
 </details>
 
 ---
@@ -4222,6 +4334,14 @@ Tests validate that notification services invalidate cache correctly:
 Example test execution:
 
 ```bash
+
+# Run full test suite
+
+pytest -q
+
+
+# Run module tests individually
+
 pytest ech/users/tests/
 pytest ech/users/api/tests/
 
@@ -4241,6 +4361,7 @@ pytest ech/reviews/tests/
 pytest ech/reviews/api/tests/
 
 pytest ech/notifications/tests/
+pytest ech/notifications/api/tests/
 
 ```
 
