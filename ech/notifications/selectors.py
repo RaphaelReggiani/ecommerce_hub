@@ -495,20 +495,3 @@ def list_user_notifications(*, user):
         .filter(recipient=user)
         .order_by("-created_at")
     )
-
-
-def list_management_notifications():
-    """
-    Return all notifications for management dashboards.
-    Used by staff endpoints.
-    """
-
-    return (
-        Notification.objects
-        .select_related("recipient", "created_by")
-        .prefetch_related(
-            "events",
-            "deliveries",
-        )
-        .order_by("-created_at")
-    )

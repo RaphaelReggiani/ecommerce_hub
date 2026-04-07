@@ -58,6 +58,7 @@ LABEL_ADMIN = "ADMIN"
 LABEL_PAYMENT_STAFF = "PaymentStaff"
 LABEL_OPERATIONS_STAFF = "OperationsStaff"
 LABEL_SUPPORT_STAFF = "SupportStaff"
+LABEL_ANALYTICS_STAFF = "AnalyticsStaff"
 LABEL_CUSTOMER_USER = "CustomerUser"
 
 # =========================

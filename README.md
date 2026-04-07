@@ -768,6 +768,81 @@ ecommerce_hub/
 │   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
+│   │
+│   ├── analytics/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_analytic_dashboard_summary_api.py
+│   │   │   │   ├── test_analytic_sales_overview_api.py
+│   │   │   │   ├── test_analytic_order_funnel_api.py
+│   │   │   │   ├── test_analytic_payment_overview_api.py
+│   │   │   │   ├── test_analytic_shipping_overview_api.py
+│   │   │   │   ├── test_analytic_product_performance_api.py
+│   │   │   │   ├── test_analytic_customer_summary_api.py
+│   │   │   │   ├── test_analytic_snapshot_list_api.py
+│   │   │   │   ├── test_analytic_snapshot_detail_api.py
+│   │   │   │   └── test_analytic_snapshot_refresh_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── analytic_dashboard_summary_service.py
+│   │   │   ├── analytic_sales_overview_service.py
+│   │   │   ├── analytic_order_funnel_service.py
+│   │   │   ├── analytic_payment_overview_service.py
+│   │   │   ├── analytic_shipping_overview_service.py
+│   │   │   ├── analytic_product_performance_service.py
+│   │   │   ├── analytic_customer_summary_service.py
+│   │   │   ├── analytic_snapshot_generation_service.py
+│   │   │   ├── analytic_snapshot_refresh_service.py
+│   │   │   └── analytic_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   ├── date_ranges.py
+│   │   │   ├── metric_builders.py
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_analytic_dashboard_summary_service.py
+│   │   │   ├── test_analytic_sales_overview_service.py
+│   │   │   ├── test_analytic_order_funnel_service.py
+│   │   │   ├── test_analytic_payment_overview_service.py
+│   │   │   ├── test_analytic_shipping_overview_service.py
+│   │   │   ├── test_analytic_product_performance_service.py
+│   │   │   ├── test_analytic_customer_summary_service.py
+│   │   │   ├── test_analytic_snapshot_generation_service.py
+│   │   │   ├── test_analytic_snapshot_refresh_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── admin.py
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── selectors.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
 │   └── ...
 │
 ├── ech_web/
@@ -2329,8 +2404,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
-| **Notifications** | 205| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
-| **TOTAL (implemented modules)** | **1379** | **440** | **1819** | Core Business Logic | — |
+| **Notifications** | 210| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
+| **TOTAL (implemented modules)** | **1384** | **440** | **1824** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.

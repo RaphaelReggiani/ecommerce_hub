@@ -1,0 +1,3 @@
+"""
+Analytics domain events package.
+"""

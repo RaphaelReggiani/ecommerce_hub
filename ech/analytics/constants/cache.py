@@ -1,0 +1,117 @@
+# ==============================
+# CACHE PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_PREFIX = "analytic"
+
+# ==============================
+# CACHE VERSION PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_VERSION_PREFIX = f"{ANALYTIC_CACHE_PREFIX}:version"
+
+ANALYTIC_CACHE_DASHBOARD_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:dashboard"
+)
+
+ANALYTIC_CACHE_SALES_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:sales"
+)
+
+ANALYTIC_CACHE_ORDER_FUNNEL_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:order_funnel"
+)
+
+ANALYTIC_CACHE_PAYMENT_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:payment"
+)
+
+ANALYTIC_CACHE_SHIPPING_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:shipping"
+)
+
+ANALYTIC_CACHE_PRODUCT_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:product"
+)
+
+ANALYTIC_CACHE_CUSTOMER_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:customer"
+)
+
+ANALYTIC_CACHE_SNAPSHOT_VERSION_PREFIX = (
+    f"{ANALYTIC_CACHE_VERSION_PREFIX}:snapshot"
+)
+
+# ==============================
+# CACHE DETAIL PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_SNAPSHOT_DETAIL_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:snapshot:detail"
+)
+
+# ==============================
+# CACHE LIST PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_SNAPSHOT_LIST_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:snapshot:list"
+)
+
+ANALYTIC_CACHE_SNAPSHOT_PERIOD_LIST_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:snapshot:period:list"
+)
+
+# ==============================
+# CACHE DASHBOARD PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_DASHBOARD_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:dashboard"
+)
+
+ANALYTIC_CACHE_SALES_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:sales"
+)
+
+ANALYTIC_CACHE_ORDER_FUNNEL_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:order_funnel"
+)
+
+ANALYTIC_CACHE_PAYMENT_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:payment"
+)
+
+ANALYTIC_CACHE_SHIPPING_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:shipping"
+)
+
+ANALYTIC_CACHE_PRODUCT_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:product"
+)
+
+ANALYTIC_CACHE_CUSTOMER_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:customer"
+)
+
+# ==============================
+# CACHE SEARCH PREFIXES
+# ==============================
+
+ANALYTIC_CACHE_SEARCH_PREFIX = (
+    f"{ANALYTIC_CACHE_PREFIX}:search"
+)
+
+# ==============================
+# CACHE TIMEOUTS
+# ==============================
+
+ANALYTIC_CACHE_TIMEOUT_SHORT = 60
+ANALYTIC_CACHE_TIMEOUT_DEFAULT = 300
+ANALYTIC_CACHE_TIMEOUT_LONG = 900
+
+# ==============================
+# CACHE VERSION DEFAULTS
+# ==============================
+
+ANALYTIC_CACHE_DEFAULT_VERSION = 1
