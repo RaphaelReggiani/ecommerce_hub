@@ -1,9 +1,9 @@
 from ech.analytics.exceptions import (
-    AnalyticsProductUnavailableException,
+    AnalyticsUserUnavailableException,
 )
 from ech.analytics.selectors import (
     get_latest_analytics_snapshot_by_period_type,
-    list_orders_for_analytics,
+    list_users_for_analytics,
 )
 from ech.analytics.services.analytic_log_service import (
     AnalyticsLogService,
@@ -12,20 +12,21 @@ from ech.analytics.services.cache_service import (
     AnalyticsCacheService,
 )
 from ech.analytics.utils.cache_keys import (
-    product_performance_cache_key,
+    user_overview_cache_key,
 )
 from ech.analytics.utils.date_ranges import (
     get_period_range,
 )
+from ech.users.models import CustomUser
 
 
-class AnalyticsProductPerformanceService:
+class AnalyticsUserOverviewService:
     """
-    Service responsible for product performance analytics.
+    Service responsible for user analytics overview data.
     """
 
     @classmethod
-    def get_performance(
+    def get_overview(
         cls,
         *,
         period_type,
@@ -34,7 +35,10 @@ class AnalyticsProductPerformanceService:
         performed_by=None,
     ):
         """
-        Retrieve product performance analytics for the requested period.
+        Retrieve user analytics overview for the requested period.
+
+        Snapshot data is preferred when the latest snapshot matches the
+        requested bounds. Otherwise, metrics are calculated in real time.
         """
 
         resolved_period_start, resolved_period_end = cls._resolve_period_bounds(
@@ -43,12 +47,11 @@ class AnalyticsProductPerformanceService:
             period_end=period_end,
         )
 
-        product_version = AnalyticsCacheService.get_product_version()
-
-        cache_key = product_performance_cache_key(
+        user_version = AnalyticsCacheService.get_user_version()
+        cache_key = user_overview_cache_key(
             period_start=resolved_period_start,
             period_end=resolved_period_end,
-            product_version=product_version,
+            user_version=user_version,
         )
 
         def producer():
@@ -59,18 +62,17 @@ class AnalyticsProductPerformanceService:
             )
 
             if snapshot is not None:
-                payload = cls._build_performance_from_snapshot(snapshot=snapshot)
+                payload = cls._build_overview_from_snapshot(snapshot=snapshot)
             else:
-                payload = cls._build_performance_realtime(
-                    period_start=resolved_period_start,
+                payload = cls._build_overview_realtime(
                     period_end=resolved_period_end,
                 )
 
-            AnalyticsLogService.log_product_metrics_calculated(
+            AnalyticsLogService.log_user_metrics_calculated(
                 period_start=resolved_period_start,
                 period_end=resolved_period_end,
-                products_sold=payload["products_sold"],
-                top_product_id=payload["top_product_id"],
+                total_registered_users=payload["total_registered_users"],
+                active_users=payload["active_users"],
                 performed_by=performed_by,
             )
 
@@ -83,7 +85,7 @@ class AnalyticsProductPerformanceService:
                 timeout=None,
             )
         except Exception as exc:
-            raise AnalyticsProductUnavailableException() from exc
+            raise AnalyticsUserUnavailableException() from exc
 
     @classmethod
     def _resolve_period_bounds(
@@ -93,15 +95,11 @@ class AnalyticsProductPerformanceService:
         period_start,
         period_end,
     ):
-        """
-        Resolve product performance period bounds.
-        """
-
         if period_start is None and period_end is None:
             return get_period_range(period_type=period_type)
 
         if period_start is None or period_end is None:
-            raise AnalyticsProductUnavailableException()
+            raise AnalyticsUserUnavailableException()
 
         return period_start, period_end
 
@@ -113,10 +111,6 @@ class AnalyticsProductPerformanceService:
         period_start,
         period_end,
     ):
-        """
-        Return latest snapshot only if bounds match.
-        """
-
         try:
             snapshot = get_latest_analytics_snapshot_by_period_type(
                 period_type=period_type,
@@ -133,67 +127,77 @@ class AnalyticsProductPerformanceService:
         return None
 
     @classmethod
-    def _build_performance_from_snapshot(cls, *, snapshot):
-        """
-        Build product performance payload from snapshot.
-        """
-
+    def _build_overview_from_snapshot(cls, *, snapshot):
         return {
             "source": "snapshot",
             "snapshot_id": snapshot.id,
             "period_type": snapshot.period_type,
             "period_start": snapshot.period_start,
             "period_end": snapshot.period_end,
-            "products_sold": snapshot.products_sold,
-            "top_product_id": snapshot.top_product_id,
+            "total_registered_users": snapshot.total_registered_users,
+            "active_users": snapshot.active_users,
+            "inactive_users": snapshot.inactive_users,
+            "confirmed_users": snapshot.confirmed_users,
+            "unconfirmed_users": snapshot.unconfirmed_users,
+            "staff_users": snapshot.staff_users,
+            "customer_users": snapshot.customer_users,
         }
 
     @classmethod
-    def _build_performance_realtime(
+    def _build_overview_realtime(
         cls,
         *,
-        period_start,
         period_end,
     ):
-        """
-        Build product performance from order items.
-        """
-
-        orders = list(
-            list_orders_for_analytics(
-                period_start=period_start,
+        users = list(
+            list_users_for_analytics(
                 period_end=period_end,
             )
         )
 
-        product_quantities = {}
-        total_products_sold = 0
+        total_registered_users = len(users)
 
-        for order in orders:
-            for item in order.items.all():
-                product_id = item.product_id
-                quantity = item.quantity
+        active_users = sum(
+            1 for user in users
+            if user.is_active
+        )
 
-                total_products_sold += quantity
+        inactive_users = sum(
+            1 for user in users
+            if not user.is_active
+        )
 
-                product_quantities[product_id] = (
-                    product_quantities.get(product_id, 0) + quantity
-                )
+        confirmed_users = sum(
+            1 for user in users
+            if user.email_confirmed
+        )
 
-        top_product_id = None
+        unconfirmed_users = sum(
+            1 for user in users
+            if not user.email_confirmed
+        )
 
-        if product_quantities:
-            top_product_id = max(
-                product_quantities,
-                key=product_quantities.get,
-            )
+        customer_users = sum(
+            1 for user in users
+            if user.user_role == CustomUser.ROLE_CUSTOMER_USER
+        )
+
+        staff_users = sum(
+            1 for user in users
+            if user.user_role != CustomUser.ROLE_CUSTOMER_USER
+        )
 
         return {
             "source": "realtime",
             "snapshot_id": None,
             "period_type": None,
-            "period_start": period_start,
+            "period_start": None,
             "period_end": period_end,
-            "products_sold": total_products_sold,
-            "top_product_id": top_product_id,
+            "total_registered_users": total_registered_users,
+            "active_users": active_users,
+            "inactive_users": inactive_users,
+            "confirmed_users": confirmed_users,
+            "unconfirmed_users": unconfirmed_users,
+            "staff_users": staff_users,
+            "customer_users": customer_users,
         }

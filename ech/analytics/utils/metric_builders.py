@@ -138,6 +138,58 @@ def build_customer_metrics(
     }
 
 
+def build_user_metrics(
+    *,
+    total_registered_users=0,
+    active_users=0,
+    inactive_users=0,
+    confirmed_users=0,
+    unconfirmed_users=0,
+    staff_users=0,
+    customer_users=0,
+):
+    """
+    Build the user metrics payload.
+    """
+    return {
+        "total_registered_users": safe_int(total_registered_users),
+        "active_users": safe_int(active_users),
+        "inactive_users": safe_int(inactive_users),
+        "confirmed_users": safe_int(confirmed_users),
+        "unconfirmed_users": safe_int(unconfirmed_users),
+        "staff_users": safe_int(staff_users),
+        "customer_users": safe_int(customer_users),
+    }
+
+
+def build_review_metrics(
+    *,
+    total_reviews=0,
+    approved_reviews=0,
+    rejected_reviews=0,
+    hidden_reviews=0,
+    cancelled_reviews=0,
+    verified_purchase_reviews=0,
+    average_rating=None,
+    low_rated_products_count=0,
+    high_rated_products_count=0,
+):
+    """
+    Build the review metrics payload.
+    """
+    return {
+        "total_reviews": safe_int(total_reviews),
+        "approved_reviews": safe_int(approved_reviews),
+        "rejected_reviews": safe_int(rejected_reviews),
+        "hidden_reviews": safe_int(hidden_reviews),
+        "cancelled_reviews": safe_int(cancelled_reviews),
+        "verified_purchase_reviews": safe_int(verified_purchase_reviews),
+        "average_rating": safe_decimal(average_rating),
+        "low_rated_products_count": safe_int(low_rated_products_count),
+        "high_rated_products_count": safe_int(high_rated_products_count),
+    }
+
+
 def build_snapshot_metrics(
     *,
     order_metrics=None,
@@ -146,6 +198,8 @@ def build_snapshot_metrics(
     shipping_metrics=None,
     product_metrics=None,
     customer_metrics=None,
+    user_metrics=None,
+    review_metrics=None,
 ):
     """
     Merge all analytics metric groups into a single payload
@@ -160,6 +214,8 @@ def build_snapshot_metrics(
     payload.update(shipping_metrics or {})
     payload.update(product_metrics or {})
     payload.update(customer_metrics or {})
+    payload.update(user_metrics or {})
+    payload.update(review_metrics or {})
 
     return payload
 
@@ -176,4 +232,6 @@ def build_empty_snapshot_metrics():
         shipping_metrics=build_shipping_metrics(),
         product_metrics=build_product_metrics(),
         customer_metrics=build_customer_metrics(),
+        user_metrics=build_user_metrics(),
+        review_metrics=build_review_metrics(),
     )

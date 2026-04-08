@@ -12,6 +12,8 @@ from ech.analytics.constants.messages import (
     ANALYTICS_SHIPPING_ANALYTICS_UNAVAILABLE,
     ANALYTICS_PRODUCT_ANALYTICS_UNAVAILABLE,
     ANALYTICS_CUSTOMER_ANALYTICS_UNAVAILABLE,
+    ANALYTICS_USER_ANALYTICS_UNAVAILABLE,
+    ANALYTICS_REVIEW_ANALYTICS_UNAVAILABLE,
     ANALYTICS_IDEMPOTENCY_KEY_CONFLICT,
 )
 
@@ -138,6 +140,24 @@ class AnalyticsCustomerUnavailableException(AnalyticsException):
     """
 
     def __init__(self, message=ANALYTICS_CUSTOMER_ANALYTICS_UNAVAILABLE):
+        super().__init__(message)
+
+
+class AnalyticsUserUnavailableException(AnalyticsException):
+    """
+    Raised when user analytics data is unavailable.
+    """
+
+    def __init__(self, message=ANALYTICS_USER_ANALYTICS_UNAVAILABLE):
+        super().__init__(message)
+
+
+class AnalyticsReviewUnavailableException(AnalyticsException):
+    """
+    Raised when review analytics data is unavailable.
+    """
+
+    def __init__(self, message=ANALYTICS_REVIEW_ANALYTICS_UNAVAILABLE):
         super().__init__(message)
 
 

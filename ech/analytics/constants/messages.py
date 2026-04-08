@@ -73,6 +73,20 @@ ANALYTICS_CUSTOMER_SUMMARY_RETRIEVED = "Customer analytics summary retrieved suc
 ANALYTICS_CUSTOMER_ANALYTICS_UNAVAILABLE = "Customer analytics data is unavailable."
 
 # =============================
+# USER ANALYTICS
+# =============================
+
+ANALYTICS_USER_OVERVIEW_RETRIEVED = "User analytics overview retrieved successfully."
+ANALYTICS_USER_ANALYTICS_UNAVAILABLE = "User analytics data is unavailable."
+
+# =============================
+# REVIEW ANALYTICS
+# =============================
+
+ANALYTICS_REVIEW_OVERVIEW_RETRIEVED = "Review analytics overview retrieved successfully."
+ANALYTICS_REVIEW_ANALYTICS_UNAVAILABLE = "Review analytics data is unavailable."
+
+# =============================
 # ANALYTICS CACHE
 # =============================
 
@@ -93,4 +107,6 @@ LOG_ANALYTICS_CACHE_INVALIDATED = "Analytics cache invalidated."
 # ANALYTICS IDEMPOTENCY
 # =============================
 
-ANALYTICS_IDEMPOTENCY_KEY_CONFLICT = "This idempotency key has already been used for a different analytics request."
+ANALYTICS_IDEMPOTENCY_KEY_CONFLICT = (
+    "This idempotency key has already been used for a different analytics request."
+)

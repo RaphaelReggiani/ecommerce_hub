@@ -341,6 +341,26 @@ def list_customers_for_analytics(*, period_start=None, period_end=None):
     return queryset
 
 
+def user_analytics_base_queryset():
+    """
+    Return the base user queryset used by analytics services.
+    """
+    return CustomUser.objects.all()
+
+
+def list_users_for_analytics(*, period_end=None):
+    """
+    List users for analytics, optionally restricted to registrations
+    created up to a specific datetime.
+    """
+    queryset = user_analytics_base_queryset()
+
+    if period_end is not None:
+        queryset = queryset.filter(date_joined__lt=period_end)
+
+    return queryset
+
+
 def review_analytics_base_queryset():
     """
     Return the base review queryset used by analytics services.

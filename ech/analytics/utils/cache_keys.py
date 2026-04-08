@@ -1,5 +1,4 @@
 from ech.analytics.constants.cache import (
-    ANALYTIC_CACHE_CUSTOMER_PREFIX,
     ANALYTIC_CACHE_DETAIL_PREFIX,
     ANALYTIC_CACHE_MANAGEMENT_PREFIX,
     ANALYTIC_CACHE_SEARCH_PREFIX,
@@ -37,7 +36,7 @@ def sales_version_key():
 
 
 def order_funnel_version_key():
-    return f"{ANALYTIC_CACHE_VERSION_PREFIX}:order-funnel"
+    return f"{ANALYTIC_CACHE_VERSION_PREFIX}:order_funnel"
 
 
 def payment_version_key():
@@ -54,6 +53,14 @@ def product_version_key():
 
 def customer_version_key():
     return f"{ANALYTIC_CACHE_VERSION_PREFIX}:customer"
+
+
+def user_version_key():
+    return f"{ANALYTIC_CACHE_VERSION_PREFIX}:user"
+
+
+def review_version_key():
+    return f"{ANALYTIC_CACHE_VERSION_PREFIX}:review"
 
 
 def management_version_key():
@@ -209,6 +216,34 @@ def customer_summary_cache_key(
         f"{_normalize_text(period_start)}:"
         f"{_normalize_text(period_end)}:"
         f"v{customer_version}"
+    )
+
+
+def user_overview_cache_key(
+    *,
+    period_start,
+    period_end,
+    user_version,
+):
+    return (
+        f"{ANALYTIC_CACHE_MANAGEMENT_PREFIX}:user-overview:"
+        f"{_normalize_text(period_start)}:"
+        f"{_normalize_text(period_end)}:"
+        f"v{user_version}"
+    )
+
+
+def review_overview_cache_key(
+    *,
+    period_start,
+    period_end,
+    review_version,
+):
+    return (
+        f"{ANALYTIC_CACHE_MANAGEMENT_PREFIX}:review-overview:"
+        f"{_normalize_text(period_start)}:"
+        f"{_normalize_text(period_end)}:"
+        f"v{review_version}"
     )
 
 

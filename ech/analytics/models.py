@@ -138,6 +138,72 @@ class AnalyticsSnapshot(models.Model):
         default=0,
     )
 
+    total_registered_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    active_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    inactive_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    confirmed_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    unconfirmed_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    staff_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    customer_users = models.PositiveIntegerField(
+        default=0,
+    )
+
+    total_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    approved_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    rejected_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    hidden_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    cancelled_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    verified_purchase_reviews = models.PositiveIntegerField(
+        default=0,
+    )
+
+    average_rating = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=0,
+    )
+
+    low_rated_products_count = models.PositiveIntegerField(
+        default=0,
+    )
+
+    high_rated_products_count = models.PositiveIntegerField(
+        default=0,
+    )
+
     generated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -267,8 +333,14 @@ class AnalyticsEvent(models.Model):
 
     EVENT_TYPE_CHOICES = [
         (TYPE_SNAPSHOT_CREATED, LABEL_EVENT_TYPE_SNAPSHOT_CREATED),
-        (TYPE_SNAPSHOT_GENERATION_STARTED, LABEL_EVENT_TYPE_SNAPSHOT_GENERATION_STARTED),
-        (TYPE_SNAPSHOT_GENERATION_COMPLETED, LABEL_EVENT_TYPE_SNAPSHOT_GENERATION_COMPLETED),
+        (
+            TYPE_SNAPSHOT_GENERATION_STARTED,
+            LABEL_EVENT_TYPE_SNAPSHOT_GENERATION_STARTED,
+        ),
+        (
+            TYPE_SNAPSHOT_GENERATION_COMPLETED,
+            LABEL_EVENT_TYPE_SNAPSHOT_GENERATION_COMPLETED,
+        ),
         (TYPE_SNAPSHOT_REFRESHED, LABEL_EVENT_TYPE_SNAPSHOT_REFRESHED),
         (TYPE_SNAPSHOT_FAILED, LABEL_EVENT_TYPE_SNAPSHOT_FAILED),
     ]
