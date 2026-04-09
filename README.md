@@ -7,7 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **1850+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **1845+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
 **This project is currently under active development.**
 
