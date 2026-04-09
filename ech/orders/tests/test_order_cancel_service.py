@@ -1,22 +1,21 @@
 from decimal import Decimal
-import uuid
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from ech.orders.constants.messages import (
-    MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED,
     MSG_ERROR_ORDER_ALREADY_CANCELLED,
+    MSG_ERROR_SHIPPED_OR_DELIVERED_ORDERS_CANNOT_BE_CANCELLED,
 )
 from ech.orders.exceptions import (
-    OrderCancellationNotAllowedError,
     OrderAlreadyCancelledError,
+    OrderCancellationNotAllowedError,
 )
 from ech.orders.models import (
     Order,
+    OrderEvent,
     OrderItem,
     OrderLifecycle,
-    OrderEvent,
 )
 from ech.orders.services.order_cancel_service import CancelOrderService
 from ech.products.models import Product, ProductInventory
@@ -25,15 +24,24 @@ from ech.products.models import Product, ProductInventory
 class BaseCancelOrderFactoryMixin:
     user_counter = 0
     product_counter = 0
+    _user_model = None
+    _user_model_fields = None
+
+    @classmethod
+    def _get_user_model_and_fields(cls):
+        if cls._user_model is None or cls._user_model_fields is None:
+            cls._user_model = get_user_model()
+            cls._user_model_fields = {
+                field.name for field in cls._user_model._meta.fields
+            }
+        return cls._user_model, cls._user_model_fields
 
     def create_user(self, **overrides):
-        User = get_user_model()
+        User, model_fields = self.__class__._get_user_model_and_fields()
+
         self.__class__.user_counter += 1
         idx = self.__class__.user_counter
-
-        model_fields = {field.name: field for field in User._meta.fields}
-        unique_suffix = uuid.uuid4().hex[:8]
-        unique_email = f"user_{idx}_{unique_suffix}@test.com"
+        unique_email = f"user_{idx}@test.com"
 
         data = {}
 
@@ -44,7 +52,7 @@ class BaseCancelOrderFactoryMixin:
             data["user_email"] = unique_email
 
         if "username" in model_fields:
-            data["username"] = f"user_{idx}_{unique_suffix}"
+            data["username"] = f"user_{idx}"
 
         if "user_name" in model_fields:
             data["user_name"] = f"Test User {idx}"

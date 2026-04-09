@@ -6,12 +6,4 @@ class ProductsConfig(AppConfig):
     name = "ech.products"
 
     def ready(self):
-        """
-        Registers product domain event handlers on app startup.
-        """
-
-        from ech.products.domain_events.registry import (
-            register_product_event_handlers,
-        )
-
-        register_product_event_handlers()
+        from ech.products.domain_events import registry

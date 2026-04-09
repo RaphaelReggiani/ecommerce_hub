@@ -21,10 +21,9 @@ from ech.orders.services.cache_service import invalidate_order_related_caches
 
 
 class OrderCacheSelectorsTestCase(TestCase):
-    def setUp(self):
-        cache.clear()
-
-        self.customer = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -33,7 +32,7 @@ class OrderCacheSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.staff = CustomUser.objects.create_user(
+        cls.staff = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             user_name="Operations Staff",
@@ -42,17 +41,20 @@ class OrderCacheSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Keyboard Pro",
             product_type=Product.KEYBOARD,
             brand="Logitech",
-            sold_by=self.staff,
+            sold_by=cls.staff,
             description="Keyboard",
             technical_information="Info",
             price=Decimal("150.00"),
             discount_price=Decimal("120.00"),
             is_active=True,
         )
+
+    def setUp(self):
+        cache.clear()
 
     def tearDown(self):
         cache.clear()

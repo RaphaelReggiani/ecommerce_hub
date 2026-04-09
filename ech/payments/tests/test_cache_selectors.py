@@ -4,7 +4,6 @@ from django.test import TestCase, override_settings
 from django.core.cache import cache
 
 from ech.payments.services.cache_service import PaymentCacheService
-from ech.payments.utils.cache_keys import PaymentCacheKeys
 
 
 TEST_CACHE = {

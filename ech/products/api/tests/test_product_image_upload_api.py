@@ -25,35 +25,38 @@ User = get_user_model()
 
 
 class ProductImageUploadAPITestCase(APITestCase):
-
-    def setUp(self):
-
-        self.manager = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.manager = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
         )
 
-        self.customer = User.objects.create_user(
+        cls.customer = User.objects.create_user(
             email="customer@gmail.com",
             password="StrongPassword123",
             user_name="customer_user",
             role=CustomUser.ROLE_CUSTOMER_USER,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Monitor",
             product_type=Product.PRODUCT_CHOICES[0][0],
             brand="LG",
-            sold_by=self.manager,
+            sold_by=cls.manager,
             description="Monitor",
             technical_information="144Hz",
             price=Decimal("1500.00"),
         )
 
-    def _image(self):
+        cls.upload_url = reverse(
+            "products-api:product-image-upload",
+            args=[str(cls.product.id)],
+        )
 
+    def _image(self):
         file = BytesIO()
         image = Image.new("RGB", (100, 100))
         image.save(file, "JPEG")
@@ -66,32 +69,26 @@ class ProductImageUploadAPITestCase(APITestCase):
         )
 
     def test_upload_image_manager(self):
-
         self.client.force_authenticate(self.manager)
-
-        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
 
         data = {
             "image": self._image(),
             "order": 1,
         }
 
-        response = self.client.post(url, data, format="multipart")
+        response = self.client.post(self.upload_url, data, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_upload_image_forbidden(self):
-
         self.client.force_authenticate(self.customer)
-
-        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
 
         data = {
             "image": self._image(),
             "order": 1,
         }
 
-        response = self.client.post(url, data, format="multipart")
+        response = self.client.post(self.upload_url, data, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -100,11 +97,7 @@ class ProductImageUploadAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-image-upload", args=[str(self.product.id)])
-
-
         for i in range(ProductImageRules.MAX_IMAGES_ALLOWED):
-
             image = SimpleUploadedFile(
                 f"test{i}.jpg",
                 b"file_content",
@@ -112,7 +105,7 @@ class ProductImageUploadAPITestCase(APITestCase):
             )
 
             self.client.post(
-                url,
+                self.upload_url,
                 {"image": image, "order": i + 1},
                 format="multipart",
             )
@@ -124,7 +117,7 @@ class ProductImageUploadAPITestCase(APITestCase):
         )
 
         response = self.client.post(
-            url,
+            self.upload_url,
             {"image": extra_image, "order": 99},
             format="multipart",
         )

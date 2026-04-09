@@ -36,17 +36,26 @@ from ech.shipping.selectors import (
 )
 
 
-User = get_user_model()
-
-
 class BaseShipmentSelectorFactoryMixin:
+    user_counter = 0
+    shipment_counter = 0
+    _user_model = None
+
+    @classmethod
+    def _get_user_model(cls):
+        if cls._user_model is None:
+            cls._user_model = get_user_model()
+        return cls._user_model
+
     def create_user(self, **kwargs):
-        suffix = uuid.uuid4().hex[:8]
+        User = self.__class__._get_user_model()
+        self.__class__.user_counter += 1
+        idx = self.__class__.user_counter
 
         data = {
-            "email": f"user_{suffix}@test.com",
+            "email": f"user_{idx}@test.com",
             "password": "StrongPassword123",
-            "user_name": f"User {suffix}",
+            "user_name": f"User {idx}",
             "role": User.ROLE_CUSTOMER_USER,
             "is_active": True,
             "email_confirmed": True,
@@ -68,6 +77,9 @@ class BaseShipmentSelectorFactoryMixin:
         return Order.objects.create(**data)
 
     def create_shipment(self, **kwargs):
+        self.__class__.shipment_counter += 1
+        idx = self.__class__.shipment_counter
+
         order = kwargs.pop("order", None) or self.create_order()
         customer = kwargs.pop("customer", None) or order.customer
 
@@ -77,8 +89,8 @@ class BaseShipmentSelectorFactoryMixin:
             "status": Shipment.STATUS_PENDING,
             "shipping_method": Shipment.METHOD_STANDARD,
             "carrier_name": "DHL",
-            "tracking_code": f"TRACK-{uuid.uuid4().hex[:10].upper()}",
-            "external_reference": f"EXT-{uuid.uuid4().hex[:6].upper()}",
+            "tracking_code": f"TRACK-{idx:010d}",
+            "external_reference": f"EXT-{idx:06d}",
             "shipping_cost": Decimal("19.90"),
             "currency": "USD",
             "estimated_delivery_date": timezone.now().date() + timedelta(days=5),
@@ -184,7 +196,10 @@ class ShipmentRetrievalSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCa
     def test_get_customer_shipment_returns_customer_owned_shipment(self):
         """Return a shipment when it belongs to the given customer."""
         customer = self.create_user()
-        shipment = self.create_shipment(customer=customer, order=self.create_order(customer=customer))
+        shipment = self.create_shipment(
+            customer=customer,
+            order=self.create_order(customer=customer),
+        )
 
         result = get_customer_shipment(
             shipment_id=shipment.id,
@@ -220,100 +235,108 @@ class ShipmentRetrievalSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCa
 
 
 class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
-    def setUp(self):
-        self.customer_1 = self.create_user()
-        self.customer_2 = self.create_user()
+    @classmethod
+    def setUpTestData(cls):
+        helper = cls()
+        cls.customer_1 = helper.create_user()
+        cls.customer_2 = helper.create_user()
 
-        self.order_1 = self.create_order(customer=self.customer_1)
-        self.order_2 = self.create_order(customer=self.customer_1)
-        self.order_3 = self.create_order(customer=self.customer_2)
+        cls.order_1 = helper.create_order(customer=cls.customer_1)
+        cls.order_2 = helper.create_order(customer=cls.customer_1)
+        cls.order_3 = helper.create_order(customer=cls.customer_2)
 
-        self.shipment_1 = self.create_shipment(
-            order=self.order_1,
-            customer=self.customer_1,
+        base_date = timezone.now().date()
+
+        cls.shipment_1 = helper.create_shipment(
+            order=cls.order_1,
+            customer=cls.customer_1,
             status=Shipment.STATUS_PENDING,
             shipping_method=Shipment.METHOD_STANDARD,
             carrier_name="DHL",
             tracking_code="TRACK-CUST-001",
             external_reference="REF-CUST-001",
-            estimated_delivery_date=timezone.now().date() + timedelta(days=2),
+            estimated_delivery_date=base_date + timedelta(days=2),
         )
-        self.shipment_2 = self.create_shipment(
-            order=self.order_2,
-            customer=self.customer_1,
+        cls.shipment_2 = helper.create_shipment(
+            order=cls.order_2,
+            customer=cls.customer_1,
             status=Shipment.STATUS_SHIPPED,
             shipping_method=Shipment.METHOD_EXPRESS,
             carrier_name="FedEx",
             tracking_code="TRACK-CUST-002",
             external_reference="REF-CUST-002",
-            estimated_delivery_date=timezone.now().date() + timedelta(days=4),
+            estimated_delivery_date=base_date + timedelta(days=4),
         )
-        self.shipment_3 = self.create_shipment(
-            order=self.order_3,
-            customer=self.customer_2,
+        cls.shipment_3 = helper.create_shipment(
+            order=cls.order_3,
+            customer=cls.customer_2,
             status=Shipment.STATUS_IN_TRANSIT,
             shipping_method=Shipment.METHOD_SAME_DAY,
             carrier_name="UPS",
             tracking_code="TRACK-CUST-003",
             external_reference="REF-CUST-003",
-            estimated_delivery_date=timezone.now().date() + timedelta(days=4),
+            estimated_delivery_date=base_date + timedelta(days=4),
         )
 
     def test_list_customer_shipments_returns_only_customer_shipments(self):
         """List only shipments belonging to the given customer."""
-        result = list_customer_shipments(customer=self.customer_1)
+        result = list(list_customer_shipments(customer=self.customer_1))
 
-        self.assertEqual(result.count(), 2)
-        self.assertEqual(list(result), [self.shipment_2, self.shipment_1])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result, [self.shipment_2, self.shipment_1])
 
     def test_list_customer_shipments_by_status_filters_customer_shipments(self):
         """List customer shipments filtered by a specific status."""
-        result = list_customer_shipments_by_status(
+        result = list(list_customer_shipments_by_status(
             customer=self.customer_1,
             status=Shipment.STATUS_SHIPPED,
-        )
+        ))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_2)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_2)
 
     def test_list_management_shipments_returns_all_shipments(self):
         """List all shipments for management in descending creation order."""
-        result = list_management_shipments()
+        result = list(list_management_shipments())
 
-        self.assertEqual(result.count(), 3)
-        self.assertEqual(list(result), [self.shipment_3, self.shipment_2, self.shipment_1])
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result, [self.shipment_3, self.shipment_2, self.shipment_1])
 
     def test_list_shipments_by_status_filters_management_queryset(self):
         """List shipments filtered by status for management use."""
-        result = list_shipments_by_status(status=Shipment.STATUS_PENDING)
+        result = list(list_shipments_by_status(status=Shipment.STATUS_PENDING))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_1)
 
     def test_list_shipments_by_shipping_method_filters_queryset(self):
         """List shipments filtered by shipping method."""
-        result = list_shipments_by_shipping_method(
+        result = list(list_shipments_by_shipping_method(
             shipping_method=Shipment.METHOD_EXPRESS,
-        )
+        ))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_2)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_2)
 
     def test_list_shipments_by_carrier_filters_case_insensitively(self):
         """List shipments filtered by carrier name using case-insensitive exact match."""
-        result = list_shipments_by_carrier(carrier_name="fedex")
+        result = list(list_shipments_by_carrier(carrier_name="fedex"))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_2)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_2)
 
     def test_list_shipments_due_for_delivery_filters_by_estimated_date(self):
         """List shipments due for a specific delivery date."""
         target_date = self.shipment_2.estimated_delivery_date
 
-        result = list_shipments_by_estimated_delivery_date(estimated_delivery_date=target_date)
+        result = list(
+            list_shipments_by_estimated_delivery_date(
+                estimated_delivery_date=target_date
+            )
+        )
 
-        self.assertEqual(result.count(), 2)
-        self.assertEqual(list(result), [self.shipment_3, self.shipment_2])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result, [self.shipment_3, self.shipment_2])
 
     def test_list_shipments_with_tracking_code_excludes_null_and_blank_values(self):
         """List only shipments that already contain a non-empty tracking code."""
@@ -328,7 +351,7 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
             tracking_code="",
         )
 
-        result = list_shipments_with_tracking()
+        result = list(list_shipments_with_tracking())
 
         self.assertIn(self.shipment_1, result)
         self.assertIn(self.shipment_2, result)
@@ -338,24 +361,24 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
 
     def test_search_shipments_matches_tracking_code(self):
         """Search shipments by partial tracking code."""
-        result = search_shipments(query="CUST-001")
+        result = list(search_shipments(query="CUST-001"))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_1)
 
     def test_search_shipments_matches_carrier_name(self):
         """Search shipments by partial carrier name."""
-        result = search_shipments(query="fed")
+        result = list(search_shipments(query="fed"))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_2)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_2)
 
     def test_search_shipments_matches_external_reference(self):
         """Search shipments by partial external reference."""
-        result = search_shipments(query="REF-CUST-003")
+        result = list(search_shipments(query="REF-CUST-003"))
 
-        self.assertEqual(result.count(), 1)
-        self.assertEqual(result.first(), self.shipment_3)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.shipment_3)
 
     def test_search_shipments_returns_ordered_results(self):
         """Return matching search results ordered by newest created_at first."""
@@ -365,6 +388,6 @@ class ShipmentListSelectorTestCase(BaseShipmentSelectorFactoryMixin, TestCase):
         self.shipment_3.tracking_code = "SEARCH-SHARED-002"
         self.shipment_3.save(update_fields=["tracking_code"])
 
-        result = search_shipments(query="SEARCH-SHARED")
+        result = list(search_shipments(query="SEARCH-SHARED"))
 
-        self.assertEqual(list(result), [self.shipment_3, self.shipment_2])
+        self.assertEqual(result, [self.shipment_3, self.shipment_2])

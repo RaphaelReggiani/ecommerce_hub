@@ -6,6 +6,7 @@ class PaymentsConfig(AppConfig):
     name = "ech.payments"
 
     def ready(self):
-        from ech.payments.domain_events.registry import register_payment_event_handlers
-
-        register_payment_event_handlers()
+        """
+        Ensure domain event registry is loaded when the app starts.
+        """
+        from ech.payments.domain_events import registry

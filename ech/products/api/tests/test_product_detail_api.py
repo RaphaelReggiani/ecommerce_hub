@@ -21,39 +21,44 @@ User = get_user_model()
 
 
 class ProductDetailAPITestCase(APITestCase):
-
-    def setUp(self):
-
-        self.user = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Headset",
             product_type=Product.PRODUCT_CHOICES[0][0],
             brand="HyperX",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Headset",
             technical_information="7.1 Surround",
             price=Decimal("400.00"),
         )
 
+        cls.product_detail_url = reverse(
+            "products-api:product-detail",
+            args=[str(cls.product.id)],
+        )
+
     def test_product_detail_success(self):
         """Return product detail successfully when product exists."""
 
-        url = reverse("products-api:product-detail", args=[str(self.product.id)])
-
-        response = self.client.get(url)
+        response = self.client.get(self.product_detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_product_detail_not_found(self):
         """Return 404 when requested product does not exist."""
 
-        url = reverse("products-api:product-detail", args=["00000000-0000-0000-0000-000000000000"])
+        url = reverse(
+            "products-api:product-detail",
+            args=["00000000-0000-0000-0000-000000000000"],
+        )
 
         response = self.client.get(url)
 

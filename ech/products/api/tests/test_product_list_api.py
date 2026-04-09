@@ -19,10 +19,9 @@ User = get_user_model()
 
 
 class ProductListAPITestCase(APITestCase):
-    def setUp(self):
-        cache.clear()
-
-        self.user = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
@@ -30,6 +29,10 @@ class ProductListAPITestCase(APITestCase):
             is_active=True,
             email_confirmed=True,
         )
+        cls.product_list_url = reverse("products-api:product-list")
+
+    def setUp(self):
+        cache.clear()
 
         Product.objects.create(
             name="Keyboard",
@@ -57,9 +60,7 @@ class ProductListAPITestCase(APITestCase):
         """Ensure only active products are listed for authenticated users."""
         self.client.force_authenticate(self.user)
 
-        url = reverse("products-api:product-list")
-
-        response = self.client.get(url)
+        response = self.client.get(self.product_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -69,9 +70,7 @@ class ProductListAPITestCase(APITestCase):
 
     def test_product_list_requires_authentication(self):
         """API should require authentication to access the product list."""
-        url = reverse("products-api:product-list")
-
-        response = self.client.get(url)
+        response = self.client.get(self.product_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -91,10 +90,8 @@ class ProductListAPITestCase(APITestCase):
                 is_active=True,
             )
 
-        url = reverse("products-api:product-list")
-
-        page1 = self.client.get(url + "?page=1")
-        page2 = self.client.get(url + "?page=2")
+        page1 = self.client.get(f"{self.product_list_url}?page=1")
+        page2 = self.client.get(f"{self.product_list_url}?page=2")
 
         ids_page1 = {p["id"] for p in page1.data["results"]}
         ids_page2 = {p["id"] for p in page2.data["results"]}

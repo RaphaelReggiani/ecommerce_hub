@@ -89,8 +89,13 @@ def passthrough_get_or_set(*, key, producer, timeout):
 
 
 class BaseAnalyticsSelectorFactoryMixin:
-    def create_user(self, **kwargs):
-        suffix = uuid.uuid4().hex[:8]
+    @staticmethod
+    def unique_suffix():
+        return uuid.uuid4().hex[:8]
+
+    @classmethod
+    def create_user(cls, **kwargs):
+        suffix = cls.unique_suffix()
 
         data = {
             "email": f"user_{suffix}@test.com",
@@ -103,8 +108,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return User.objects.create_user(**data)
 
-    def create_staff_user(self, **kwargs):
-        suffix = uuid.uuid4().hex[:8]
+    @classmethod
+    def create_staff_user(cls, **kwargs):
+        suffix = cls.unique_suffix()
 
         data = {
             "email": f"staff_{suffix}@company.com",
@@ -117,11 +123,12 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return User.objects.create_user(**data)
 
-    def create_product(self, **kwargs):
-        sold_by = kwargs.pop("sold_by", None) or self.create_staff_user()
+    @classmethod
+    def create_product(cls, **kwargs):
+        sold_by = kwargs.pop("sold_by", None) or cls.create_staff_user()
 
         data = {
-            "name": f"Product {uuid.uuid4().hex[:6]}",
+            "name": f"Product {cls.unique_suffix()}",
             "product_type": Product.PHONE,
             "brand": "Apple",
             "sold_by": sold_by,
@@ -134,8 +141,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return Product.objects.create(**data)
 
-    def create_product_with_related_data(self, **kwargs):
-        product = self.create_product(**kwargs)
+    @classmethod
+    def create_product_with_related_data(cls, **kwargs):
+        product = cls.create_product(**kwargs)
 
         ProductInventory.objects.create(
             product=product,
@@ -148,8 +156,9 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return product
 
-    def create_order(self, **kwargs):
-        customer = kwargs.pop("customer", None) or self.create_user()
+    @classmethod
+    def create_order(cls, **kwargs):
+        customer = kwargs.pop("customer", None) or cls.create_user()
 
         data = {
             "customer": customer,
@@ -161,9 +170,10 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return Order.objects.create(**data)
 
-    def create_order_with_related_data(self, **kwargs):
-        product = kwargs.pop("product", None) or self.create_product()
-        order = self.create_order(**kwargs)
+    @classmethod
+    def create_order_with_related_data(cls, **kwargs):
+        product = kwargs.pop("product", None) or cls.create_product()
+        order = cls.create_order(**kwargs)
 
         OrderTotals.objects.create(
             order=order,
@@ -208,29 +218,31 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return order
 
-    def create_payment(self, **kwargs):
-        order = kwargs.pop("order", None) or self.create_order()
+    @classmethod
+    def create_payment(cls, **kwargs):
+        order = kwargs.pop("order", None) or cls.create_order()
         customer = kwargs.pop("customer", None) or order.customer
 
         data = {
             "order": order,
             "customer": customer,
-            "payment_reference": f"PAY-{uuid.uuid4().hex[:10].upper()}",
+            "payment_reference": f"PAY-{cls.unique_suffix().upper()}",
             "method": Payment.PAYMENT_METHOD_PIX,
             "status": Payment.PAYMENT_STATUS_CAPTURED,
             "amount": Decimal("4500.00"),
             "refunded_amount": Decimal("0.00"),
             "currency": "USD",
             "gateway_name": "stripe",
-            "gateway_payment_id": f"GW-{uuid.uuid4().hex[:8]}",
-            "gateway_customer_id": f"CUST-{uuid.uuid4().hex[:8]}",
+            "gateway_payment_id": f"GW-{cls.unique_suffix()}",
+            "gateway_customer_id": f"CUST-{cls.unique_suffix()}",
             "metadata": {"source": "test"},
         }
         data.update(kwargs)
         return Payment.objects.create(**data)
 
-    def create_payment_with_related_data(self, **kwargs):
-        payment = self.create_payment(**kwargs)
+    @classmethod
+    def create_payment_with_related_data(cls, **kwargs):
+        payment = cls.create_payment(**kwargs)
 
         PaymentLifecycle.objects.create(payment=payment)
         PaymentTransaction.objects.create(
@@ -253,8 +265,9 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return payment
 
-    def create_shipment(self, **kwargs):
-        order = kwargs.pop("order", None) or self.create_order()
+    @classmethod
+    def create_shipment(cls, **kwargs):
+        order = kwargs.pop("order", None) or cls.create_order()
         customer = kwargs.pop("customer", None) or order.customer
 
         data = {
@@ -263,8 +276,8 @@ class BaseAnalyticsSelectorFactoryMixin:
             "status": Shipment.STATUS_PENDING,
             "shipping_method": Shipment.METHOD_STANDARD,
             "carrier_name": "DHL",
-            "tracking_code": f"TRACK-{uuid.uuid4().hex[:10].upper()}",
-            "external_reference": f"EXT-{uuid.uuid4().hex[:8].upper()}",
+            "tracking_code": f"TRACK-{cls.unique_suffix().upper()}",
+            "external_reference": f"EXT-{cls.unique_suffix().upper()}",
             "shipping_cost": Decimal("25.00"),
             "currency": "USD",
             "estimated_delivery_date": timezone.now().date() + timedelta(days=5),
@@ -272,8 +285,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return Shipment.objects.create(**data)
 
-    def create_shipment_with_related_data(self, **kwargs):
-        shipment = self.create_shipment(**kwargs)
+    @classmethod
+    def create_shipment_with_related_data(cls, **kwargs):
+        shipment = cls.create_shipment(**kwargs)
 
         ShipmentAddress.objects.create(
             shipment=shipment,
@@ -309,9 +323,10 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return shipment
 
-    def create_review(self, **kwargs):
-        customer = kwargs.pop("customer", None) or self.create_user()
-        product = kwargs.pop("product", None) or self.create_product()
+    @classmethod
+    def create_review(cls, **kwargs):
+        customer = kwargs.pop("customer", None) or cls.create_user()
+        product = kwargs.pop("product", None) or cls.create_product()
 
         data = {
             "customer": customer,
@@ -325,8 +340,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return Review.objects.create(**data)
 
-    def create_review_with_related_data(self, **kwargs):
-        review = self.create_review(**kwargs)
+    @classmethod
+    def create_review_with_related_data(cls, **kwargs):
+        review = cls.create_review(**kwargs)
 
         ReviewLifecycle.objects.create(review=review)
         ReviewEvent.objects.create(
@@ -336,9 +352,10 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return review
 
-    def create_notification(self, **kwargs):
-        recipient = kwargs.pop("recipient", None) or self.create_user()
-        created_by = kwargs.pop("created_by", None) or self.create_staff_user()
+    @classmethod
+    def create_notification(cls, **kwargs):
+        recipient = kwargs.pop("recipient", None) or cls.create_user()
+        created_by = kwargs.pop("created_by", None) or cls.create_staff_user()
 
         data = {
             "recipient": recipient,
@@ -357,8 +374,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return Notification.objects.create(**data)
 
-    def create_notification_with_related_data(self, **kwargs):
-        notification = self.create_notification(**kwargs)
+    @classmethod
+    def create_notification_with_related_data(cls, **kwargs):
+        notification = cls.create_notification(**kwargs)
 
         NotificationLifecycle.objects.create(notification=notification)
         NotificationDelivery.objects.create(
@@ -374,8 +392,9 @@ class BaseAnalyticsSelectorFactoryMixin:
 
         return notification
 
-    def create_snapshot(self, **kwargs):
-        generated_by = kwargs.pop("generated_by", None) or self.create_staff_user()
+    @classmethod
+    def create_snapshot(cls, **kwargs):
+        generated_by = kwargs.pop("generated_by", None) or cls.create_staff_user()
         now = timezone.now()
 
         data = {
@@ -422,8 +441,9 @@ class BaseAnalyticsSelectorFactoryMixin:
         data.update(kwargs)
         return AnalyticsSnapshot.objects.create(**data)
 
-    def create_snapshot_with_related_data(self, **kwargs):
-        snapshot = self.create_snapshot(**kwargs)
+    @classmethod
+    def create_snapshot_with_related_data(cls, **kwargs):
+        snapshot = cls.create_snapshot(**kwargs)
 
         AnalyticsSnapshotLifecycle.objects.create(
             snapshot=snapshot,
@@ -462,6 +482,10 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
     BaseAnalyticsSelectorFactoryMixin,
     TestCase,
 ):
+    @classmethod
+    def setUpTestData(cls):
+        cls.snapshot = cls.create_snapshot_with_related_data()
+
     @patch(
         "ech.analytics.selectors.AnalyticsCacheService.get_snapshot_version",
         return_value=1,
@@ -475,12 +499,10 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_version,
     ):
-        snapshot = self.create_snapshot_with_related_data()
+        result = get_analytics_snapshot_by_id(snapshot_id=self.snapshot.id)
 
-        result = get_analytics_snapshot_by_id(snapshot_id=snapshot.id)
-
-        self.assertEqual(result, snapshot)
-        self.assertEqual(result.generated_by, snapshot.generated_by)
+        self.assertEqual(result, self.snapshot)
+        self.assertEqual(result.generated_by, self.snapshot.generated_by)
         self.assertIsNotNone(result.lifecycle)
         self.assertEqual(result.events.count(), 1)
         self.assertTrue(mock_get_or_set.called)
@@ -515,11 +537,9 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_version,
     ):
-        snapshot = self.create_snapshot_with_related_data()
+        result = get_analytics_snapshot_with_related(snapshot_id=self.snapshot.id)
 
-        result = get_analytics_snapshot_with_related(snapshot_id=snapshot.id)
-
-        self.assertEqual(result, snapshot)
+        self.assertEqual(result, self.snapshot)
         self.assertIsNotNone(result.lifecycle)
         self.assertEqual(result.events.count(), 1)
 
@@ -579,26 +599,27 @@ class AnalyticsSnapshotListSelectorTestCase(
     BaseAnalyticsSelectorFactoryMixin,
     TestCase,
 ):
-    def setUp(self):
-        self.generated_by = self.create_staff_user()
+    @classmethod
+    def setUpTestData(cls):
+        cls.generated_by = cls.create_staff_user()
         now = timezone.now()
 
-        self.snapshot_daily_old = self.create_snapshot(
-            generated_by=self.generated_by,
+        cls.snapshot_daily_old = cls.create_snapshot(
+            generated_by=cls.generated_by,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
             period_start=now - timedelta(days=3),
             period_end=now - timedelta(days=2),
             metadata={"tag": "old-daily"},
         )
-        self.snapshot_daily_new = self.create_snapshot(
-            generated_by=self.generated_by,
+        cls.snapshot_daily_new = cls.create_snapshot(
+            generated_by=cls.generated_by,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
             period_start=now - timedelta(days=2),
             period_end=now - timedelta(days=1),
             metadata={"tag": "new-daily"},
         )
-        self.snapshot_weekly = self.create_snapshot(
-            generated_by=self.generated_by,
+        cls.snapshot_weekly = cls.create_snapshot(
+            generated_by=cls.generated_by,
             period_type=AnalyticsSnapshot.PERIOD_WEEKLY,
             period_start=now - timedelta(days=8),
             period_end=now - timedelta(days=1),
@@ -850,123 +871,124 @@ class AnalyticsOperationalListSelectorTestCase(
     BaseAnalyticsSelectorFactoryMixin,
     TestCase,
 ):
-    def setUp(self):
-        self.period_start = timezone.now() - timedelta(days=2)
-        self.period_end = timezone.now() + timedelta(days=1)
+    @classmethod
+    def setUpTestData(cls):
+        cls.period_start = timezone.now() - timedelta(days=2)
+        cls.period_end = timezone.now() + timedelta(days=1)
 
-        self.customer = self.create_user()
-        self.staff_user = self.create_staff_user()
+        cls.customer = cls.create_user()
+        cls.staff_user = cls.create_staff_user()
 
-        self.product = self.create_product()
-        self.second_product = self.create_product()
+        cls.product = cls.create_product()
+        cls.second_product = cls.create_product()
 
-        self.order_inside = self.create_order_with_related_data(
-            customer=self.customer,
-            product=self.product,
+        cls.order_inside = cls.create_order_with_related_data(
+            customer=cls.customer,
+            product=cls.product,
             status=Order.ORDER_STATUS_DELIVERED,
         )
-        self.order_outside = self.create_order_with_related_data(
-            customer=self.customer,
-            product=self.product,
+        cls.order_outside = cls.create_order_with_related_data(
+            customer=cls.customer,
+            product=cls.product,
             status=Order.ORDER_STATUS_PENDING,
         )
-        Order.objects.filter(id=self.order_inside.id).update(
+        Order.objects.filter(id=cls.order_inside.id).update(
             created_at=timezone.now() - timedelta(hours=12),
         )
-        Order.objects.filter(id=self.order_outside.id).update(
+        Order.objects.filter(id=cls.order_outside.id).update(
             created_at=timezone.now() - timedelta(days=10),
         )
 
-        self.payment_inside = self.create_payment_with_related_data(
-            order=self.order_inside,
-            customer=self.customer,
+        cls.payment_inside = cls.create_payment_with_related_data(
+            order=cls.order_inside,
+            customer=cls.customer,
             status=Payment.PAYMENT_STATUS_CAPTURED,
         )
-        self.payment_outside = self.create_payment_with_related_data(
-            order=self.order_outside,
-            customer=self.customer,
+        cls.payment_outside = cls.create_payment_with_related_data(
+            order=cls.order_outside,
+            customer=cls.customer,
             status=Payment.PAYMENT_STATUS_FAILED,
         )
-        Payment.objects.filter(id=self.payment_inside.id).update(
+        Payment.objects.filter(id=cls.payment_inside.id).update(
             created_at=timezone.now() - timedelta(hours=10),
         )
-        Payment.objects.filter(id=self.payment_outside.id).update(
+        Payment.objects.filter(id=cls.payment_outside.id).update(
             created_at=timezone.now() - timedelta(days=10),
         )
 
-        self.shipment_inside = self.create_shipment_with_related_data(
-            order=self.order_inside,
-            customer=self.customer,
+        cls.shipment_inside = cls.create_shipment_with_related_data(
+            order=cls.order_inside,
+            customer=cls.customer,
             status=Shipment.STATUS_DELIVERED,
         )
-        self.shipment_outside = self.create_shipment_with_related_data(
-            order=self.order_outside,
-            customer=self.customer,
+        cls.shipment_outside = cls.create_shipment_with_related_data(
+            order=cls.order_outside,
+            customer=cls.customer,
             status=Shipment.STATUS_PENDING,
         )
-        Shipment.objects.filter(id=self.shipment_inside.id).update(
+        Shipment.objects.filter(id=cls.shipment_inside.id).update(
             created_at=timezone.now() - timedelta(hours=8),
         )
-        Shipment.objects.filter(id=self.shipment_outside.id).update(
+        Shipment.objects.filter(id=cls.shipment_outside.id).update(
             created_at=timezone.now() - timedelta(days=10),
         )
 
-        self.review_inside = self.create_review_with_related_data(
-            customer=self.customer,
-            product=self.product,
+        cls.review_inside = cls.create_review_with_related_data(
+            customer=cls.customer,
+            product=cls.product,
             status=Review.REVIEW_STATUS_APPROVED,
         )
-        self.review_outside_customer = self.create_user()
-        self.review_outside = self.create_review_with_related_data(
-            customer=self.review_outside_customer,
-            product=self.second_product,
+        cls.review_outside_customer = cls.create_user()
+        cls.review_outside = cls.create_review_with_related_data(
+            customer=cls.review_outside_customer,
+            product=cls.second_product,
             status=Review.REVIEW_STATUS_REJECTED,
         )
-        Review.objects.filter(id=self.review_inside.id).update(
+        Review.objects.filter(id=cls.review_inside.id).update(
             created_at=timezone.now() - timedelta(hours=6),
         )
-        Review.objects.filter(id=self.review_outside.id).update(
+        Review.objects.filter(id=cls.review_outside.id).update(
             created_at=timezone.now() - timedelta(days=10),
         )
 
-        self.notification_inside = self.create_notification_with_related_data(
-            recipient=self.customer,
-            created_by=self.staff_user,
+        cls.notification_inside = cls.create_notification_with_related_data(
+            recipient=cls.customer,
+            created_by=cls.staff_user,
         )
-        self.notification_outside = self.create_notification_with_related_data(
-            recipient=self.customer,
-            created_by=self.staff_user,
+        cls.notification_outside = cls.create_notification_with_related_data(
+            recipient=cls.customer,
+            created_by=cls.staff_user,
         )
-        Notification.objects.filter(id=self.notification_inside.id).update(
+        Notification.objects.filter(id=cls.notification_inside.id).update(
             created_at=timezone.now() - timedelta(hours=4),
         )
-        Notification.objects.filter(id=self.notification_outside.id).update(
+        Notification.objects.filter(id=cls.notification_outside.id).update(
             created_at=timezone.now() - timedelta(days=10),
         )
 
-        self.customer_inside = self.create_user(
-            email=f"customer_in_{uuid.uuid4().hex[:6]}@test.com",
+        cls.customer_inside = cls.create_user(
+            email=f"customer_in_{cls.unique_suffix()}@test.com",
         )
-        self.customer_outside = self.create_user(
-            email=f"customer_out_{uuid.uuid4().hex[:6]}@test.com",
+        cls.customer_outside = cls.create_user(
+            email=f"customer_out_{cls.unique_suffix()}@test.com",
         )
-        User.objects.filter(id=self.customer_inside.id).update(
+        User.objects.filter(id=cls.customer_inside.id).update(
             date_joined=timezone.now() - timedelta(hours=3),
         )
-        User.objects.filter(id=self.customer_outside.id).update(
+        User.objects.filter(id=cls.customer_outside.id).update(
             date_joined=timezone.now() - timedelta(days=10),
         )
 
-        self.staff_inside = self.create_staff_user(
-            email=f"analytics_{uuid.uuid4().hex[:6]}@company.com",
+        cls.staff_inside = cls.create_staff_user(
+            email=f"analytics_{cls.unique_suffix()}@company.com",
         )
-        self.staff_outside = self.create_staff_user(
-            email=f"admin_{uuid.uuid4().hex[:6]}@company.com",
+        cls.staff_outside = cls.create_staff_user(
+            email=f"admin_{cls.unique_suffix()}@company.com",
         )
-        User.objects.filter(id=self.staff_inside.id).update(
+        User.objects.filter(id=cls.staff_inside.id).update(
             date_joined=timezone.now() - timedelta(hours=2),
         )
-        User.objects.filter(id=self.staff_outside.id).update(
+        User.objects.filter(id=cls.staff_outside.id).update(
             date_joined=timezone.now() - timedelta(days=20),
         )
 

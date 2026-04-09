@@ -8,19 +8,20 @@ from ech.users.models import CustomUser
 
 
 class ProductLogServiceTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="logs@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Log User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Mouse",
             product_type=Product.MOUSE,
             brand="Logitech",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Gaming mouse",
             technical_information="Specs",
             price=Decimal("200.00"),

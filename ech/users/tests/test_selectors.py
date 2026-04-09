@@ -16,27 +16,28 @@ from ech.users.selectors import (
 
 
 class UserSelectorsTestCase(TestCase):
-    def setUp(self):
-        self.customer = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer",
         )
 
-        self.admin = CustomUser.objects.create_user(
+        cls.admin = CustomUser.objects.create_user(
             email="admin@company.com",
             password="StrongPassword123",
             user_name="Admin",
             role=CustomUser.ROLE_ADMIN,
         )
 
-        self.active_user = CustomUser.objects.create_user(
+        cls.active_user = CustomUser.objects.create_user(
             email="active@test.com",
             password="StrongPassword123",
             user_name="Active",
         )
-        self.active_user.is_active = True
-        self.active_user.save()
+        cls.active_user.is_active = True
+        cls.active_user.save()
 
     def test_get_user_by_id_returns_user(self):
         """Ensure get_user_by_id returns the correct user."""
@@ -83,31 +84,32 @@ class UserSelectorsTestCase(TestCase):
 
 
 class UserTokenSelectorsTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="token@test.com",
             password="StrongPassword123",
             user_name="Token User",
         )
 
-        self.valid_token = UserToken.objects.create(
-            user=self.user,
+        cls.valid_token = UserToken.objects.create(
+            user=cls.user,
             token="valid-token",
             token_type=UserToken.TYPE_EMAIL_CONFIRMATION,
             expires_at=timezone.now() + timedelta(hours=1),
             used=False,
         )
 
-        self.used_token = UserToken.objects.create(
-            user=self.user,
+        cls.used_token = UserToken.objects.create(
+            user=cls.user,
             token="used-token",
             token_type=UserToken.TYPE_EMAIL_CONFIRMATION,
             expires_at=timezone.now() + timedelta(hours=1),
             used=True,
         )
 
-        self.expired_token = UserToken.objects.create(
-            user=self.user,
+        cls.expired_token = UserToken.objects.create(
+            user=cls.user,
             token="expired-token",
             token_type=UserToken.TYPE_EMAIL_CONFIRMATION,
             expires_at=timezone.now() - timedelta(minutes=1),

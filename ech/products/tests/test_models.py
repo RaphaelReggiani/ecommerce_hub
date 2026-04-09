@@ -18,19 +18,20 @@ from ech.users.models import CustomUser
 
 
 class ProductModelTestCase(TestCase):
-    def setUp(self):
-        self.staff_user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff_user = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Staff User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Mouse",
             product_type=Product.MOUSE,
             brand="Logitech",
-            sold_by=self.staff_user,
+            sold_by=cls.staff_user,
             description="High performance gaming mouse.",
             technical_information="16000 DPI sensor.",
             price=Decimal("299.90"),
@@ -184,19 +185,20 @@ class ProductModelTestCase(TestCase):
 
 
 class ProductInventoryModelTestCase(TestCase):
-    def setUp(self):
-        self.staff_user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff_user = CustomUser.objects.create_user(
             email="inventory@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Inventory User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Studio Microphone",
             product_type=Product.MICROPHONE,
             brand="Shure",
-            sold_by=self.staff_user,
+            sold_by=cls.staff_user,
             description="Professional studio microphone.",
             technical_information="Cardioid condenser microphone.",
             price=Decimal("899.90"),
@@ -247,19 +249,20 @@ class ProductInventoryModelTestCase(TestCase):
 
 
 class ProductImageModelTestCase(TestCase):
-    def setUp(self):
-        self.staff_user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff_user = CustomUser.objects.create_user(
             email="images@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Image User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Wireless Earphone",
             product_type=Product.EARPHONE,
             brand="Sony",
-            sold_by=self.staff_user,
+            sold_by=cls.staff_user,
             description="Wireless earphone description.",
             technical_information="Bluetooth 5.3.",
             price=Decimal("399.90"),
@@ -392,19 +395,20 @@ class ProductImageModelTestCase(TestCase):
 
 
 class ProductEventLogModelTestCase(TestCase):
-    def setUp(self):
-        self.staff_user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff_user = CustomUser.objects.create_user(
             email="events@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Event User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Office Headset",
             product_type=Product.HEADSET,
             brand="JBL",
-            sold_by=self.staff_user,
+            sold_by=cls.staff_user,
             description="Office headset description.",
             technical_information="Noise cancelling headset.",
             price=Decimal("599.90"),

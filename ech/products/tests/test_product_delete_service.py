@@ -12,19 +12,20 @@ from ech.users.models import CustomUser
 
 
 class ProductDeleteServiceTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Staff User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Keyboard",
             product_type=Product.KEYBOARD,
             brand="Keychron",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Mechanical gaming keyboard",
             technical_information="RGB hot-swappable switches",
             price=Decimal("499.90"),

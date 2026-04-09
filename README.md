@@ -2404,12 +2404,12 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | :--- | :---: | :---: | :---: | :--- | :--- |
 | **Users** | 149 | 50 | 199 | Authentication, JWT, Permissions, Logging, Idempotency | ✔ Stable |
 | **Products** | 169 | 27 | 196 | Inventory Management, Audit Logs, Caching, Logging, Idempotency | ✔ Stable |
-| **Orders** | 240 | 87 | 327 | Order Lifecycle, Concurrency, Caching, Logging, Idempotency | ✔ Stable |
+| **Orders** | 261 | 87 | 348 | Order Lifecycle, Concurrency, Caching, Logging, Idempotency | ✔ Stable |
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
 | **Notifications** | 210| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
-| **TOTAL (implemented modules)** | **1384** | **440** | **1824** | Core Business Logic | — |
+| **TOTAL (implemented modules)** | **1405** | **440** | **1845** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.

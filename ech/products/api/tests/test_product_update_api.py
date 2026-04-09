@@ -19,31 +19,35 @@ User = get_user_model()
 
 
 class ProductUpdateAPITestCase(APITestCase):
-
-    def setUp(self):
-
-        self.manager = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.manager = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
         )
 
-        self.customer = User.objects.create_user(
+        cls.customer = User.objects.create_user(
             email="customer@gmail.com",
             password="StrongPassword123",
             user_name="customer_user",
             role=CustomUser.ROLE_CUSTOMER_USER,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Monitor",
             product_type=Product.PRODUCT_CHOICES[0][0],
             brand="LG",
-            sold_by=self.manager,
+            sold_by=cls.manager,
             description="Monitor",
             technical_information="144Hz",
             price=Decimal("1500.00"),
+        )
+
+        cls.product_update_url = reverse(
+            "products-api:product-update",
+            args=[str(cls.product.id)],
         )
 
     def test_update_product_success(self):
@@ -51,14 +55,12 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-update", args=[str(self.product.id)])
-
         data = {
             "name": "Gaming Monitor Pro",
             "brand": "LG UltraGear",
         }
 
-        response = self.client.patch(url, data)
+        response = self.client.patch(self.product_update_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -72,13 +74,11 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-update", args=[str(self.product.id)])
-
         data = {
             "price": Decimal("1300.00"),
         }
 
-        response = self.client.patch(url, data)
+        response = self.client.patch(self.product_update_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -91,13 +91,11 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.customer)
 
-        url = reverse("products-api:product-update", args=[str(self.product.id)])
-
         data = {
             "name": "Invalid Update",
         }
 
-        response = self.client.patch(url, data)
+        response = self.client.patch(self.product_update_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -123,14 +121,12 @@ class ProductUpdateAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-update", args=[str(self.product.id)])
-
         data = {
             "price": Decimal("1000.00"),
             "discount_price": Decimal("1200.00"),
         }
 
-        response = self.client.patch(url, data)
+        response = self.client.patch(self.product_update_url, data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -141,9 +137,7 @@ class ProductUpdateAPITestCase(APITestCase):
 
         original_price = self.product.price
 
-        url = reverse("products-api:product-update", args=[str(self.product.id)])
-
-        response = self.client.patch(url, {"name": "Updated Name"})
+        response = self.client.patch(self.product_update_url, {"name": "Updated Name"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

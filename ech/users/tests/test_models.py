@@ -340,8 +340,9 @@ class CustomUserModelTestCase(TestCase):
 
 
 class UserTokenModelTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="tokenuser@test.com",
             password="StrongPassword123",
             user_name="Token User",

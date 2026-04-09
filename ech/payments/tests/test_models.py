@@ -18,8 +18,9 @@ from ech.users.models import CustomUser
 
 
 class PaymentModelsTestCase(TestCase):
-    def setUp(self):
-        self.customer = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -28,7 +29,7 @@ class PaymentModelsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.actor = CustomUser.objects.create_user(
+        cls.actor = CustomUser.objects.create_user(
             email="actor@test.com",
             password="StrongPassword123",
             user_name="Actor User",
@@ -37,16 +38,16 @@ class PaymentModelsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.order = Order.objects.create(
-            customer=self.customer,
+        cls.order = Order.objects.create(
+            customer=cls.customer,
             status=Order.ORDER_STATUS_PENDING,
             payment_status=Order.PAYMENT_STATUS_PENDING,
             shipping_status=Order.SHIPPING_STATUS_PENDING,
         )
 
-        self.payment = Payment.objects.create(
-            order=self.order,
-            customer=self.customer,
+        cls.payment = Payment.objects.create(
+            order=cls.order,
+            customer=cls.customer,
             payment_reference="PAY-001",
             method=Payment.PAYMENT_METHOD_CREDIT_CARD,
             status=Payment.PAYMENT_STATUS_PENDING,

@@ -19,41 +19,48 @@ User = get_user_model()
 
 
 class ProductDeleteAPITestCase(APITestCase):
-
-    def setUp(self):
-
-        self.manager = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.manager = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
         )
 
-        self.customer = User.objects.create_user(
+        cls.customer = User.objects.create_user(
             email="customer@gmail.com",
             password="StrongPassword123",
             user_name="customer_user",
             role=CustomUser.ROLE_CUSTOMER_USER,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Monitor",
             product_type=Product.PRODUCT_CHOICES[0][0],
             brand="LG",
-            sold_by=self.manager,
+            sold_by=cls.manager,
             description="Monitor",
             technical_information="144Hz",
             price=Decimal("1500.00"),
         )
+
+        cls.product_delete_url = reverse(
+            "products-api:product-delete",
+            args=[str(cls.product.id)],
+        )
+        cls.product_detail_url = reverse(
+            "products-api:product-detail",
+            args=[str(cls.product.id)],
+        )
+        cls.product_list_url = reverse("products-api:product-list")
 
     def test_delete_product_success(self):
         """Operations staff should be able to delete a product."""
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-delete", args=[str(self.product.id)])
-
-        response = self.client.delete(url)
+        response = self.client.delete(self.product_delete_url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -66,9 +73,7 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.customer)
 
-        url = reverse("products-api:product-delete", args=[str(self.product.id)])
-
-        response = self.client.delete(url)
+        response = self.client.delete(self.product_delete_url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -93,9 +98,7 @@ class ProductDeleteAPITestCase(APITestCase):
         self.product.is_active = False
         self.product.save()
 
-        url = reverse("products-api:product-list")
-
-        response = self.client.get(url)
+        response = self.client.get(self.product_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -110,13 +113,14 @@ class ProductDeleteAPITestCase(APITestCase):
 
         self.client.force_authenticate(self.manager)
 
-        url = reverse("products-api:product-delete", args=[str(self.product.id)])
-
-        response1 = self.client.delete(url)
-        response2 = self.client.delete(url)
+        response1 = self.client.delete(self.product_delete_url)
+        response2 = self.client.delete(self.product_delete_url)
 
         self.assertEqual(response1.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertIn(response2.status_code, [status.HTTP_204_NO_CONTENT, status.HTTP_404_NOT_FOUND])
+        self.assertIn(
+            response2.status_code,
+            [status.HTTP_204_NO_CONTENT, status.HTTP_404_NOT_FOUND],
+        )
 
     def test_deleted_product_not_accessible(self):
         """Soft deleted products should not be accessible via detail endpoint."""
@@ -126,8 +130,6 @@ class ProductDeleteAPITestCase(APITestCase):
         self.product.is_active = False
         self.product.save()
 
-        url = reverse("products-api:product-detail", args=[str(self.product.id)])
-
-        response = self.client.get(url)
+        response = self.client.get(self.product_detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

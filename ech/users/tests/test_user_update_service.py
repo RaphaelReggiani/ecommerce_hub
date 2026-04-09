@@ -10,10 +10,11 @@ from ech.users.services.user_update_service import UserUpdateService
 
 
 class UserUpdateServiceTestCase(TestCase):
-    def setUp(self):
-        corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
+    @classmethod
+    def setUpTestData(cls):
+        cls.corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
 
-        self.user = CustomUser.objects.create_user(
+        cls.user = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -25,8 +26,8 @@ class UserUpdateServiceTestCase(TestCase):
             user_age=30,
         )
 
-        self.admin_user = CustomUser.objects.create_user(
-            email=f"admin@{corporate_domain}",
+        cls.admin_user = CustomUser.objects.create_user(
+            email=f"admin@{cls.corporate_domain}",
             password="StrongPassword123",
             user_name="Admin User",
             role=CustomUser.ROLE_ADMIN,
@@ -99,10 +100,8 @@ class UserUpdateServiceTestCase(TestCase):
             )
 
     def test_update_user_allows_role_change_when_performed_by_authorized_user(self):
-        corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
-
         staff_candidate = CustomUser.objects.create_user(
-            email=f"staffcandidate@{corporate_domain}",
+            email=f"staffcandidate@{self.corporate_domain}",
             password="StrongPassword123",
             user_name="Staff Candidate",
             role=CustomUser.ROLE_CUSTOMER_USER,
@@ -166,10 +165,8 @@ class UserUpdateServiceTestCase(TestCase):
         self.assertFalse(self.user.is_superuser)
 
     def test_update_user_allows_staff_role_assignment_for_corporate_email(self):
-        corporate_domain = CORPORATE_EMAIL_DOMAIN.lstrip("@")
-
         staff_user = CustomUser.objects.create_user(
-            email=f"staff@{corporate_domain}",
+            email=f"staff@{self.corporate_domain}",
             password="StrongPassword123",
             user_name="Staff Candidate",
             role=CustomUser.ROLE_CUSTOMER_USER,

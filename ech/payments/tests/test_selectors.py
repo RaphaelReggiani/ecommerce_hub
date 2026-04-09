@@ -2,7 +2,6 @@ from decimal import Decimal
 import uuid
 
 from django.test import TestCase
-from django.utils import timezone
 
 from ech.orders.models import Order
 from ech.payments.exceptions import (
@@ -39,8 +38,9 @@ from ech.users.models import CustomUser
 
 
 class PaymentSelectorsTestCase(TestCase):
-    def setUp(self):
-        self.customer = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer",
@@ -49,7 +49,7 @@ class PaymentSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.other_customer = CustomUser.objects.create_user(
+        cls.other_customer = CustomUser.objects.create_user(
             email="other@test.com",
             password="StrongPassword123",
             user_name="Other Customer",
@@ -58,9 +58,7 @@ class PaymentSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        # Para selectors, não precisamos de role de staff.
-        # Basta um usuário válido para os campos performed_by/requested_by/processed_by.
-        self.actor = CustomUser.objects.create_user(
+        cls.actor = CustomUser.objects.create_user(
             email="actor@test.com",
             password="StrongPassword123",
             user_name="Actor",
@@ -69,32 +67,32 @@ class PaymentSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.order = Order.objects.create(
-            customer=self.customer,
+        cls.order = Order.objects.create(
+            customer=cls.customer,
             status=Order.ORDER_STATUS_PENDING,
             payment_status=Order.PAYMENT_STATUS_PENDING,
             shipping_status=Order.SHIPPING_STATUS_PENDING,
         )
 
-        self.other_order = Order.objects.create(
-            customer=self.other_customer,
+        cls.other_order = Order.objects.create(
+            customer=cls.other_customer,
             status=Order.ORDER_STATUS_PENDING,
             payment_status=Order.PAYMENT_STATUS_PENDING,
             shipping_status=Order.SHIPPING_STATUS_PENDING,
         )
 
-        self.payment = Payment.objects.create(
-            order=self.order,
-            customer=self.customer,
+        cls.payment = Payment.objects.create(
+            order=cls.order,
+            customer=cls.customer,
             payment_reference="PAY-001",
             method=Payment.PAYMENT_METHOD_PIX,
             status=Payment.PAYMENT_STATUS_PENDING,
             amount=Decimal("100.00"),
         )
 
-        self.other_payment = Payment.objects.create(
-            order=self.other_order,
-            customer=self.other_customer,
+        cls.other_payment = Payment.objects.create(
+            order=cls.other_order,
+            customer=cls.other_customer,
             payment_reference="PAY-002",
             method=Payment.PAYMENT_METHOD_CREDIT_CARD,
             status=Payment.PAYMENT_STATUS_CAPTURED,
@@ -102,38 +100,38 @@ class PaymentSelectorsTestCase(TestCase):
             refunded_amount=Decimal("50.00"),
         )
 
-        self.lifecycle = PaymentLifecycle.objects.create(payment=self.payment)
+        cls.lifecycle = PaymentLifecycle.objects.create(payment=cls.payment)
 
-        self.transaction = PaymentTransaction.objects.create(
-            payment=self.payment,
+        cls.transaction = PaymentTransaction.objects.create(
+            payment=cls.payment,
             transaction_type=PaymentTransaction.TRANSACTION_TYPE_AUTHORIZATION,
             status=PaymentTransaction.TRANSACTION_STATUS_SUCCESS,
             amount=Decimal("100.00"),
-            performed_by=self.actor,
+            performed_by=cls.actor,
         )
 
-        self.refund = PaymentRefund.objects.create(
-            payment=self.payment,
+        cls.refund = PaymentRefund.objects.create(
+            payment=cls.payment,
             amount=Decimal("20.00"),
             reason="Test refund",
             status=PaymentRefund.REFUND_STATUS_PENDING,
-            requested_by=self.actor,
-            processed_by=self.actor,
+            requested_by=cls.actor,
+            processed_by=cls.actor,
         )
 
-        self.other_refund = PaymentRefund.objects.create(
-            payment=self.other_payment,
+        cls.other_refund = PaymentRefund.objects.create(
+            payment=cls.other_payment,
             amount=Decimal("50.00"),
             reason="Processed refund",
             status=PaymentRefund.REFUND_STATUS_PROCESSED,
-            requested_by=self.actor,
-            processed_by=self.actor,
+            requested_by=cls.actor,
+            processed_by=cls.actor,
         )
 
-        self.event = PaymentEvent.objects.create(
-            payment=self.payment,
+        cls.event = PaymentEvent.objects.create(
+            payment=cls.payment,
             event_type=PaymentEvent.TYPE_CREATED,
-            performed_by=self.actor,
+            performed_by=cls.actor,
         )
 
     def test_get_payment_by_id_returns_payment(self):

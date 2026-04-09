@@ -10,27 +10,28 @@ from ech.users.models import CustomUser
 
 
 class ProductInventoryServiceTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="inventory@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Inventory User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Mouse",
             product_type=Product.MOUSE,
             brand="Logitech",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Gaming mouse",
             technical_information="Specs",
             price=Decimal("200.00"),
             is_active=True,
         )
 
-        self.inventory = ProductInventory.objects.create(
-            product=self.product,
+        cls.inventory = ProductInventory.objects.create(
+            product=cls.product,
             quantity=10,
         )
 

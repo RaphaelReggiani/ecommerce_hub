@@ -19,19 +19,20 @@ from ech.products.services.product_image_service import (
 
 
 class ProductImageServiceTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Staff User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Headset",
             product_type=Product.HEADSET,
             brand="HyperX",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Gaming headset description",
             technical_information="7.1 surround sound",
             price=Decimal("399.90"),
@@ -161,23 +162,27 @@ class ProductImageServiceTestCase(TestCase):
         )
 
         self.assertEqual(len(created_images), ProductImageRules.MAX_IMAGES_ALLOWED)
-        self.assertEqual(ProductImage.objects.filter(product=self.product).count(), ProductImageRules.MAX_IMAGES_ALLOWED)
+        self.assertEqual(
+            ProductImage.objects.filter(product=self.product).count(),
+            ProductImageRules.MAX_IMAGES_ALLOWED,
+        )
 
 
 class ValidateProductMinimumImagesTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="images@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Images User",
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Studio Microphone",
             product_type=Product.MICROPHONE,
             brand="Shure",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Microphone description",
             technical_information="Professional audio specs",
             price=Decimal("899.90"),

@@ -19,22 +19,23 @@ from ech.users.models import CustomUser
 
 
 class ProductCreationServiceTestCase(TestCase):
-    def setUp(self):
-        self.allowed_user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.allowed_user = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Staff User",
         )
 
-        self.disallowed_user = CustomUser.objects.create_user(
+        cls.disallowed_user = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_CUSTOMER_USER,
             user_name="Customer User",
         )
 
-        self.valid_payload = {
+        cls.valid_payload = {
             "name": "Gaming Mouse",
             "product_type": Product.MOUSE,
             "brand": "Logitech",

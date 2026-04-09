@@ -20,15 +20,25 @@ from ech.products.models import Product
 class BaseModelFactoryMixin:
     user_counter = 0
     product_counter = 0
+    _user_model = None
+    _user_model_fields = None
+
+    @classmethod
+    def _get_user_model_and_fields(cls):
+        if cls._user_model is None or cls._user_model_fields is None:
+            cls._user_model = get_user_model()
+            cls._user_model_fields = {
+                field.name for field in cls._user_model._meta.fields
+            }
+        return cls._user_model, cls._user_model_fields
 
     def create_user(self, **overrides):
-        User = get_user_model()
+        User, model_fields = self.__class__._get_user_model_and_fields()
+
         self.__class__.user_counter += 1
         idx = self.__class__.user_counter
 
-        model_fields = {field.name: field for field in User._meta.fields}
-        unique_suffix = uuid.uuid4().hex[:8]
-        unique_email = f"user_{idx}_{unique_suffix}@test.com"
+        unique_email = f"user_{idx}@test.com"
 
         data = {}
 
@@ -39,7 +49,7 @@ class BaseModelFactoryMixin:
             data["user_email"] = unique_email
 
         if "username" in model_fields:
-            data["username"] = f"user_{idx}_{unique_suffix}"
+            data["username"] = f"user_{idx}"
 
         if "user_name" in model_fields:
             data["user_name"] = f"User {idx}"
@@ -533,5 +543,4 @@ class OrderNoteModelTestCase(BaseModelFactoryMixin, TestCase):
     def test_order_note_meta_ordering(self):
         """Verify meta ordering configuration for order notes."""
         self.assertEqual(OrderNote._meta.ordering, ["created_at"])
-
-    
+        

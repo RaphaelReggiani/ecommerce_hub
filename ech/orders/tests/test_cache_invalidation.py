@@ -24,10 +24,9 @@ from ech.orders.services.order_status_service import OrderStatusService
 
 
 class OrderCacheInvalidationTestCase(TestCase):
-    def setUp(self):
-        cache.clear()
-
-        self.customer = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -36,7 +35,7 @@ class OrderCacheInvalidationTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.staff = CustomUser.objects.create_user(
+        cls.staff = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             user_name="Operations Staff",
@@ -45,11 +44,11 @@ class OrderCacheInvalidationTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Keyboard Pro",
             product_type=Product.KEYBOARD,
             brand="Logitech",
-            sold_by=self.staff,
+            sold_by=cls.staff,
             description="Keyboard",
             technical_information="Info",
             price=Decimal("150.00"),
@@ -57,19 +56,19 @@ class OrderCacheInvalidationTestCase(TestCase):
             is_active=True,
         )
 
-        self.inventory = ProductInventory.objects.create(
-            product=self.product,
+        cls.inventory = ProductInventory.objects.create(
+            product=cls.product,
             quantity=20,
         )
 
-        self.valid_items = [
+        cls.valid_items = [
             {
-                "product_id": self.product.id,
+                "product_id": cls.product.id,
                 "quantity": 2,
             }
         ]
 
-        self.valid_address = {
+        cls.valid_address = {
             "full_name": "User Tester",
             "address_line": "Rua Teste, 123",
             "city": "Sao Paulo",
@@ -78,6 +77,9 @@ class OrderCacheInvalidationTestCase(TestCase):
             "postal_code": "01234-567",
             "phone": "11999999999",
         }
+
+    def setUp(self):
+        cache.clear()
 
     def tearDown(self):
         cache.clear()
@@ -243,9 +245,10 @@ class OrderCacheInvalidationTestCase(TestCase):
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_start_processing_invalidates_order_related_caches(self, mock_invalidate):
         """Invalidate related caches when order processing starts."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_CONFIRMED,
-            lifecycle_confirmed_at=timezone.now(),
+            lifecycle_confirmed_at=now,
         )
 
         service = OrderStatusService(
@@ -264,9 +267,10 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     def test_start_processing_returns_fresh_detail_after_cache_invalidation(self):
         """Return fresh management detail after processing transition."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_CONFIRMED,
-            lifecycle_confirmed_at=timezone.now(),
+            lifecycle_confirmed_at=now,
         )
 
         cached_order = get_order_detail_for_management(order.id)
@@ -284,11 +288,12 @@ class OrderCacheInvalidationTestCase(TestCase):
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_ship_order_invalidates_order_related_caches(self, mock_invalidate):
         """Invalidate related caches when shipping an order."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PROCESSING,
             shipping_status=Order.SHIPPING_STATUS_PREPARING,
-            lifecycle_confirmed_at=timezone.now(),
-            lifecycle_processing_at=timezone.now(),
+            lifecycle_confirmed_at=now,
+            lifecycle_processing_at=now,
         )
 
         service = OrderStatusService(
@@ -308,11 +313,12 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     def test_ship_order_returns_fresh_detail_after_cache_invalidation(self):
         """Return fresh management detail after shipping an order."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_PROCESSING,
             shipping_status=Order.SHIPPING_STATUS_PREPARING,
-            lifecycle_confirmed_at=timezone.now(),
-            lifecycle_processing_at=timezone.now(),
+            lifecycle_confirmed_at=now,
+            lifecycle_processing_at=now,
         )
 
         cached_order = get_order_detail_for_management(order.id)
@@ -331,12 +337,13 @@ class OrderCacheInvalidationTestCase(TestCase):
     @patch("ech.orders.services.order_status_service.invalidate_order_related_caches")
     def test_deliver_order_invalidates_order_related_caches(self, mock_invalidate):
         """Invalidate related caches when delivering an order."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_SHIPPED,
             shipping_status=Order.SHIPPING_STATUS_SHIPPED,
-            lifecycle_confirmed_at=timezone.now(),
-            lifecycle_processing_at=timezone.now(),
-            lifecycle_shipped_at=timezone.now(),
+            lifecycle_confirmed_at=now,
+            lifecycle_processing_at=now,
+            lifecycle_shipped_at=now,
         )
 
         service = OrderStatusService(
@@ -356,12 +363,13 @@ class OrderCacheInvalidationTestCase(TestCase):
 
     def test_deliver_order_returns_fresh_detail_after_cache_invalidation(self):
         """Return fresh management detail after delivering an order."""
+        now = timezone.now()
         order = self.create_order_with_related_data(
             status=Order.ORDER_STATUS_SHIPPED,
             shipping_status=Order.SHIPPING_STATUS_SHIPPED,
-            lifecycle_confirmed_at=timezone.now(),
-            lifecycle_processing_at=timezone.now(),
-            lifecycle_shipped_at=timezone.now(),
+            lifecycle_confirmed_at=now,
+            lifecycle_processing_at=now,
+            lifecycle_shipped_at=now,
         )
 
         cached_order = get_order_detail_for_management(order.id)

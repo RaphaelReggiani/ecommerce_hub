@@ -1,5 +1,6 @@
 from decimal import Decimal
 import uuid
+
 from django.test import TestCase
 
 from ech.users.models import CustomUser
@@ -17,19 +18,20 @@ from ech.products.selectors import (
 
 
 class ProductSelectorsTestCase(TestCase):
-    def setUp(self):
-        self.user = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = CustomUser.objects.create_user(
             email="staff@company.com",
             password="StrongPassword123",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
             user_name="Staff User",
         )
 
-        self.product_active = Product.objects.create(
+        cls.product_active = Product.objects.create(
             name="Gaming Mouse",
             product_type=Product.MOUSE,
             brand="Logitech",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Gaming mouse",
             technical_information="Specs",
             price=Decimal("200.00"),
@@ -37,11 +39,11 @@ class ProductSelectorsTestCase(TestCase):
             is_active=True,
         )
 
-        self.product_inactive = Product.objects.create(
+        cls.product_inactive = Product.objects.create(
             name="Old Keyboard",
             product_type=Product.KEYBOARD,
             brand="Razer",
-            sold_by=self.user,
+            sold_by=cls.user,
             description="Old keyboard",
             technical_information="Specs",
             price=Decimal("300.00"),
@@ -49,7 +51,7 @@ class ProductSelectorsTestCase(TestCase):
         )
 
         ProductInventory.objects.create(
-            product=self.product_active,
+            product=cls.product_active,
             quantity=10,
         )
 

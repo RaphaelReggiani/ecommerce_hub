@@ -1,5 +1,4 @@
 import uuid
-from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -19,24 +18,25 @@ User = get_user_model()
 
 
 class ProductCreateAPITestCase(APITestCase):
-    def setUp(self):
-        self.url = reverse("products-api:product-create")
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("products-api:product-create")
 
-        self.manager = User.objects.create_user(
+        cls.manager = User.objects.create_user(
             email=f"ops{CORPORATE_EMAIL_DOMAIN}",
             password="StrongPassword123",
             user_name="ops_user",
             role=CustomUser.ROLE_OPERATIONS_STAFF,
         )
 
-        self.customer = User.objects.create_user(
+        cls.customer = User.objects.create_user(
             email="customer@gmail.com",
             password="StrongPassword123",
             user_name="customer_user",
             role=CustomUser.ROLE_CUSTOMER_USER,
         )
 
-        self.payload = {
+        cls.payload = {
             "name": "Gaming Mouse",
             "product_type": Product.PRODUCT_CHOICES[0][0],
             "brand": "Logitech",
