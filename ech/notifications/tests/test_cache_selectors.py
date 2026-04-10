@@ -18,10 +18,9 @@ from ech.notifications.selectors import (
 
 
 class NotificationCacheSelectorsTestCase(TestCase):
-    def setUp(self):
-        cache.clear()
-
-        self.recipient = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.recipient = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -30,7 +29,7 @@ class NotificationCacheSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.staff = CustomUser.objects.create_user(
+        cls.staff = CustomUser.objects.create_user(
             email="ops@company.com",
             password="StrongPassword123",
             user_name="Operations Staff",
@@ -39,9 +38,9 @@ class NotificationCacheSelectorsTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.notification = Notification.objects.create(
-            recipient=self.recipient,
-            created_by=self.staff,
+        cls.notification = Notification.objects.create(
+            recipient=cls.recipient,
+            created_by=cls.staff,
             notification_type="order_shipped",
             title="Order shipped",
             message="Your order has been shipped.",
@@ -56,8 +55,11 @@ class NotificationCacheSelectorsTestCase(TestCase):
         )
 
         NotificationLifecycle.objects.create(
-            notification=self.notification,
+            notification=cls.notification,
         )
+
+    def setUp(self):
+        cache.clear()
 
     def test_get_notification_by_id_uses_cached_detail_snapshot(self):
         """Return cached notification detail until cache is invalidated."""

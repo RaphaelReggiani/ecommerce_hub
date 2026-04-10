@@ -38,6 +38,8 @@ urlpatterns = [
     path("api/v1/reviews/", include(("ech.reviews.api.urls", "reviews-api"), namespace="reviews-api")),
 
     path("api/v1/notifications/", include(("ech.notifications.api.urls", "notifications-api"), namespace="notifications-api")),
+
+    path("api/v1/analytics/", include(("ech.analytics.api.urls", "analytics-api"), namespace="analytics-api")),
 ] 
 
 if settings.DEBUG:

@@ -7,9 +7,9 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **1845+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **2200+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
-**This project is currently under active development.**
+**This project is under active development.**
 
 ECH (E-commerce Hub) is a backend-focused fullstack e-commerce system built using **Python, Django, and Django REST Framework**, designed with an **API-First architecture**.
 
@@ -64,10 +64,13 @@ Examples:
 * `ShippingCreationService`
 * `ReviewsModerationService`
 * `NotificationCreationService`
+* `AnalyticsSnapshotGenerationService`
+* `AnalyticsSnapshotRefreshService`
+* `AnalyticsDashboardSummaryService`
 
 This approach ensures:
 
-* separation between HTTP layer and business logic
+* separation between HTTP layer and domain logic
 * easier testing of domain rules
 * transactional orchestration inside services
 * maintainable and extensible domain workflows
@@ -84,12 +87,12 @@ Each module includes:
 * an in-memory event dispatcher
 * a handler registry executed at application startup
 
-Events are used for:
+Domain events are used for:
 
 * audit logging
 * cache invalidation
 * lifecycle tracking
-* future integrations (notifications, analytics, etc.)
+* integrations
 
 ---
 
@@ -106,10 +109,11 @@ Examples include:
 * `ShipmentEvent`
 * `ReviewEvent`
 * `NotificationEvent`
+* `AnalyticsEvent`
 
 These event logs provide a complete operational audit trail and support future observability and analytics integrations.
 
-Structured application logging is handled separately by dedicated logging services.
+Structured application logging is handled separately through dedicated logging services.
 
 ---
 
@@ -124,6 +128,11 @@ Examples:
 * payment list caching
 * shipment list caching
 * review summary caching
+* notifications delivery caching
+* analytics dashboard caching
+* analytics snapshot caching
+* analytics sales overview caching
+* analytics operational metrics caching
 
 Cache versioning allows safe invalidation without requiring wildcard cache deletion.
 
@@ -150,9 +159,14 @@ When a request with the same `Idempotency-Key` is received:
 
 This strategy prevents duplicate resource creation in scenarios such as:
 
-* repeated payment attempts
-* repeated order submissions
+* repeated user creation requests
 * repeated product creation requests
+* repeated order submissions
+* repeated payment attempts
+* repeated shipment creation requests
+* repeated review creation requests
+* repeated notification creation requests
+* repeated analytics snapshot generation
 * client retries after network failures
 
 Idempotency is implemented across multiple modules including:
@@ -164,6 +178,7 @@ Idempotency is implemented across multiple modules including:
 * shipment creation
 * review creation
 * notification creation
+* analytics snapshot generation
 
 ---
 
@@ -180,6 +195,7 @@ Handles HTTP communication using Django REST Framework.
 * Views
 * Serializers
 * Permissions
+* Pagination
 * Throttling
 
 ### Service Layer
@@ -220,23 +236,36 @@ Centralizes system messages and configuration values.
                                   |
                                   v
                              Service Layer
-                  (business rules / orchestration)
+                  (business rules • orchestration)
                                   |
-                 +------------------------------------+
-                 |                                    |
-                 v                                    v
-             Selectors                           Domain Events
-        (query optimization)                (event dispatcher)
-                 |                                    |
-                 v                                    v
-             Django ORM                         Event Handlers
-                 |
-                 v
-              Database
-                 |
-                 v
-               Cache
-        (Django Cache / Redis)
+          +---------------------------------------------------+
+          |                                                   |
+          v                                                   v
+      Operational Services                           Analytics Services
+ (users • products • orders • payments •       (snapshots • dashboards •
+  shipping • reviews • notifications)           business intelligence metrics)
+          |                                                   |
+          v                                                   v
+      Selectors                                       Analytics Selectors
+ (query optimization)                          (aggregated analytical queries)
+          |                                                   |
+          +----------------------+----------------------------+
+                                 |
+                                 v
+                             Django ORM
+                                 |
+                                 v
+                              Database
+                                 |
+                                 v
+                               Cache
+                      (Django Cache / Redis)
+
+          +---------------------------------------------------+
+          |
+          v
+                         Domain Events System
+              (dispatcher • handlers • lifecycle observability)
 ```
 > Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, including users, products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as the admin dashboard may still follow a service-oriented architecture without a dedicated domain event layer.
 
@@ -296,8 +325,8 @@ Planned modules:
 * Shipping module ✔
 * Reviews module ✔
 * Notifications module ✔
-* Analytics module (**Current step**)
-* Admin dashboard
+* Analytics module ✔
+* Admin dashboard (**Current step**) 
 
 ---
 
@@ -774,9 +803,11 @@ ecommerce_hub/
 │   │   │   ├── tests/
 │   │   │   │   ├── test_analytic_dashboard_summary_api.py
 │   │   │   │   ├── test_analytic_sales_overview_api.py
+│   │   │   │   ├── test_analytic_user_overview_api.py
 │   │   │   │   ├── test_analytic_order_funnel_api.py
 │   │   │   │   ├── test_analytic_payment_overview_api.py
 │   │   │   │   ├── test_analytic_shipping_overview_api.py
+│   │   │   │   ├── test_analytic_review_overview_api.py
 │   │   │   │   ├── test_analytic_product_performance_api.py
 │   │   │   │   ├── test_analytic_customer_summary_api.py
 │   │   │   │   ├── test_analytic_snapshot_list_api.py
@@ -929,6 +960,38 @@ Current domain events include:
 * login succeeded
 * login failed
 * invalid token detected
+
+### Service Layer Architecture
+
+The users module follows a service-oriented domain architecture.
+
+Core domain operations are executed through dedicated services, including:
+
+* `UserRegistrationService`
+* `EmailConfirmationService`
+* `PasswordResetRequestService`
+* `PasswordResetService`
+* `UserProfileUpdateService`
+* `UserAuthenticationService`
+* `UserLogService`
+
+These services are responsible for orchestrating domain operations such as:
+
+* user account creation
+* email confirmation workflow
+* password reset request generation
+* password change operations
+* profile update validation
+* authentication lifecycle events
+* structured security logging
+
+This architecture ensures:
+
+* clear separation between API, domain logic, and persistence layers
+* centralized enforcement of authentication and security rules
+* transactional consistency for sensitive account operations
+* improved maintainability and extensibility of the authentication system
+* easier testing of isolated domain behaviors
 
 ### User Lifecycle Management
 
@@ -1895,36 +1958,6 @@ Handlers are designed to support future integrations such as:
 * notification services
 * external moderation monitoring systems
 
-### Reviews API
-
-The module exposes a REST API for both customer and management operations.
-
-Customer endpoints include:
-
-* create review
-* update review
-* cancel review
-* list customer reviews
-* retrieve review detail
-
-Public endpoints include:
-
-* public product review listing
-* product review summary
-
-Management endpoints include:
-
-* review moderation actions
-* management review listing
-* review detail for operational dashboards
-
-API responses support:
-
-* filtering
-* pagination
-* structured serialization
-* permission-based access control
-
 ### Caching Layer
 
 A dedicated caching service improves performance for review queries:
@@ -2030,7 +2063,7 @@ Key rules enforced by the domain layer:
 * Notifications can be cancelled before user interaction.
 * Failed delivery attempts move notifications to FAILED.
 
-Lifecycle timestamps are tracked in the NotificationLifecycle model.
+Lifecycle timestamps are tracked in the `NotificationLifecycle` model.
 
 ### Notification Lifecycle Flow
 
@@ -2168,7 +2201,6 @@ Database queries are optimized using:
 * efficient filtering patterns
 * paginated query support
 
-
 ### Service Layer Architecture
 
 The notifications module follows a service-oriented domain architecture:
@@ -2187,6 +2219,261 @@ This architecture ensures:
 * centralized notification lifecycle rules
 * easier testing and maintenance
 * extensibility for new notification channels
+
+---
+
+## Analytics Module
+
+The analytics module provides aggregated business intelligence metrics used by management dashboards and reporting tools.
+
+Instead of recalculating heavy aggregates on every request, the system generates **analytics snapshots**, which store pre-computed metrics for specific periods.
+
+Supported snapshot periods:
+
+* Daily
+* Weekly
+* Monthly
+
+Snapshots aggregate data across multiple operational domains, including:
+
+* sales performance
+* order lifecycle metrics
+* payment processing statistics
+* shipping performance
+* product sales performance
+* customer behavior
+* user growth
+* review analytics
+
+### Analytics Architecture
+
+The analytics module follows a **snapshot-based architecture** designed to reduce database load and improve query performance for analytical operations.
+
+Analytics workflows operate as follows:
+
+1. Operational data is collected from core domain models (orders, payments, shipping, users, etc).
+2. Aggregated metrics are generated by specialized analytics services.
+3. The metrics are stored inside **AnalyticsSnapshot** records.
+4. Snapshots are cached and reused by dashboard services.
+5. Domain events are emitted for snapshot lifecycle operations.
+
+This architecture ensures that complex analytical queries do not impact the performance of operational workloads.
+
+### Analytics Management
+
+* Analytics generation through dedicated service layers
+* Aggregation of cross-module business metrics
+* Snapshot-based analytical data persistence
+* Read-optimized metrics for dashboards and management views
+* Cache-backed analytical queries for performance-sensitive operations
+* Event-driven analytical recalculation support
+
+### Analytics Components
+
+Analytics is composed of multiple related entities:
+
+* **AnalyticsSnapshot** – main aggregate root representing a generated analytics snapshot
+* **AnalyticsSnapshotMetric** – metric entries associated with a generated snapshot
+* **AnalyticsSnapshotLifecycle** – timestamps and lifecycle state tracking for analytics snapshots
+* **AnalyticsEvent** – operational event log for analytics generation and refresh actions
+
+This structure ensures traceability, historical consistency, and optimized read access for management analytics.
+
+### Analytics Snapshot Lifecycle Management
+
+Analytics snapshots follow a controlled lifecycle:
+
+```text
+PENDING
+→ GENERATING
+→ COMPLETED
+```
+
+Alternative transitions:
+
+```text
+PENDING → FAILED
+GENERATING → FAILED
+COMPLETED → ARCHIVED
+```
+
+Key rules enforced by the domain layer:
+
+* Snapshots are created with status PENDING.
+* Snapshot generation moves the snapshot to GENERATING.
+* Successfully aggregated snapshots are stored as COMPLETED.
+* Failed generation attempts move the snapshot to FAILED.
+* Completed snapshots may later be archived for historical retention.
+
+Lifecycle timestamps are tracked in the `AnalyticsSnapshotLifecycle` model.
+
+### Analytics Snapshot Lifecycle Flow
+
+```mermaid
+stateDiagram-v2
+
+    [*] --> Pending
+
+    Pending --> Generating : start_generation
+    Pending --> Failed : generation_failure
+
+    Generating --> Completed : persist_snapshot
+    Generating --> Failed : generation_failure
+
+    Completed --> Archived : archive_snapshot
+
+    Failed --> [*]
+    Archived --> [*]
+```
+
+### Analytics Snapshot System
+
+The analytics module is built around snapshot generation and aggregation.
+
+Snapshots are responsible for storing read-optimized analytical data such as:
+
+* sales metrics
+* revenue metrics
+* order funnel metrics
+* payment overview metrics
+* shipping overview metrics
+* review overview metrics
+* product performance metrics
+* customer summary metrics
+* dashboard summary metrics
+
+This design allows the platform to serve management analytics efficiently without recalculating complex aggregates on every request.
+
+### Operational Event Logging
+
+Every important analytics operation generates an `AnalyticsEvent`, including:
+
+* snapshot generation
+* snapshot refresh
+* snapshot completion
+* generation failures
+* dashboard metric recalculation
+
+This ensures a complete operational audit trail for analytics workflows.
+
+Structured application logging is handled separately through the `AnalyticsLogService`, allowing observability without coupling runtime logs to database event persistence.
+
+### Structured Logging
+
+The module includes a dedicated logging service:
+
+* `AnalyticsLogService`
+
+Structured logs are generated for:
+
+* snapshot generation requests
+* snapshot refresh operations
+* snapshot completion
+* generation failures
+* metric recalculation flows
+* dashboard summary builds
+
+Logs include structured metadata such as:
+
+* snapshot ID
+* metric type
+* generation status
+* performer ID
+* refresh context
+* failure metadata (when applicable)
+
+### Domain Event System
+
+The analytics module implements a lightweight event-driven architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability
+
+Current domain events include:
+
+* analytics snapshot requested
+* analytics snapshot generated
+* analytics snapshot refreshed
+* analytics snapshot failed
+
+Handlers can be extended for integrations such as:
+
+* external BI pipelines
+* monitoring and alerting systems
+* asynchronous reporting systems
+* historical analytics exports
+
+### Caching Layer
+
+A dedicated caching utility improves performance for analytics retrieval operations:
+
+* dashboard summary caching
+* analytics snapshot detail caching
+* analytics management list caching
+* aggregated metric caching
+* filtered analytics query caching
+
+All cache keys are versioned to allow safe invalidation strategies.
+
+### Cache Invalidation Strategy
+
+Cache consistency is maintained through automatic invalidation when:
+
+* a new snapshot is generated
+* an existing snapshot is refreshed
+* analytical metrics are recalculated
+* snapshot generation fails and cached state must be replaced
+
+Cache invalidation is centralized in the `AnalyticsCacheService`.
+
+### Filtering and Query Optimization
+
+Analytics queries support filtering by:
+
+* snapshot status
+* metric type
+* date range
+* generated by user
+* snapshot creation date
+* snapshot completion date
+
+Database queries are optimized using:
+
+* indexed fields
+* `select_related`
+* efficient aggregation strategies
+* optimized selectors for read-heavy analytical queries
+* paginated query support
+
+### Service Layer Architecture
+
+The analytics module follows a service-oriented domain architecture:
+
+* `AnalyticsDashboardSummaryService`
+* `AnalyticsSalesOverviewService`
+* `AnalyticsUserOverviewService`
+* `AnalyticsOrderFunnelService`
+* `AnalyticsPaymentOverviewService`
+* `AnalyticsShippingOverviewService`
+* `AnalyticsReviewOverviewService`
+* `AnalyticsProductPerformanceService`
+* `AnalyticsCustomerSummaryService`
+* `AnalyticsSnapshotGenerationService`
+* `AnalyticsSnapshotRefreshService`
+* `AnalyticsLogService`
+* `AnalyticsCacheService`
+
+This architecture ensures:
+
+* clear separation of responsibilities
+* centralized analytical aggregation rules
+* transactional consistency
+* easier testing and maintenance
+* extensibility for future reporting and BI features
 
 ---
 
@@ -2345,6 +2632,31 @@ Endpoints that support idempotency are explicitly marked in the API tables below
 
 ---
 
+## Analytics (Snapshot Endpoints)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| POST | `/api/v1/analytics/snapshots/generate/` | Generate analytics snapshot (supports `Idempotency-Key`) |
+| GET | `/api/v1/analytics/snapshots/` | List analytics snapshots |
+| GET | `/api/v1/analytics/snapshots/{snapshot_id}/` | Retrieve analytics snapshot details |
+| POST | `/api/v1/analytics/snapshots/{snapshot_id}/refresh/` | Refresh an existing snapshot |
+
+## Analytics (Dashboard Endpoints)
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/analytics/dashboard/summary/` | Global dashboard metrics |
+| GET | `/api/v1/analytics/dashboard/sales/` | Sales performance overview |
+| GET | `/api/v1/analytics/dashboard/orders/` | Order funnel analytics |
+| GET | `/api/v1/analytics/dashboard/payments/` | Payment processing analytics |
+| GET | `/api/v1/analytics/dashboard/shipping/` | Shipping performance analytics |
+| GET | `/api/v1/analytics/dashboard/products/` | Product performance analytics |
+| GET | `/api/v1/analytics/dashboard/customers/` | Customer analytics summary |
+| GET | `/api/v1/analytics/dashboard/users/` | User growth analytics |
+| GET | `/api/v1/analytics/dashboard/reviews/` | Review moderation analytics |
+
+---
+
 # Automated Tests
 
 The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
@@ -2409,7 +2721,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
 | **Notifications** | 210| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
-| **TOTAL (implemented modules)** | **1405** | **440** | **1845** | Core Business Logic | — |
+| **Analytics** | 262 | 95 | 357 | Analytical snapshots, aggregated business metrics, dashboard queries, caching, event-driven analytics | ✔ Stable |
+| **TOTAL (implemented modules)** | **1667** | **535** | **2202** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -4410,6 +4723,344 @@ Tests validate that notification services invalidate cache correctly:
 
 ---
 
+<details>
+<summary><strong>Analytics Module Tests</strong></summary>
+
+### Analytics Domain Tests
+
+The analytics module focuses on **aggregated business intelligence**, snapshot-based reporting, and operational analytics queries across the platform.
+
+#### Domain Models
+
+Tests validate snapshot persistence and analytics event tracking:
+
+* analytics snapshot creation and field persistence
+* snapshot period validation (`period_start`, `period_end`)
+* snapshot period type handling (`daily`, `weekly`, `monthly`)
+* metric field persistence for all analytics domains
+* snapshot status lifecycle validation
+* generated-by user relationship
+* timestamp consistency
+* string representation behavior
+
+#### Domain Exceptions
+
+Analytics-specific exceptions ensure safe failure modes for analytical operations:
+
+* analytics snapshot not found validation
+* analytics snapshot generation failure handling
+* analytics snapshot refresh failure handling
+* unavailable analytics data protections
+* dashboard metrics unavailable exception
+* operational analytics unavailable exception hierarchy validation
+
+#### Query Selectors
+
+Selectors are responsible for retrieving analytical data efficiently and safely:
+
+* retrieving analytics snapshot by ID
+* retrieving latest snapshot by period type
+* listing snapshots within a period range
+* listing snapshots filtered by period type
+* listing snapshots ordered by generation date
+* retrieving snapshots for dashboard queries
+* retrieving customers for analytics aggregation
+* retrieving products for analytics aggregation
+* retrieving orders for analytics aggregation
+* retrieving payments for analytics aggregation
+* retrieving shipping operations for analytics aggregation
+* retrieving review data for analytics aggregation
+* database query optimization validation
+* handling empty analytical datasets safely
+
+#### Cache Selectors
+
+Tests validate the **analytics caching layer** used to avoid recalculating heavy aggregated queries:
+
+* cache key generation for analytics queries
+* snapshot cache retrieval
+* snapshot list caching behavior
+* cache versioning strategy validation
+* cache invalidation on analytics updates
+* dashboard cache reuse across identical queries
+* cache rebuilding after invalidation
+* idempotent cache writes
+* safe handling of cache misses
+
+#### Domain Events
+
+The analytics module uses **event-driven observability** for snapshot lifecycle events.
+
+Tests validate event dispatching and handler execution:
+
+* analytics snapshot created event dispatch
+* analytics snapshot refreshed event dispatch
+* analytics snapshot failed event dispatch
+* event handler registry mapping validation
+* domain event serialization (`to_dict`)
+* event dispatcher routing logic
+* handler execution without side effects
+* logging payload structure validation
+
+#### Cache Invalidation
+
+Tests validate the analytics cache invalidation strategy:
+
+* invalidation of dashboard cache
+* invalidation of sales overview cache
+* invalidation of order funnel cache
+* invalidation of payment overview cache
+* invalidation of shipping overview cache
+* invalidation of product performance cache
+* invalidation of customer summary cache
+* invalidation of user overview cache
+* invalidation of review overview cache
+* snapshot cache invalidation on generation
+* snapshot cache invalidation on refresh
+
+#### Analytics Snapshot Generation Service
+
+Tests validate snapshot generation logic and safety:
+
+* snapshot creation with aggregated business metrics
+* snapshot generation for empty datasets
+* correct metric mapping from operational data
+* event dispatch after successful snapshot generation
+* logging of generation operations
+* idempotent snapshot generation behavior
+* transaction safety during snapshot creation
+* handling snapshot generation failures
+
+#### Analytics Snapshot Refresh Service
+
+Tests validate the refresh workflow for existing snapshots:
+
+* refreshing existing analytics snapshots
+* updating snapshot metrics safely
+* event dispatch after refresh
+* logging of refresh operations
+* handling refresh failures
+* failure event dispatch
+* safe refresh with empty datasets
+
+#### Dashboard Summary Service
+
+Tests validate aggregated dashboard metrics:
+
+* building dashboard summary from snapshots
+* rebuilding dashboard metrics after cache invalidation
+* dashboard cache reuse
+* dashboard metric structure validation
+* handling empty dashboard metrics safely
+* validating period bounds consistency
+
+#### Sales Overview Service
+
+Tests validate revenue and sales metrics aggregation:
+
+* retrieving sales overview from snapshots
+* fallback to realtime aggregation when snapshot mismatch occurs
+* cache reuse for identical requests
+* cache rebuild after invalidation
+* logging of sales analytics generation
+* handling empty sales metrics safely
+
+#### Order Funnel Service
+
+Tests validate order lifecycle funnel analytics:
+
+* retrieving funnel metrics from snapshots
+* fallback to realtime funnel calculation
+* conversion rate calculations
+* handling zero-order scenarios safely
+* validating funnel stage metrics
+* cache reuse and rebuilding behavior
+
+#### Payment Overview Service
+
+Tests validate payment processing analytics:
+
+* retrieving payment overview from snapshots
+* realtime fallback when snapshots are unavailable
+* payment metric aggregation
+* cache reuse and invalidation
+* safe handling of missing payment data
+* exception handling for unavailable analytics data
+
+#### Shipping Overview Service
+
+Tests validate logistics and delivery analytics:
+
+* retrieving shipping overview from snapshots
+* realtime aggregation fallback
+* shipping success and failure rate calculations
+* cache reuse and rebuilding
+* handling empty shipping metrics safely
+* validation of snapshot metric mapping
+
+#### Product Performance Service
+
+Tests validate product-level analytics:
+
+* retrieving product performance metrics from snapshots
+* realtime fallback for operational data
+* product sales ranking calculations
+* product performance metric structure validation
+* cache reuse and rebuild behavior
+* handling empty product datasets safely
+
+#### Customer Summary Service
+
+Tests validate customer behavior analytics:
+
+* retrieving customer summary metrics from snapshots
+* realtime fallback when snapshots mismatch
+* customer growth metrics validation
+* returning customer calculations
+* cache reuse and rebuilding behavior
+* safe handling of empty customer datasets
+
+#### User Overview Service
+
+Tests validate platform user analytics:
+
+* retrieving user overview metrics from snapshots
+* realtime fallback for operational queries
+* new user registration metrics
+* total user count aggregation
+* cache reuse and invalidation
+* safe handling of empty user datasets
+
+#### Review Overview Service
+
+Tests validate review and rating analytics:
+
+* retrieving review overview metrics from snapshots
+* realtime fallback when snapshots mismatch
+* average rating calculations
+* review moderation metrics aggregation
+* cache reuse and rebuilding behavior
+* safe handling of empty review datasets
+
+#### Analytics Log Service
+
+Tests validate structured analytics logging behavior:
+
+* analytics event logging for snapshot generation
+* analytics event logging for snapshot refresh
+* logging payload structure validation
+* logging metadata consistency
+* logging safety without breaking service execution
+
+---
+
+### Analytics API Tests
+
+#### Analytics Snapshot List API
+
+* retrieving analytics snapshots for authorized roles
+* rejection of customer users
+* filtering by period type
+* filtering by generated user
+* filtering by revenue thresholds
+* filtering by rating thresholds
+* pagination behavior validation
+* authentication enforcement
+
+#### Analytics Snapshot Detail API
+
+* retrieving snapshot details for authorized roles
+* validation of nested lifecycle data
+* validation of snapshot event history
+* rejection of customer users
+* authentication enforcement
+* handling non-existent snapshots (404)
+
+#### Analytics Snapshot Refresh API
+
+* successful snapshot refresh execution
+* validation of refresh lifecycle state
+* rejection of customer users
+* validation of refresh failure handling
+* authentication enforcement
+* handling non-existent snapshots
+
+#### Analytics Dashboard Summary API
+
+* retrieving global analytics dashboard summary
+* validation of aggregated metrics serialization
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Sales Overview API
+
+* retrieving sales performance metrics
+* validation of revenue and order aggregates
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Order Funnel API
+
+* retrieving order lifecycle funnel metrics
+* validation of funnel stage aggregation
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Payment Overview API
+
+* retrieving payment processing metrics
+* validation of payment status aggregation
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Shipping Overview API
+
+* retrieving shipping performance metrics
+* validation of shipping lifecycle aggregates
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Product Performance API
+
+* retrieving product performance metrics
+* validation of product sales and rating aggregates
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Customer Summary API
+
+* retrieving customer behavior analytics
+* validation of customer activity metrics
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics User Overview API
+
+* retrieving user growth analytics
+* validation of user activity metrics
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+#### Analytics Review Overview API
+
+* retrieving review moderation analytics
+* validation of review rating aggregates
+* rejection of customer users
+* authentication enforcement
+* handling unavailable analytics data
+
+</details>
+
+---
+
 Example test execution:
 
 ```bash
@@ -4441,6 +5092,9 @@ pytest ech/reviews/api/tests/
 
 pytest ech/notifications/tests/
 pytest ech/notifications/api/tests/
+
+pytest ech/analytics/tests/
+pytest ech/analytics/api/tests/
 
 ```
 

@@ -3,20 +3,19 @@ import uuid
 from django.core.cache import cache
 from django.test import TestCase
 
-from ech.users.models import CustomUser
 from ech.products.models import Product
 from ech.reviews.models import (
     Review,
     ReviewLifecycle,
 )
 from ech.reviews.services.cache_service import ReviewsCacheService
+from ech.users.models import CustomUser
 
 
 class ReviewsCacheInvalidationTestCase(TestCase):
-    def setUp(self):
-        cache.clear()
-
-        self.admin = CustomUser.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = CustomUser.objects.create_user(
             email="admin@company.com",
             password="StrongPassword123",
             user_name="Admin User",
@@ -25,7 +24,7 @@ class ReviewsCacheInvalidationTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.customer = CustomUser.objects.create_user(
+        cls.customer = CustomUser.objects.create_user(
             email="customer@test.com",
             password="StrongPassword123",
             user_name="Customer User",
@@ -34,11 +33,11 @@ class ReviewsCacheInvalidationTestCase(TestCase):
             email_confirmed=True,
         )
 
-        self.product = Product.objects.create(
+        cls.product = Product.objects.create(
             name="Gaming Headset",
             product_type=Product.HEADSET,
             brand="TechBrand",
-            sold_by=self.admin,
+            sold_by=cls.admin,
             description="High quality headset.",
             technical_information="Wireless and low latency.",
             price="499.90",
@@ -46,9 +45,9 @@ class ReviewsCacheInvalidationTestCase(TestCase):
             is_active=True,
         )
 
-        self.review = Review.objects.create(
-            customer=self.customer,
-            product=self.product,
+        cls.review = Review.objects.create(
+            customer=cls.customer,
+            product=cls.product,
             rating=5,
             title="Excellent product",
             comment="Initial comment",
@@ -57,7 +56,10 @@ class ReviewsCacheInvalidationTestCase(TestCase):
             is_verified_purchase=True,
         )
 
-        ReviewLifecycle.objects.create(review=self.review)
+        ReviewLifecycle.objects.create(review=cls.review)
+
+    def setUp(self):
+        cache.clear()
 
     def test_invalidate_review_detail_changes_detail_cache_key(self):
         """Change the review detail cache key after detail invalidation."""
