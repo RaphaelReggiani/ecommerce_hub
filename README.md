@@ -867,6 +867,7 @@ ecommerce_hub/
 │   │   │   ├── test_analytic_customer_summary_service.py
 │   │   │   ├── test_analytic_snapshot_generation_service.py
 │   │   │   ├── test_analytic_snapshot_refresh_service.py
+│   │   │   ├── test_analytic_log_service.py
 │   │   │   ├── test_domain_events.py
 │   │   │   ├── test_cache_selectors.py
 │   │   │   ├── test_cache_invalidation.py
@@ -878,7 +879,76 @@ ecommerce_hub/
 │   │   ├── selectors.py
 │   │   ├── exceptions.py
 │   │   └── apps.py
-│   └── ...
+│   │
+│   ├── admin_dashboard/
+│   │   ├── api/
+│   │   │   ├── tests/
+│   │   │   │   ├── test_admin_dashboard_summary_api.py
+│   │   │   │   ├── test_admin_dashboard_operational_metrics_api.py
+│   │   │   │   ├── test_admin_dashboard_recent_activity_api.py
+│   │   │   │   ├── test_admin_dashboard_alerts_api.py
+│   │   │   │   ├── test_admin_dashboard_bulk_order_actions_api.py
+│   │   │   │   ├── test_admin_dashboard_bulk_review_moderation_api.py
+│   │   │   │   ├── test_admin_dashboard_bulk_notification_retry_api.py
+│   │   │   │   ├── test_analytic_product_performance_api.py
+│   │   │   │   └── test_admin_dashboard_permissions_api.py
+│   │   │   │
+│   │   │   ├── serializers.py
+│   │   │   ├── permissions.py
+│   │   │   ├── pagination.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── cache_service.py
+│   │   │   ├── admin_dashboard_summary_service.py
+│   │   │   ├── admin_dashboard_operational_metrics_service.py
+│   │   │   ├── admin_dashboard_recent_activity_service.py
+│   │   │   ├── admin_dashboard_alerts_service.py
+│   │   │   ├── admin_dashboard_bulk_order_actions_service.py
+│   │   │   ├── admin_dashboard_bulk_review_moderation_service.py
+│   │   │   ├── admin_dashboard_bulk_notification_retry_service.py
+│   │   │   └── admin_dashboard_log_service.py
+│   │   │ 
+│   │   ├── utils/
+│   │   │   ├── metric_builders.py
+│   │   │   └── cache_keys.py
+│   │   │
+│   │   ├── domain_events/
+│   │   │   ├── dispatcher.py
+│   │   │   ├── events.py
+│   │   │   ├── handlers.py
+│   │   │   └── registry.py
+│   │   │
+│   │   ├── constants/
+│   │   │   ├── cache.py
+│   │   │   ├── constants.py
+│   │   │   ├── messages.py
+│   │   │   └── roles_management.py
+│   │   │
+│   │   ├── tests/
+│   │   │   ├── test_models.py
+│   │   │   ├── test_exceptions.py
+│   │   │   ├── test_selectors.py
+│   │   │   ├── test_admin_dashboard_summary_service.py
+│   │   │   ├── test_admin_dashboard_operational_metrics_service.py
+│   │   │   ├── test_admin_dashboard_recent_activity_service.py
+│   │   │   ├── test_admin_dashboard_alerts_service.py
+│   │   │   ├── test_admin_dashboard_bulk_order_actions_service.py
+│   │   │   ├── test_admin_dashboard_bulk_review_moderation_service.py
+│   │   │   ├── test_admin_dashboard_bulk_notification_retry_service.py
+│   │   │   ├── test_admin_dashboard_log_service.py
+│   │   │   ├── test_domain_events.py
+│   │   │   ├── test_cache_selectors.py
+│   │   │   ├── test_cache_invalidation.py
+│   │   │   └── test_filters.py
+│   │   │
+│   │   ├── admin.py
+│   │   ├── filters.py
+│   │   ├── models.py
+│   │   ├── selectors.py
+│   │   ├── exceptions.py
+│   │   └── apps.py
 │
 ├── ech_web/
 │   └── ...

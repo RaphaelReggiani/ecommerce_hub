@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'ech.reviews.apps.ReviewsConfig',
     'ech.notifications.apps.NotificationsConfig',
     'ech.analytics.apps.AnalyticsConfig',
+    'ech.admin_dashboard.apps.AdminDashboardConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
