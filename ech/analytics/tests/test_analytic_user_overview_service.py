@@ -43,6 +43,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         }
 
     def test_get_overview_returns_snapshot_data_when_available(self):
+        """Ensure snapshot metrics are returned when a matching analytics snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=901,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -90,6 +91,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure realtime metrics are calculated when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=902,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -129,6 +131,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_overview_uses_cache(self):
+        """Ensure realtime metrics are cached and reused on subsequent overview requests."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -159,6 +162,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_overview_rebuilds_after_cache_clear(self):
+        """Ensure realtime metrics are recalculated after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -190,6 +194,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_overview_handles_empty_metrics(self):
+        """Ensure the overview service correctly handles scenarios where all user metrics are zero."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -232,6 +237,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
         self.assertEqual(result["customer_users"], 0)
 
     def test_get_overview_raises_when_cache_layer_fails(self):
+        """Ensure an AnalyticsUserUnavailableException is raised when the cache service fails."""
         with patch(
             "ech.analytics.services.analytic_user_overview_service."
             "AnalyticsCacheService.get_or_set",
@@ -245,6 +251,7 @@ class AnalyticsUserOverviewServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period resolution fails when only one of period_start or period_end is provided."""
         with self.assertRaises(AnalyticsUserUnavailableException):
             AnalyticsUserOverviewService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,

@@ -463,6 +463,7 @@ class AnalyticsSnapshotBaseQuerysetTestCase(
     TestCase,
 ):
     def test_analytics_snapshot_base_queryset_applies_select_and_prefetch_related(self):
+        """Ensure the analytics snapshot base queryset eagerly loads generated_by and lifecycle and prefetches events."""
         queryset = analytics_snapshot_base_queryset()
 
         self.assertEqual(
@@ -499,6 +500,7 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_version,
     ):
+        """Ensure retrieval by snapshot id returns the expected snapshot with related data loaded."""
         result = get_analytics_snapshot_by_id(snapshot_id=self.snapshot.id)
 
         self.assertEqual(result, self.snapshot)
@@ -521,6 +523,7 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_version,
     ):
+        """Ensure retrieval by snapshot id raises the domain exception when the snapshot does not exist."""
         with self.assertRaises(AnalyticsSnapshotNotFoundException):
             get_analytics_snapshot_by_id(snapshot_id=uuid.uuid4())
 
@@ -537,6 +540,7 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_version,
     ):
+        """Ensure retrieval with related data returns the expected snapshot including lifecycle and events."""
         result = get_analytics_snapshot_with_related(snapshot_id=self.snapshot.id)
 
         self.assertEqual(result, self.snapshot)
@@ -556,6 +560,7 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_period_version,
     ):
+        """Ensure the latest snapshot selector returns the most recent snapshot for the requested period type."""
         now = timezone.now()
 
         older_snapshot = self.create_snapshot(
@@ -589,6 +594,7 @@ class AnalyticsSnapshotRetrievalSelectorTestCase(
         mock_get_or_set,
         mock_get_period_version,
     ):
+        """Ensure requesting the latest snapshot for an empty period type raises the not found exception."""
         with self.assertRaises(AnalyticsSnapshotNotFoundException):
             get_latest_analytics_snapshot_by_period_type(
                 period_type=AnalyticsSnapshot.PERIOD_MONTHLY,
@@ -639,6 +645,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_management_version,
     ):
+        """Ensure listing analytics snapshots returns all snapshots in descending recency order."""
         result = list_analytics_snapshots()
 
         self.assertEqual(result.count(), 3)
@@ -660,6 +667,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_period_version,
     ):
+        """Ensure listing snapshots by period type returns only snapshots matching the requested period."""
         result = list_analytics_snapshots_by_period_type(
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
         )
@@ -683,6 +691,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_management_version,
     ):
+        """Ensure listing snapshots by period range returns only snapshots fully contained within the given bounds."""
         result = list_analytics_snapshots_by_period_range(
             period_start=self.snapshot_daily_old.period_start,
             period_end=self.snapshot_daily_new.period_end,
@@ -707,6 +716,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_management_version,
     ):
+        """Ensure period range listing also honors an additional period type filter when provided."""
         result = list_analytics_snapshots_by_period_range(
             period_start=self.snapshot_weekly.period_start,
             period_end=self.snapshot_weekly.period_end,
@@ -717,6 +727,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         self.assertEqual(result.first(), self.snapshot_weekly)
 
     def test_list_recent_analytics_snapshots_returns_ordered_queryset(self):
+        """Ensure recent snapshot listing returns snapshots ordered from newest to oldest."""
         result = list_recent_analytics_snapshots()
 
         self.assertEqual(
@@ -737,6 +748,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_management_version,
     ):
+        """Ensure snapshot search matches content derived from the period type field."""
         result = search_analytics_snapshots(query="daily")
 
         self.assertEqual(result.count(), 2)
@@ -758,6 +770,7 @@ class AnalyticsSnapshotListSelectorTestCase(
         mock_get_or_set,
         mock_get_management_version,
     ):
+        """Ensure snapshot search matches values stored inside snapshot metadata."""
         result = search_analytics_snapshots(query="weekly-analytics")
 
         self.assertEqual(result.count(), 1)
@@ -769,6 +782,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
     TestCase,
 ):
     def test_order_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the order analytics queryset applies the expected select_related and prefetch_related configuration."""
         queryset = order_analytics_base_queryset()
 
         self.assertEqual(
@@ -786,6 +800,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
         )
 
     def test_payment_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the payment analytics queryset applies the expected related object loading strategy."""
         queryset = payment_analytics_base_queryset()
 
         self.assertEqual(
@@ -802,6 +817,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
         )
 
     def test_shipment_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the shipment analytics queryset applies the expected related object loading strategy."""
         queryset = shipment_analytics_base_queryset()
 
         self.assertEqual(
@@ -819,6 +835,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
         )
 
     def test_product_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the product analytics queryset applies the expected related object loading strategy."""
         queryset = product_analytics_base_queryset()
 
         self.assertEqual(
@@ -834,6 +851,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
         )
 
     def test_review_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the review analytics queryset applies the expected related object loading strategy."""
         queryset = review_analytics_base_queryset()
 
         self.assertEqual(
@@ -851,6 +869,7 @@ class AnalyticsOperationalBaseQuerysetTestCase(
         )
 
     def test_notification_analytics_base_queryset_applies_related_loading(self):
+        """Ensure the notification analytics queryset applies the expected related object loading strategy."""
         queryset = notification_analytics_base_queryset()
 
         self.assertEqual(
@@ -993,6 +1012,7 @@ class AnalyticsOperationalListSelectorTestCase(
         )
 
     def test_list_orders_for_analytics_filters_by_created_at(self):
+        """Ensure order analytics listing filters records by created_at within the requested period."""
         result = list_orders_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,
@@ -1004,6 +1024,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertEqual(result.first().events.count(), 1)
 
     def test_list_payments_for_analytics_filters_by_created_at(self):
+        """Ensure payment analytics listing filters records by created_at within the requested period."""
         result = list_payments_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,
@@ -1015,6 +1036,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertEqual(result.first().refunds.count(), 1)
 
     def test_list_shipments_for_analytics_filters_by_created_at(self):
+        """Ensure shipment analytics listing filters records by created_at within the requested period."""
         result = list_shipments_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,
@@ -1026,6 +1048,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertEqual(result.first().notes.count(), 1)
 
     def test_list_products_for_analytics_returns_all_products(self):
+        """Ensure product analytics listing returns all products available for aggregation."""
         result = list_products_for_analytics()
 
         self.assertIn(self.product, result)
@@ -1033,6 +1056,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertEqual(result.count(), 2)
 
     def test_customer_analytics_base_queryset_returns_only_customer_users(self):
+        """Ensure the customer analytics base queryset includes only customer users and excludes staff users."""
         result = customer_analytics_base_queryset()
 
         self.assertIn(self.customer, result)
@@ -1041,6 +1065,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertNotIn(self.staff_inside, result)
 
     def test_list_customers_for_analytics_without_bounds_returns_all_customers(self):
+        """Ensure customer analytics listing without date bounds returns all customer users."""
         result = list_customers_for_analytics()
 
         self.assertIn(self.customer, result)
@@ -1049,6 +1074,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertNotIn(self.staff_user, result)
 
     def test_list_customers_for_analytics_filters_by_join_date_range(self):
+        """Ensure customer analytics listing filters customer users by date_joined within the requested range."""
         result = list_customers_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,
@@ -1061,6 +1087,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertNotIn(self.staff_inside, result)
 
     def test_user_analytics_base_queryset_returns_all_users(self):
+        """Ensure the user analytics base queryset returns both customer and staff users."""
         result = user_analytics_base_queryset()
 
         self.assertIn(self.customer, result)
@@ -1068,6 +1095,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertIn(self.staff_inside, result)
 
     def test_list_users_for_analytics_filters_by_period_end(self):
+        """Ensure user analytics listing honors the upper bound when filtering by join date."""
         result = list_users_for_analytics(
             period_end=self.period_end,
         )
@@ -1077,6 +1105,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertIn(self.customer_outside, result)
 
     def test_list_reviews_for_analytics_filters_by_created_at(self):
+        """Ensure review analytics listing filters records by created_at within the requested period."""
         result = list_reviews_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,
@@ -1087,6 +1116,7 @@ class AnalyticsOperationalListSelectorTestCase(
         self.assertEqual(result.first().events.count(), 1)
 
     def test_list_notifications_for_analytics_filters_by_created_at(self):
+        """Ensure notification analytics listing filters records by created_at within the requested period."""
         result = list_notifications_for_analytics(
             period_start=self.period_start,
             period_end=self.period_end,

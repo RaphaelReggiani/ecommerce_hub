@@ -466,6 +466,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         )
 
     def test_generate_snapshot_creates_snapshot_with_expected_metrics(self):
+        """Ensure snapshot generation persists the expected aggregated analytics metrics, lifecycle data, events, logs, and cache invalidation."""
         self._create_full_period_dataset()
 
         with patch(
@@ -575,6 +576,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         self.assertEqual(dispatched_event.generated_by_id, self.analytics_staff.id)
 
     def test_generate_snapshot_creates_zeroed_snapshot_when_operational_data_is_empty(self):
+        """Ensure snapshot generation produces a fully zeroed analytics snapshot when all selector sources return no data."""
         with patch(
             "ech.analytics.services.analytic_snapshot_generation_service."
             "list_orders_for_analytics",
@@ -650,6 +652,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         self.assertEqual(snapshot.high_rated_products_count, 0)
 
     def test_generate_snapshot_returns_existing_snapshot_for_same_idempotency_key(self):
+        """Ensure snapshot generation replays the existing snapshot when the same idempotency key is reused for the same period."""
         idempotency_key = uuid.uuid4()
 
         existing_snapshot = self._create_existing_snapshot(
@@ -681,6 +684,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         invalidate_mock.assert_not_called()
 
     def test_generate_snapshot_raises_already_exists_without_idempotency_key(self):
+        """Ensure snapshot generation raises an already exists exception when a snapshot for the period exists and no idempotency key is provided."""
         self._create_existing_snapshot(
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
             period_start=self.period_start,
@@ -698,6 +702,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
             )
 
     def test_generate_snapshot_raises_already_exists_for_new_key_same_period(self):
+        """Ensure snapshot generation raises an already exists exception when a different idempotency key targets a period that already has a snapshot."""
         self._create_existing_snapshot(
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
             period_start=self.period_start,
@@ -715,6 +720,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
             )
 
     def test_generate_snapshot_raises_idempotency_conflict_for_reused_key_other_period(self):
+        """Ensure snapshot generation raises an idempotency conflict when a previously used key is reused for a different period."""
         reused_key = uuid.uuid4()
 
         self._create_existing_snapshot(
@@ -740,6 +746,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
             )
 
     def test_generate_snapshot_normalizes_date_bounds(self):
+        """Ensure snapshot generation normalizes date inputs into timezone-aware datetime period bounds."""
         period_start_date = self.period_start.date()
         period_end_date = self.period_end.date()
 
@@ -772,6 +779,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         self.assertEqual(snapshot.period_end, expected_end)
 
     def test_generate_snapshot_raises_creation_exception_when_only_one_bound_is_provided(self):
+        """Ensure snapshot generation raises a creation exception when only one period bound is provided."""
         with self.assertRaises(AnalyticsSnapshotCreationException):
             AnalyticsSnapshotGenerationService.generate_snapshot(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -782,6 +790,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
             )
 
     def test_generate_snapshot_dispatches_failure_event_when_creation_fails(self):
+        """Ensure snapshot generation dispatches a failed event and raises a creation exception when persistence fails."""
         with patch(
             "ech.analytics.services.analytic_snapshot_generation_service."
             "AnalyticsSnapshot.objects.create",
@@ -810,6 +819,7 @@ class AnalyticsSnapshotGenerationServiceTestCase(
         self.assertIn("boom", failed_event.error_message)
 
     def test_build_snapshot_metrics_returns_empty_payload_when_all_selectors_are_empty(self):
+        """Ensure metric building returns an empty analytics payload when all selector sources are empty."""
         with patch(
             "ech.analytics.services.analytic_snapshot_generation_service."
             "list_orders_for_analytics",

@@ -40,6 +40,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         }
 
     def test_get_summary_returns_snapshot_data_when_available(self):
+        """Ensure customer summary returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=801,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -91,6 +92,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         )
 
     def test_get_summary_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure customer summary falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=802,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -130,6 +132,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         )
 
     def test_get_summary_uses_cache(self):
+        """Ensure customer summary reuses cached realtime metrics for repeated requests within the same period."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -160,6 +163,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_summary_rebuilds_after_cache_clear(self):
+        """Ensure customer summary rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -191,6 +195,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_summary_handles_empty_metrics(self):
+        """Ensure customer summary correctly handles periods with zero customers and zero derived metrics."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -227,6 +232,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         self.assertEqual(result["repeat_customer_rate"], 0)
 
     def test_get_summary_raises_when_cache_layer_fails(self):
+        """Ensure customer summary raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_customer_summary_service."
             "AnalyticsCacheService.get_or_set",
@@ -240,6 +246,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one customer summary bound is provided."""
         with self.assertRaises(AnalyticsCustomerUnavailableException):
             AnalyticsCustomerSummaryService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -248,6 +255,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_customer_summary_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -262,6 +270,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested customer summary period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -283,6 +292,7 @@ class AnalyticsCustomerSummaryServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_build_summary_from_snapshot_handles_no_previous_snapshot(self):
+        """Ensure snapshot-based customer summary computes growth and repeat rate correctly when no previous snapshot exists."""
         snapshot = AnalyticsSnapshot(
             id=901,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

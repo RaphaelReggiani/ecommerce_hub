@@ -88,6 +88,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         }
 
     def test_get_summary_returns_snapshot_payload_when_snapshot_matches_period(self):
+        """Ensure dashboard summary returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=123,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -160,6 +161,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         )
 
     def test_get_summary_uses_realtime_payload_when_snapshot_does_not_match_period(self):
+        """Ensure dashboard summary falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=456,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -196,6 +198,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         )
 
     def test_get_summary_uses_cache_for_identical_requests(self):
+        """Ensure dashboard summary reuses cached realtime metrics and avoids recalculating or relogging on repeated identical requests."""
         realtime_payload = self._build_nested_payload(source="realtime")
 
         with patch(
@@ -226,6 +229,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         log_mock.assert_called_once()
 
     def test_get_summary_rebuilds_after_cache_clear(self):
+        """Ensure dashboard summary rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_nested_payload(source="realtime")
 
         with patch(
@@ -257,6 +261,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_summary_returns_empty_realtime_metrics_structure(self):
+        """Ensure dashboard summary correctly returns the full empty realtime metrics structure when no data is available."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -338,6 +343,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         self.assertEqual(summary["reviews"]["average_rating"], Decimal("0.00"))
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one dashboard summary bound is provided."""
         with self.assertRaises(AnalyticsDashboardUnavailableException):
             AnalyticsDashboardSummaryService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -346,6 +352,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
             )
 
     def test_get_summary_raises_dashboard_unavailable_when_cache_layer_fails(self):
+        """Ensure dashboard summary raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_dashboard_summary_service."
             "AnalyticsCacheService.get_or_set",
@@ -359,6 +366,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
                 )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_dashboard_summary_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -373,6 +381,7 @@ class AnalyticsDashboardSummaryServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested dashboard summary period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

@@ -7,7 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **2200+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **2400+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
 **This project is under active development.**
 
@@ -67,6 +67,13 @@ Examples:
 * `AnalyticsSnapshotGenerationService`
 * `AnalyticsSnapshotRefreshService`
 * `AnalyticsDashboardSummaryService`
+* `AdminDashboardSummaryService`
+* `AdminDashboardOperationalMetricsService`
+* `AdminDashboardRecentActivityService`
+* `AdminDashboardAlertsService`
+* `AdminDashboardBulkOrderActionsService`
+* `AdminDashboardBulkReviewModerationService`
+* `AdminDashboardBulkNotificationRetryService`
 
 This approach ensures:
 
@@ -93,6 +100,7 @@ Domain events are used for:
 * cache invalidation
 * lifecycle tracking
 * integrations
+* administrative observability
 
 ---
 
@@ -110,6 +118,8 @@ Examples include:
 * `ReviewEvent`
 * `NotificationEvent`
 * `AnalyticsEvent`
+* `AdminDashboardEvent`
+* `AdminDashboardLog`
 
 These event logs provide a complete operational audit trail and support future observability and analytics integrations.
 
@@ -133,6 +143,10 @@ Examples:
 * analytics snapshot caching
 * analytics sales overview caching
 * analytics operational metrics caching
+* admin dashboard summary caching
+* admin dashboard operational metrics caching
+* admin dashboard recent activity caching
+* admin dashboard alerts caching
 
 Cache versioning allows safe invalidation without requiring wildcard cache deletion.
 
@@ -225,7 +239,7 @@ Centralizes system messages and configuration values.
 # Architecture Diagram
 
 ```text
-                          Client (Web / Mobile)
+ Client (Web / Mobile)
                                   |
                                   v
                          Django REST API (DRF)
@@ -238,36 +252,37 @@ Centralizes system messages and configuration values.
                              Service Layer
                   (business rules • orchestration)
                                   |
-          +---------------------------------------------------+
-          |                                                   |
-          v                                                   v
-      Operational Services                           Analytics Services
- (users • products • orders • payments •       (snapshots • dashboards •
-  shipping • reviews • notifications)           business intelligence metrics)
-          |                                                   |
-          v                                                   v
-      Selectors                                       Analytics Selectors
- (query optimization)                          (aggregated analytical queries)
-          |                                                   |
-          +----------------------+----------------------------+
-                                 |
-                                 v
-                             Django ORM
-                                 |
-                                 v
-                              Database
-                                 |
-                                 v
-                               Cache
-                      (Django Cache / Redis)
+          +-------------------------+--------------------------+
+          |                         |                          |
+          v                         v                          v
+   Operational Services      Admin Dashboard Services    Analytics Services
+(users • products • orders • (summary • operational     (snapshots • dashboards •
+ payments • shipping •        metrics • activity feed •   business intelligence metrics)
+ reviews • notifications)     alerts • bulk actions)
+          |                         |                          |
+          v                         v                          v
+      Selectors              Dashboard Selectors        Analytics Selectors
+ (query optimization)      (cross-module aggregation) (aggregated analytical queries)
+          |                         |                          |
+          +-------------------------+------------+-------------+
+                                            |
+                                            v
+                                        Django ORM
+                                            |
+                                            v
+                                         Database
+                                            |
+                                            v
+                                          Cache
+                                 (Django Cache / Redis)
 
-          +---------------------------------------------------+
+          +---------------------------------------------------------------+
           |
           v
-                         Domain Events System
-              (dispatcher • handlers • lifecycle observability)
+                              Domain Events System
+             (dispatcher • handlers • lifecycle observability • auditability)
 ```
-> Domain events are used selectively in modules that benefit from lifecycle-based orchestration and operational decoupling, including users, products, orders, payments, shipping, reviews, notifications, and analytics. Simpler modules such as the admin dashboard may still follow a service-oriented architecture without a dedicated domain event layer.
+> Domain events are used selectively in modules that benefit from lifecycle-based orchestration, auditability, and operational decoupling, including users, products, orders, payments, shipping, reviews, notifications, analytics, and the admin dashboard.
 
 ---
 
@@ -275,7 +290,15 @@ Centralizes system messages and configuration values.
 
 The platform uses domain events to propagate important state transitions between modules in a decoupled way.
 
-For example, when an order is created, domain events can trigger actions in other modules such as notifications or analytics.
+When key business operations occur, domain events allow other modules to react without introducing direct dependencies between domain services.
+
+This mechanism supports:
+
+- operational observability
+- lifecycle tracking
+- cache invalidation
+- future integrations
+- analytics pipelines
 
 ### Example Event Flow
 
@@ -296,7 +319,11 @@ flowchart TD
     EmailProvider --> CustomerEmail[Customer receives email notification]
     InAppProvider --> UserDashboard[User dashboard notification]
 
-    OrderCreatedEvent --> Analytics[Analytics / Monitoring Systems]
+    OrderCreatedEvent --> AnalyticsModule[Analytics Module]
+    OrderCreatedEvent --> AdminDashboard[Admin Dashboard Observability]
+
+    AnalyticsModule --> SnapshotSystem[Analytics Snapshot System]
+    AdminDashboard --> OperationalMonitoring[Operational Monitoring]
 ```
 
 ### Event-Driven Architecture
@@ -307,10 +334,14 @@ Examples include:
 
 * order creation triggering customer notifications
 * payment state transitions triggering shipping preparation
-* notification events generating structured logs
-* domain events enabling analytics pipelines
+* review moderation generating operational logs
+* notification lifecycle events enabling delivery observability
+* analytics snapshot generation enabling business intelligence dashboards
+* administrative monitoring reacting to operational anomalies
 
-This approach allows the platform to evolve towards more advanced event-driven or message-based architectures without tightly coupling domain modules.
+Domain events are implemented through a lightweight in-memory dispatcher and a registry-based handler system.
+
+This architecture allows the platform to evolve toward more advanced event-driven or message-based systems in the future, including integration with message brokers or distributed event pipelines.
 
 ---
 
@@ -2547,6 +2578,245 @@ This architecture ensures:
 
 ---
 
+## Admin Dashboard Module
+
+The admin dashboard module provides a centralized operational control panel for administrators.
+
+Instead of accessing each subsystem independently, the dashboard aggregates operational information from multiple modules including:
+
+* users
+* products
+* orders
+* payments
+* shipping
+* reviews
+* notifications
+
+This module focuses on **real-time operational monitoring**, administrative oversight, and system health visibility.
+
+---
+
+### Dashboard Summary
+
+The dashboard provides a high-level operational overview of the platform.
+
+Aggregated metrics include:
+
+* total orders
+* total revenue
+* total users
+* total products
+* total reviews
+
+These metrics provide administrators with a quick snapshot of platform activity.
+
+---
+
+### Admin Dashboard Operational Flow
+
+```mermaid
+flowchart TD
+
+    AdminUser[Admin User]
+
+    AdminUser --> AdminAPI[Admin Dashboard API]
+
+    AdminAPI --> SummaryService[AdminDashboardSummaryService]
+    AdminAPI --> MetricsService[AdminDashboardOperationalMetricsService]
+    AdminAPI --> ActivityService[AdminDashboardRecentActivityService]
+    AdminAPI --> AlertsService[AdminDashboardAlertsService]
+    AdminAPI --> BulkOrderService[AdminDashboardBulkOrderActionsService]
+    AdminAPI --> BulkReviewService[AdminDashboardBulkReviewModerationService]
+    AdminAPI --> BulkNotificationService[AdminDashboardBulkNotificationRetryService]
+
+    SummaryService --> DashboardSelectors[Admin Dashboard Selectors]
+    MetricsService --> DashboardSelectors
+    ActivityService --> DashboardSelectors
+    AlertsService --> DashboardSelectors
+
+    DashboardSelectors --> UsersModule[Users Module]
+    DashboardSelectors --> ProductsModule[Products Module]
+    DashboardSelectors --> OrdersModule[Orders Module]
+    DashboardSelectors --> PaymentsModule[Payments Module]
+    DashboardSelectors --> ShippingModule[Shipping Module]
+    DashboardSelectors --> ReviewsModule[Reviews Module]
+    DashboardSelectors --> NotificationsModule[Notifications Module]
+
+    SummaryService --> Cache[(Cache)]
+    MetricsService --> Cache
+    ActivityService --> Cache
+    AlertsService --> Cache
+
+    BulkOrderService --> OrdersModule
+    BulkReviewService --> ReviewsModule
+    BulkNotificationService --> NotificationsModule
+
+    SummaryService --> LogService[AdminDashboardLogService]
+    MetricsService --> LogService
+    ActivityService --> LogService
+    AlertsService --> LogService
+    BulkOrderService --> LogService
+    BulkReviewService --> LogService
+    BulkNotificationService --> LogService
+
+    LogService --> AdminEvents[AdminDashboardEvent / AdminDashboardLog]
+    LogService --> DomainEvents[Domain Events]
+```
+
+---
+
+### Operational Monitoring Metrics
+
+The dashboard exposes operational monitoring metrics designed to highlight system issues that require administrative attention.
+
+Examples include:
+
+* pending orders
+* failed payments
+* delayed shipments
+* flagged reviews
+* failed notifications
+
+These metrics allow administrators to quickly detect operational anomalies across the platform.
+
+---
+
+### Product Operational Monitoring
+
+The dashboard also includes product catalog monitoring metrics, such as:
+
+* products with low stock
+* inactive products
+* products missing images
+* recently created products
+* product catalog inconsistencies
+
+These metrics allow administrators to monitor catalog health directly from the dashboard.
+
+---
+
+### Recent Activity Feed
+
+The dashboard aggregates recent operational activity across the platform.
+
+The activity feed includes events from:
+
+* orders
+* payments
+* shipments
+* reviews
+* notifications
+* administrative actions
+
+This unified feed allows administrators to monitor platform activity in near real-time.
+
+---
+
+### Operational Alerts
+
+The dashboard can generate alerts based on operational metrics.
+
+Examples include:
+
+* excessive failed payments
+* high volume of delayed shipments
+* unusually high number of flagged reviews
+* notification delivery failures
+* catalog inconsistencies
+
+These alerts allow administrators to react quickly to operational problems.
+
+---
+
+### Administrative Bulk Operations
+
+The dashboard includes administrative tools for performing bulk operational actions.
+
+Supported operations include:
+
+* bulk order actions
+* bulk review moderation
+* retrying failed notifications
+
+These operations allow administrators to efficiently manage operational incidents.
+
+---
+
+### Caching Strategy
+
+The admin dashboard is optimized for read-heavy workloads using a versioned caching strategy.
+
+Cached components include:
+
+* dashboard summary
+* operational metrics
+* recent activity feed
+* operational alerts
+
+Cache keys are versioned to allow deterministic invalidation without requiring wildcard cache deletion.
+
+Cache management is centralized through the `AdminDashboardCacheService`.
+
+---
+
+### Structured Logging
+
+The module includes a dedicated logging service:
+
+* `AdminDashboardLogService`
+
+Structured logs are generated for:
+
+* dashboard access
+* operational alert generation
+* administrative bulk operations
+
+These logs support operational observability and administrative auditing.
+
+---
+
+### Domain Event System
+
+The admin dashboard implements a lightweight domain event architecture.
+
+Components include:
+
+* domain event classes
+* in-memory event dispatcher
+* handler registry executed at application startup
+* structured event handlers for observability
+
+Domain events allow the dashboard to react to operational state changes and support future integrations with monitoring systems.
+
+---
+
+### Service Layer Architecture
+
+The admin dashboard module follows a service-oriented architecture.
+
+Core services include:
+
+* `AdminDashboardSummaryService`
+* `AdminDashboardOperationalMetricsService`
+* `AdminDashboardRecentActivityService`
+* `AdminDashboardAlertsService`
+* `AdminDashboardBulkOrderActionsService`
+* `AdminDashboardBulkReviewModerationService`
+* `AdminDashboardBulkNotificationRetryService`
+* `AdminDashboardLogService`
+* `AdminDashboardCacheService`
+
+These services orchestrate cross-module data aggregation while maintaining separation between domain logic and the API layer.
+
+This architecture ensures:
+
+* centralized operational monitoring
+* efficient cross-module aggregation
+* consistent administrative workflows
+* scalable dashboard performance
+
+---
+
 # API Endpoints
 
 All write operations that create resources support the `Idempotency-Key` header.
@@ -2792,7 +3062,8 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
 | **Notifications** | 210| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
 | **Analytics** | 262 | 95 | 357 | Analytical snapshots, aggregated business metrics, dashboard queries, caching, event-driven analytics | ✔ Stable |
-| **TOTAL (implemented modules)** | **1667** | **535** | **2202** | Core Business Logic | — |
+| **Admin Dashboard** | 215 | - | 215 | Operational monitoring, administrative actions, alerting system, caching, event-driven operations | **API Pending** |
+| **TOTAL (implemented modules)** | **1882** | **535** | **2417** | Core Business Logic | — |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -5131,6 +5402,249 @@ Tests validate structured analytics logging behavior:
 
 ---
 
+<details>
+<summary><strong>Admin Dashboard Module Tests</strong></summary>
+
+### Admin Dashboard Domain Tests
+
+The Admin Dashboard module provides **operational visibility and administrative controls** across the platform, aggregating real-time operational data and enabling safe management actions.
+
+Tests validate monitoring capabilities, alerting logic, administrative actions, and cache-driven dashboard performance.
+
+---
+
+#### Domain Models
+
+Tests validate persistence and structural integrity of dashboard operational records:
+
+* admin dashboard event creation and field validation
+* admin dashboard log creation and persistence behavior
+* UUID primary key generation
+* event type validation
+* optional performer relationships
+* metadata storage validation
+* timestamp persistence behavior
+* model ordering behavior
+* string representation validation
+
+---
+
+#### Domain Exceptions
+
+Tests validate safe failure handling for dashboard operations:
+
+* dashboard summary unavailable exception
+* operational metrics unavailable exception
+* recent activity unavailable exception
+* alerts unavailable exception
+* bulk order action exception
+* bulk review moderation exception
+* bulk notification retry exception
+* exception inheritance hierarchy validation
+
+---
+
+#### Query Selectors
+
+Selectors aggregate operational data across multiple platform domains.
+
+Tests validate retrieval logic and query correctness:
+
+* retrieving order summary metrics
+* retrieving payment summary metrics
+* retrieving shipping summary metrics
+* retrieving user summary metrics
+* retrieving product summary metrics
+* retrieving review summary metrics
+* retrieving operational order metrics
+* retrieving operational product metrics
+* retrieving operational shipping metrics
+* retrieving operational payment metrics
+* retrieving recent order activity
+* retrieving recent review activity
+* retrieving recent notification activity
+* handling empty operational datasets safely
+
+---
+
+#### Dashboard Filters
+
+Tests validate filtering behavior for dashboard event and log listings:
+
+* filtering logs by event type
+* filtering logs by performer
+* filtering logs by metadata attributes
+* filtering logs by creation date range
+* filtering events by event type
+* filtering events by performer
+* filtering events by related log entries
+* filtering events by metadata attributes
+* combined filter queries
+* safe handling of empty results
+
+---
+
+#### Domain Events
+
+The admin dashboard uses domain events to track administrative operations and operational monitoring activity.
+
+Tests validate event dispatching and payload structure:
+
+* dashboard viewed event dispatch
+* dashboard summary fetched event dispatch
+* operational metrics fetched event dispatch
+* recent activity fetched event dispatch
+* event payload serialization
+* event dispatcher execution
+* safe dispatch without registered handlers
+
+---
+
+#### Cache Selectors
+
+The dashboard relies heavily on **cache-backed selectors** to avoid repeated heavy operational queries.
+
+Tests validate caching behavior:
+
+* dashboard cache key generation
+* operational metrics cache key generation
+* recent activity cache key generation
+* alerts cache key generation
+* retrieving cached dashboard summary
+* retrieving cached operational metrics
+* retrieving cached recent activity
+* retrieving cached alerts
+* cache reuse for identical queries
+* cache rebuild after cache invalidation
+
+---
+
+#### Cache Invalidation
+
+Tests validate that administrative operations invalidate dashboard caches safely:
+
+* invalidation of dashboard summary cache
+* invalidation of operational metrics cache
+* invalidation of recent activity cache
+* invalidation of alerts cache
+* invalidation of all dashboard views
+* version bump behavior
+* returning fresh data after invalidation
+
+---
+
+#### Admin Dashboard Summary Service
+
+Tests validate aggregation of cross-domain operational metrics:
+
+* building dashboard summary payload
+* retrieving metrics from multiple operational modules
+* cache reuse for identical requests
+* cache rebuild after invalidation
+* logging dashboard access
+* safe handling of empty metrics
+
+---
+
+#### Operational Metrics Service
+
+Tests validate detailed operational monitoring metrics:
+
+* retrieving operational metrics across modules
+* cache-backed retrieval behavior
+* rebuilding metrics after cache invalidation
+* logging operational metrics access
+* handling empty operational datasets safely
+
+---
+
+#### Recent Activity Service
+
+Tests validate retrieval of recent operational events:
+
+* retrieving recent system activity
+* aggregation of cross-module activity events
+* cache reuse for identical requests
+* rebuilding activity feed after cache invalidation
+* logging activity access
+* handling empty activity feeds safely
+
+---
+
+#### Alerts Service
+
+Tests validate operational alert generation:
+
+* detecting payment failure thresholds
+* detecting shipping failure thresholds
+* detecting notification failure thresholds
+* detecting low inventory alerts
+* generating structured alert payloads
+* cache reuse for alert queries
+* rebuilding alerts after cache invalidation
+* safe handling of no-alert scenarios
+
+---
+
+#### Bulk Order Actions Service
+
+Tests validate safe execution of administrative order operations:
+
+* bulk order cancellation execution
+* bulk order status transition to processing
+* rejection when no orders are found
+* permission validation
+* wrapping service execution failures
+* logging bulk order operations
+* safe exception handling
+
+---
+
+#### Bulk Review Moderation Service
+
+Tests validate bulk moderation workflows for product reviews:
+
+* bulk review approval execution
+* bulk review rejection execution
+* bulk review hiding execution
+* rejection when no valid reviews are found
+* moderation service invocation validation
+* logging moderation actions
+* exception wrapping behavior
+
+---
+
+#### Bulk Notification Retry Service
+
+Tests validate retry operations for failed notifications:
+
+* retrying failed notification deliveries
+* skipping notifications not eligible for retry
+* delivery service invocation validation
+* logging retry operations
+* exception wrapping for delivery failures
+* safe handling of empty retry sets
+
+---
+
+#### Admin Dashboard Logging
+
+Tests validate structured logging for administrative operations:
+
+* dashboard access logging
+* operational metrics logging
+* activity feed logging
+* alert retrieval logging
+* bulk order action logging
+* bulk review moderation logging
+* notification retry logging
+* safe serialization of UUID metadata
+* structured log payload validation
+
+</details>
+
+---
+
 Example test execution:
 
 ```bash
@@ -5165,6 +5679,8 @@ pytest ech/notifications/api/tests/
 
 pytest ech/analytics/tests/
 pytest ech/analytics/api/tests/
+
+pytest ech/admin_dashboard/tests/
 
 ```
 

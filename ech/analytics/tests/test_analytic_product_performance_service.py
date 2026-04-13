@@ -38,6 +38,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         }
 
     def test_get_performance_returns_snapshot_data_when_available(self):
+        """Ensure product performance returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=601,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -75,6 +76,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         )
 
     def test_get_performance_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure product performance falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=602,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -112,6 +114,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         )
 
     def test_get_performance_uses_cache(self):
+        """Ensure product performance reuses cached realtime metrics on repeated requests for the same period."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -142,6 +145,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_performance_rebuilds_after_cache_clear(self):
+        """Ensure product performance rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -173,6 +177,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_performance_handles_empty_metrics(self):
+        """Ensure product performance correctly handles periods with zero products sold and no top product."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -205,6 +210,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         self.assertIsNone(result["top_product_id"])
 
     def test_get_performance_raises_when_cache_layer_fails(self):
+        """Ensure product performance raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_product_performance_service."
             "AnalyticsCacheService.get_or_set",
@@ -218,6 +224,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one product performance bound is provided."""
         with self.assertRaises(AnalyticsProductUnavailableException):
             AnalyticsProductPerformanceService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -226,6 +233,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_product_performance_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -240,6 +248,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested product performance period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -261,6 +270,7 @@ class AnalyticsProductPerformanceServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_build_performance_from_snapshot_handles_empty_values(self):
+        """Ensure snapshot-based product performance returns empty values correctly when no product metrics are present."""
         snapshot = AnalyticsSnapshot(
             id=701,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

@@ -41,6 +41,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         }
 
     def test_get_overview_returns_snapshot_data_when_available(self):
+        """Ensure shipping overview returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=501,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -82,6 +83,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure shipping overview falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=502,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -122,6 +124,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_cache(self):
+        """Ensure shipping overview reuses cached realtime metrics on repeated requests for the same period."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -152,6 +155,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_overview_rebuilds_after_cache_clear(self):
+        """Ensure shipping overview rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -183,6 +187,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_overview_handles_empty_metrics(self):
+        """Ensure shipping overview correctly handles periods with zero shipment metrics."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -221,6 +226,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         self.assertEqual(result["failed_rate"], 0)
 
     def test_get_overview_raises_when_cache_layer_fails(self):
+        """Ensure shipping overview raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_shipping_overview_service."
             "AnalyticsCacheService.get_or_set",
@@ -234,6 +240,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one shipping overview bound is provided."""
         with self.assertRaises(AnalyticsShippingUnavailableException):
             AnalyticsShippingOverviewService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -242,6 +249,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_shipping_overview_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -256,6 +264,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -277,6 +286,7 @@ class AnalyticsShippingOverviewServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_build_overview_from_snapshot_handles_zero_shipping_operations(self):
+        """Ensure snapshot-based shipping overview computes zero rates when all shipment counters are zero."""
         snapshot = AnalyticsSnapshot(
             id=601,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

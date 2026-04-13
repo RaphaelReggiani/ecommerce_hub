@@ -46,6 +46,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         }
 
     def test_get_overview_returns_snapshot_data_when_available(self):
+        """Ensure sales overview returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=101,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -96,6 +97,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure sales overview falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=55,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -133,6 +135,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_cache(self):
+        """Ensure sales overview reuses cached realtime metrics and avoids recalculating or relogging on repeated requests."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -163,6 +166,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         log_mock.assert_called_once()
 
     def test_get_overview_rebuilds_after_cache_clear(self):
+        """Ensure sales overview rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -194,6 +198,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_overview_handles_empty_metrics(self):
+        """Ensure sales overview correctly handles periods with zero orders, revenue, refunds, and payment metrics."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -234,6 +239,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         self.assertEqual(result["payments_refunded"], 0)
 
     def test_get_overview_raises_when_cache_layer_fails(self):
+        """Ensure sales overview raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_sales_overview_service."
             "AnalyticsCacheService.get_or_set",
@@ -247,6 +253,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one sales overview bound is provided."""
         with self.assertRaises(AnalyticsSalesUnavailableException):
             AnalyticsSalesOverviewService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -255,6 +262,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_sales_overview_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -269,6 +277,7 @@ class AnalyticsSalesOverviewServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested sales period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

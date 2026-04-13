@@ -45,6 +45,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         }
 
     def test_get_overview_returns_snapshot_data_when_available(self):
+        """Ensure payment overview returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=401,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -92,6 +93,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure payment overview falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=402,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -135,6 +137,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         )
 
     def test_get_overview_uses_cache(self):
+        """Ensure payment overview reuses cached realtime metrics and avoids recalculating or relogging on repeated requests."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -166,6 +169,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         log_mock.assert_called_once()
 
     def test_get_overview_rebuilds_after_cache_clear(self):
+        """Ensure payment overview rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -197,6 +201,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_overview_handles_empty_metrics(self):
+        """Ensure payment overview correctly handles periods with zero payment counts, refunded amount, revenue, and rates."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -241,6 +246,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         self.assertEqual(result["refund_rate"], 0)
 
     def test_get_overview_raises_when_cache_layer_fails(self):
+        """Ensure payment overview raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_payment_overview_service."
             "AnalyticsCacheService.get_or_set",
@@ -254,6 +260,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one payment overview bound is provided."""
         with self.assertRaises(AnalyticsPaymentUnavailableException):
             AnalyticsPaymentOverviewService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -262,6 +269,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_payment_overview_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -276,6 +284,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested payment period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -297,6 +306,7 @@ class AnalyticsPaymentOverviewServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_build_overview_from_snapshot_handles_zero_payment_operations(self):
+        """Ensure snapshot-based payment overview computes zero amounts and rates when all payment counters are zero."""
         snapshot = AnalyticsSnapshot(
             id=501,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

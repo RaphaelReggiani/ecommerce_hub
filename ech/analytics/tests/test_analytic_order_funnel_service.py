@@ -45,6 +45,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         }
 
     def test_get_funnel_returns_snapshot_data_when_available(self):
+        """Ensure order funnel returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=201,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -81,6 +82,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
             self.assertAlmostEqual(result["cancelled_rate"], 0.1)
 
     def test_get_funnel_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure order funnel falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=202,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -117,6 +119,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         )
 
     def test_get_funnel_uses_cache(self):
+        """Ensure order funnel reuses cached realtime metrics on repeated requests for the same period."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -143,6 +146,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_funnel_rebuilds_after_cache_clear(self):
+        """Ensure order funnel rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -171,6 +175,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_funnel_handles_empty_metrics(self):
+        """Ensure order funnel correctly handles periods with zero order counts and zero funnel rates."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -208,6 +213,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         self.assertEqual(result["cancelled_rate"], Decimal("0.00"))
 
     def test_get_funnel_raises_when_cache_layer_fails(self):
+        """Ensure order funnel raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_order_funnel_service."
             "AnalyticsCacheService.get_or_set",
@@ -221,6 +227,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one order funnel bound is provided."""
         with self.assertRaises(AnalyticsOrderUnavailableException):
             AnalyticsOrderFunnelService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -229,6 +236,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
             )
 
     def test_get_matching_snapshot_returns_none_when_selector_raises(self):
+        """Ensure matching snapshot lookup returns None when the snapshot selector raises an exception."""
         with patch(
             "ech.analytics.services.analytic_order_funnel_service."
             "get_latest_analytics_snapshot_by_period_type",
@@ -243,6 +251,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_get_matching_snapshot_returns_none_when_bounds_do_not_match(self):
+        """Ensure matching snapshot lookup returns None when snapshot bounds do not match the requested order funnel period."""
         snapshot = AnalyticsSnapshot(
             id=777,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -264,6 +273,7 @@ class AnalyticsOrderFunnelServiceTestCase(TestCase):
         self.assertIsNone(result)
 
     def test_build_funnel_from_snapshot_handles_zero_total_orders(self):
+        """Ensure snapshot-based order funnel computes zero rates when the total order count is zero."""
         snapshot = AnalyticsSnapshot(
             id=301,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,

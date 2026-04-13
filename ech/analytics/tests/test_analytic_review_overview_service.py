@@ -42,6 +42,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         }
 
     def test_get_overview_returns_snapshot_data_when_available(self):
+        """Ensure review overview returns snapshot metrics when a matching snapshot exists for the requested period."""
         snapshot = AnalyticsSnapshot(
             id=501,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -79,6 +80,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         log_mock.assert_called_once()
 
     def test_get_overview_uses_realtime_when_snapshot_mismatch(self):
+        """Ensure review overview falls back to realtime metrics when the available snapshot does not match the requested period."""
         mismatched_snapshot = AnalyticsSnapshot(
             id=502,
             period_type=AnalyticsSnapshot.PERIOD_DAILY,
@@ -117,6 +119,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_overview_uses_cache(self):
+        """Ensure review overview reuses cached realtime metrics on repeated requests for the same period."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -148,6 +151,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         realtime_mock.assert_called_once()
 
     def test_get_overview_rebuilds_after_cache_clear(self):
+        """Ensure review overview rebuilds realtime metrics after the cache is cleared."""
         realtime_payload = self._build_realtime_payload()
 
         with patch(
@@ -180,6 +184,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         self.assertEqual(realtime_mock.call_count, 2)
 
     def test_get_overview_handles_empty_metrics(self):
+        """Ensure review overview correctly handles periods with zero review metrics."""
         empty_payload = {
             "source": "realtime",
             "snapshot_id": None,
@@ -219,6 +224,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
         self.assertEqual(result["rejected_reviews"], 0)
 
     def test_get_overview_raises_when_cache_layer_fails(self):
+        """Ensure review overview raises an unavailable exception when the cache layer fails."""
         with patch(
             "ech.analytics.services.analytic_review_overview_service."
             "AnalyticsCacheService.get_or_set",
@@ -233,6 +239,7 @@ class AnalyticsReviewOverviewServiceTestCase(TestCase):
                 )
 
     def test_resolve_period_bounds_raises_when_only_one_bound_is_provided(self):
+        """Ensure period bound resolution fails when only one review overview bound is provided."""
         with self.assertRaises(AnalyticsReviewUnavailableException):
             AnalyticsReviewOverviewService._resolve_period_bounds(
                 period_type=AnalyticsSnapshot.PERIOD_DAILY,

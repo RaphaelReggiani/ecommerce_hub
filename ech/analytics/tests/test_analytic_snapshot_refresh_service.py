@@ -167,6 +167,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         AnalyticsSnapshot.objects.all().delete()
 
     def test_refresh_snapshot_rebuilds_metrics_and_updates_lifecycle(self):
+        """Ensure refreshing a snapshot rebuilds metrics, updates lifecycle state, emits events, and invalidates cache."""
         snapshot, lifecycle = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
             total_orders=0,
@@ -294,6 +295,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         )
 
     def test_refresh_snapshot_creates_expected_refresh_events_metadata(self):
+        """Ensure refresh operations persist the expected event metadata for start and completion events."""
         snapshot, _ = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
         )
@@ -379,6 +381,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         )
 
     def test_refresh_snapshot_raises_not_allowed_when_snapshot_is_none(self):
+        """Ensure refreshing is rejected when no snapshot instance is provided."""
         with self.assertRaises(AnalyticsSnapshotRefreshNotAllowedException):
             AnalyticsSnapshotRefreshService.refresh_snapshot(
                 snapshot=None,
@@ -386,6 +389,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
             )
 
     def test_refresh_snapshot_raises_not_allowed_when_lifecycle_is_missing(self):
+        """Ensure refreshing is rejected when the snapshot lifecycle record does not exist."""
         snapshot = self.create_snapshot(
             generated_by=self.analytics_staff,
         )
@@ -397,6 +401,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
             )
 
     def test_refresh_snapshot_marks_failure_and_dispatches_failed_event(self):
+        """Ensure refresh failures raise a domain exception, mark failure handling, and dispatch a failed event."""
         snapshot, lifecycle = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
         )
@@ -435,6 +440,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         self.assertEqual(dispatched_event.performed_by_id, self.analytics_staff.id)
 
     def test_mark_refresh_failure_is_noop_when_lifecycle_is_missing(self):
+        """Ensure marking refresh failure does nothing when the snapshot has no lifecycle record."""
         snapshot = self.create_snapshot(
             generated_by=self.analytics_staff,
         )
@@ -446,6 +452,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         )
 
     def test_create_event_persists_snapshot_event(self):
+        """Ensure creating a refresh event persists the expected snapshot event record and metadata."""
         snapshot, _ = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
         )
@@ -463,6 +470,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         self.assertEqual(event.metadata, {"source": "unit-test"})
 
     def test_validate_refresh_allowed_accepts_snapshot_with_lifecycle(self):
+        """Ensure refresh validation passes when the snapshot has an associated lifecycle record."""
         snapshot, _ = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
         )
@@ -470,6 +478,7 @@ class AnalyticsSnapshotRefreshServiceTestCase(
         AnalyticsSnapshotRefreshService._validate_refresh_allowed(snapshot=snapshot)
 
     def test_refresh_snapshot_allows_empty_metadata(self):
+        """Ensure refreshing a snapshot succeeds and persists default event metadata when metadata is omitted."""
         snapshot, lifecycle = self.create_snapshot_with_lifecycle(
             generated_by=self.analytics_staff,
         )
