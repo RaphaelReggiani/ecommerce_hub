@@ -239,7 +239,7 @@ Centralizes system messages and configuration values.
 # Architecture Diagram
 
 ```text
- Client (Web / Mobile)
+                        Client (Web / Mobile)
                                   |
                                   v
                          Django REST API (DRF)
