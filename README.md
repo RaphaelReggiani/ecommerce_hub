@@ -3101,7 +3101,7 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Notifications** | 210 | 62 | 272 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
 | **Analytics** | 262 | 95 | 357 | Analytical snapshots, aggregated business metrics, dashboard queries, caching, event-driven analytics | ✔ Stable |
 | **Admin Dashboard** | 215 | 66 | 281 | Operational monitoring, administrative actions, alerting system, caching, event-driven operations | ✔ Stable |
-| **TOTAL** | **1882** | **601** | **2488** | Core Business Logic | ✔ Stable |
+| **TOTAL** | **1882** | **601** | **2483** | Core Business Logic | ✔ Stable |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
