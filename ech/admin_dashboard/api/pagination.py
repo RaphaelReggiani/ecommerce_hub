@@ -1,7 +1,7 @@
 from rest_framework.pagination import PageNumberPagination
 
 
-class AdminDashBoardPagination(PageNumberPagination):
+class AdminDashboardPagination(PageNumberPagination):
     """
     Default pagination for admin dashboard list endpoints.
     """

@@ -47,6 +47,30 @@ This project demonstrates several backend engineering concepts used in productio
 
 ---
 
+# Platform Scope
+
+The E-Commerce Hub simulates a production-grade backend platform composed of multiple interconnected domains.
+
+The system currently includes:
+
+* **9 independent modules**
+* **2488 automated tests**
+* **Domain-driven service architecture**
+* **Event-driven cross-module communication**
+* **Versioned cache invalidation strategies**
+* **Idempotent API operations**
+* **Role-based permission system**
+* **Operational admin dashboard**
+* **Analytical reporting module**
+
+Each module follows the same layered architecture:
+
+Domain → Services → Selectors → API → Tests
+
+This structure allows the platform to scale while keeping business logic isolated, testable, and maintainable.
+
+---
+
 # Architectural Patterns Used
 
 The system applies several architectural patterns commonly used in production-grade backend systems.
@@ -357,7 +381,7 @@ Planned modules:
 * Reviews module ✔
 * Notifications module ✔
 * Analytics module ✔
-* Admin dashboard (**Current step**) 
+* Admin dashboard ✔
 
 ---
 
@@ -2997,6 +3021,20 @@ Endpoints that support idempotency are explicitly marked in the API tables below
 
 ---
 
+## Admin Dashboard
+
+| Method | Endpoint | Description |
+|------|------|------|
+| GET | `/api/v1/admin-dashboard/summary/` | Retrieve admin dashboard summary metrics |
+| GET | `/api/v1/admin-dashboard/operational-metrics/` | Retrieve operational monitoring metrics |
+| GET | `/api/v1/admin-dashboard/recent-activity/` | Retrieve recent operational activity feed |
+| GET | `/api/v1/admin-dashboard/alerts/` | Retrieve operational alerts |
+| POST | `/api/v1/admin-dashboard/orders/bulk-action/` | Perform bulk order management action |
+| POST | `/api/v1/admin-dashboard/reviews/bulk-moderation/` | Perform bulk review moderation actions |
+| POST | `/api/v1/admin-dashboard/notifications/bulk-retry/` | Retry failed notification deliveries |
+
+---
+
 # Automated Tests
 
 The project includes an extensive automated test suite covering domain logic and API endpoints, using **pytest** and **Django REST Framework testing tools**.
@@ -3060,10 +3098,10 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
 | **Shipping** | 219 | 69 | 288 | Logistics, Delivery Lifecycle, Tracking, Caching, Logging, Idempotency | ✔ Stable |
 | **Reviews** | 157 | 88 | 245 | Review Moderation, Lifecycle, Domain Rules, Caching, Logging, Idempotency | ✔ Stable |
-| **Notifications** | 210| 62 | 267 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
+| **Notifications** | 210 | 62 | 272 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
 | **Analytics** | 262 | 95 | 357 | Analytical snapshots, aggregated business metrics, dashboard queries, caching, event-driven analytics | ✔ Stable |
-| **Admin Dashboard** | 215 | - | 215 | Operational monitoring, administrative actions, alerting system, caching, event-driven operations | **API Pending** |
-| **TOTAL (implemented modules)** | **1882** | **535** | **2417** | Core Business Logic | — |
+| **Admin Dashboard** | 215 | 66 | 281 | Operational monitoring, administrative actions, alerting system, caching, event-driven operations | ✔ Stable |
+| **TOTAL** | **1882** | **601** | **2488** | Core Business Logic | ✔ Stable |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -5641,6 +5679,103 @@ Tests validate structured logging for administrative operations:
 * safe serialization of UUID metadata
 * structured log payload validation
 
+---
+
+### Admin Dashboard API Tests
+
+The Admin Dashboard API exposes operational monitoring endpoints and administrative management actions.
+
+API tests validate endpoint security, response structure, permission enforcement, and error handling.
+
+---
+
+#### Admin Dashboard Summary API
+
+* retrieving global operational dashboard summary
+* validation of aggregated metrics serialization
+* access for authorized administrative roles
+* rejection of customer users
+* authentication enforcement
+* handling unavailable dashboard data
+
+---
+
+#### Admin Dashboard Operational Metrics API
+
+* retrieving detailed operational monitoring metrics
+* validation of aggregated operational data structure
+* access for authorized operational roles
+* rejection of unauthorized users
+* authentication enforcement
+* handling unavailable operational metrics
+
+---
+
+#### Admin Dashboard Recent Activity API
+
+* retrieving cross-module recent activity feed
+* validation of aggregated activity payload
+* pagination behavior validation
+* access for authorized administrative roles
+* rejection of unauthorized users
+* authentication enforcement
+* handling unavailable activity data
+
+---
+
+#### Admin Dashboard Alerts API
+
+* retrieving operational alert notifications
+* validation of alert payload structure
+* pagination behavior validation
+* access for authorized administrative roles
+* rejection of unauthorized users
+* authentication enforcement
+* handling unavailable alert data
+
+---
+
+#### Admin Dashboard Bulk Order Actions API
+
+* executing bulk order administrative actions
+* validation of request payload structure
+* permission enforcement for order operations roles
+* rejection of unauthorized users
+* validation of bulk operation limits
+* handling service failures safely
+
+---
+
+#### Admin Dashboard Bulk Review Moderation API
+
+* executing bulk review moderation actions
+* validation of moderation request payload
+* permission enforcement for review moderation roles
+* rejection of unauthorized users
+* validation of moderation limits
+* handling moderation failures safely
+
+---
+
+#### Admin Dashboard Bulk Notification Retry API
+
+* retrying failed notification deliveries
+* validation of retry request payload
+* permission enforcement for notification operational roles
+* rejection of unauthorized users
+* validation of retry limits
+* handling delivery retry failures safely
+
+---
+
+#### Admin Dashboard Permissions API
+
+* validation of role-based access control across endpoints
+* rejection of unauthenticated requests
+* rejection of customer users
+* verification of allowed administrative roles
+* enforcement of operation-specific permissions
+
 </details>
 
 ---
@@ -5681,6 +5816,7 @@ pytest ech/analytics/tests/
 pytest ech/analytics/api/tests/
 
 pytest ech/admin_dashboard/tests/
+pytest ech/admin_dashboard/api/tests/
 
 ```
 

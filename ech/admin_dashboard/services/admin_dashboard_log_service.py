@@ -10,6 +10,14 @@ from ech.admin_dashboard.domain_events.events import (
     AdminDashboardAccessedEvent,
 )
 
+from ech.admin_dashboard.constants.constants import (
+    LABEL_EVENT_TYPE_DASHBOARD_VIEWED,
+    LABEL_EVENT_TYPE_ORDER_BULK_ACTION_EXECUTED,
+    LABEL_EVENT_TYPE_REVIEW_BULK_MODERATION_EXECUTED,
+    LABEL_EVENT_TYPE_NOTIFICATION_RETRY_EXECUTED,
+    LABEL_EVENT_TYPE_OPERATIONAL_ALERT_TRIGGERED,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -69,7 +77,7 @@ class AdminDashboardLogService:
         )
 
         cls._create_event(
-            event_type="admin_dashboard_accessed",
+            event_type=LABEL_EVENT_TYPE_DASHBOARD_VIEWED,
             performed_by=user,
             metadata={},
         )
@@ -112,6 +120,12 @@ class AdminDashboardLogService:
             metadata=metadata,
         )
 
+        cls._create_event(
+            event_type=LABEL_EVENT_TYPE_ORDER_BULK_ACTION_EXECUTED,
+            performed_by=performed_by,
+            metadata=metadata,
+        )
+
     @classmethod
     def log_bulk_review_moderation(
         cls,
@@ -141,6 +155,12 @@ class AdminDashboardLogService:
         cls._create_log(
             action_type="bulk_review_moderation",
             target_module="reviews",
+            performed_by=performed_by,
+            metadata=metadata,
+        )
+
+        cls._create_event(
+            event_type=LABEL_EVENT_TYPE_REVIEW_BULK_MODERATION_EXECUTED,
             performed_by=performed_by,
             metadata=metadata,
         )
@@ -175,6 +195,12 @@ class AdminDashboardLogService:
             metadata=metadata,
         )
 
+        cls._create_event(
+            event_type=LABEL_EVENT_TYPE_NOTIFICATION_RETRY_EXECUTED,
+            performed_by=performed_by,
+            metadata=metadata,
+        )
+
     @classmethod
     def log_dashboard_alert(
         cls,
@@ -197,7 +223,7 @@ class AdminDashboardLogService:
         )
 
         cls._create_event(
-            event_type="admin_dashboard_alert_generated",
+            event_type=LABEL_EVENT_TYPE_OPERATIONAL_ALERT_TRIGGERED,
             metadata={
                 "alert_type": alert_type,
                 "alert_message": alert_message,

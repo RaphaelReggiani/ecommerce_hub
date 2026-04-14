@@ -2,7 +2,7 @@ import uuid
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import TestCase, SimpleTestCase
+from django.test import TestCase
 
 from ech.admin_dashboard.models import (
     AdminDashboardEvent,
@@ -14,17 +14,39 @@ from ech.admin_dashboard.services.admin_dashboard_log_service import (
 from ech.users.models import CustomUser
 
 
-class BaseAdminDashboardLogFactoryMixin:
-    @staticmethod
-    def build_user(user_id=None):
-        return SimpleNamespace(id=user_id if user_id is not None else 99)
+class AdminDashboardLogServiceLoggingTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.order_staff = CustomUser.objects.create_user(
+            email="operations.log@company.com",
+            password="StrongPassword123",
+            user_name="Operations Log User",
+            role=CustomUser.ROLE_OPERATIONS_STAFF,
+            is_active=True,
+            email_confirmed=True,
+        )
 
+        cls.support_staff = CustomUser.objects.create_user(
+            email="support.log@company.com",
+            password="StrongPassword123",
+            user_name="Support Log User",
+            role=CustomUser.ROLE_SUPPORT_STAFF,
+            is_active=True,
+            email_confirmed=True,
+        )
 
-class AdminDashboardLogServiceLoggingTestCase(
-    BaseAdminDashboardLogFactoryMixin,
-    SimpleTestCase,
-):
-    @patch("ech.admin_dashboard.services.admin_dashboard_log_service.DomainEventDispatcher.dispatch")
+        cls.admin_user = CustomUser.objects.create_user(
+            email="admin.logging@company.com",
+            password="StrongPassword123",
+            user_name="Admin Logging User",
+            role=CustomUser.ROLE_ADMIN,
+            is_active=True,
+            email_confirmed=True,
+        )
+
+    @patch(
+        "ech.admin_dashboard.services.admin_dashboard_log_service.DomainEventDispatcher.dispatch"
+    )
     @patch("ech.admin_dashboard.services.admin_dashboard_log_service.logger.info")
     def test_log_dashboard_access_logs_expected_payload(
         self,
@@ -32,7 +54,7 @@ class AdminDashboardLogServiceLoggingTestCase(
         dispatch_mock,
     ):
         """Log dashboard access with structured payload."""
-        user = self.build_user(user_id=10)
+        user = self.admin_user
 
         with patch.object(
             AdminDashboardLogService,
@@ -44,31 +66,38 @@ class AdminDashboardLogServiceLoggingTestCase(
         logger_info_mock.assert_called_once_with(
             "Admin dashboard accessed.",
             extra={
-                "user_id": 10,
+                "user_id": user.id,
             },
         )
 
         create_event_mock.assert_called_once_with(
-            event_type="admin_dashboard_accessed",
+            event_type="dashboard_viewed",
             performed_by=user,
             metadata={},
         )
 
         dispatched_event = dispatch_mock.call_args[0][0]
         self.assertEqual(dispatched_event.event_name, "admin_dashboard_accessed")
-        self.assertEqual(dispatched_event.user_id, 10)
+        self.assertEqual(dispatched_event.user_id, user.id)
 
     @patch("ech.admin_dashboard.services.admin_dashboard_log_service.logger.info")
     def test_log_bulk_order_action_logs_expected_payload(self, logger_info_mock):
         """Log bulk order action with structured payload."""
-        performed_by = self.build_user(user_id=20)
+        performed_by = self.order_staff
         order_ids = [uuid.uuid4(), uuid.uuid4()]
 
-        with patch.object(
-            AdminDashboardLogService,
-            "_create_log",
-            return_value=SimpleNamespace(id=uuid.uuid4()),
-        ) as create_log_mock:
+        with (
+            patch.object(
+                AdminDashboardLogService,
+                "_create_log",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_log_mock,
+            patch.object(
+                AdminDashboardLogService,
+                "_create_event",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_event_mock,
+        ):
             AdminDashboardLogService.log_bulk_order_action(
                 action_type="mark_processing",
                 order_ids=order_ids,
@@ -80,7 +109,7 @@ class AdminDashboardLogServiceLoggingTestCase(
             extra={
                 "action_type": "mark_processing",
                 "order_ids": order_ids,
-                "performed_by_id": 20,
+                "performed_by_id": performed_by.id,
             },
         )
 
@@ -93,20 +122,35 @@ class AdminDashboardLogServiceLoggingTestCase(
             },
         )
 
+        create_event_mock.assert_called_once_with(
+            event_type="order_bulk_action_executed",
+            performed_by=performed_by,
+            metadata={
+                "order_ids": order_ids,
+            },
+        )
+
     @patch("ech.admin_dashboard.services.admin_dashboard_log_service.logger.info")
     def test_log_bulk_review_moderation_logs_expected_payload(
         self,
         logger_info_mock,
     ):
         """Log bulk review moderation with structured payload."""
-        performed_by = self.build_user(user_id=30)
+        performed_by = self.support_staff
         review_ids = [uuid.uuid4(), uuid.uuid4()]
 
-        with patch.object(
-            AdminDashboardLogService,
-            "_create_log",
-            return_value=SimpleNamespace(id=uuid.uuid4()),
-        ) as create_log_mock:
+        with (
+            patch.object(
+                AdminDashboardLogService,
+                "_create_log",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_log_mock,
+            patch.object(
+                AdminDashboardLogService,
+                "_create_event",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_event_mock,
+        ):
             AdminDashboardLogService.log_bulk_review_moderation(
                 moderation_action="approve",
                 review_ids=review_ids,
@@ -118,7 +162,7 @@ class AdminDashboardLogServiceLoggingTestCase(
             extra={
                 "moderation_action": "approve",
                 "review_ids": review_ids,
-                "performed_by_id": 30,
+                "performed_by_id": performed_by.id,
             },
         )
 
@@ -132,17 +176,33 @@ class AdminDashboardLogServiceLoggingTestCase(
             },
         )
 
+        create_event_mock.assert_called_once_with(
+            event_type="review_bulk_moderation_executed",
+            performed_by=performed_by,
+            metadata={
+                "review_ids": review_ids,
+                "moderation_action": "approve",
+            },
+        )
+
     @patch("ech.admin_dashboard.services.admin_dashboard_log_service.logger.info")
     def test_log_notification_retry_logs_expected_payload(self, logger_info_mock):
         """Log notification retry with structured payload."""
-        performed_by = self.build_user(user_id=40)
+        performed_by = self.support_staff
         notification_ids = [uuid.uuid4(), uuid.uuid4()]
 
-        with patch.object(
-            AdminDashboardLogService,
-            "_create_log",
-            return_value=SimpleNamespace(id=uuid.uuid4()),
-        ) as create_log_mock:
+        with (
+            patch.object(
+                AdminDashboardLogService,
+                "_create_log",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_log_mock,
+            patch.object(
+                AdminDashboardLogService,
+                "_create_event",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_event_mock,
+        ):
             AdminDashboardLogService.log_notification_retry(
                 notification_ids=notification_ids,
                 performed_by=performed_by,
@@ -152,13 +212,21 @@ class AdminDashboardLogServiceLoggingTestCase(
             "Admin notification retry executed.",
             extra={
                 "notification_ids": notification_ids,
-                "performed_by_id": 40,
+                "performed_by_id": performed_by.id,
             },
         )
 
         create_log_mock.assert_called_once_with(
             action_type="notification_retry",
             target_module="notifications",
+            performed_by=performed_by,
+            metadata={
+                "notification_ids": notification_ids,
+            },
+        )
+
+        create_event_mock.assert_called_once_with(
+            event_type="notification_retry_executed",
             performed_by=performed_by,
             metadata={
                 "notification_ids": notification_ids,
@@ -194,7 +262,7 @@ class AdminDashboardLogServiceLoggingTestCase(
         )
 
         create_event_mock.assert_called_once_with(
-            event_type="admin_dashboard_alert_generated",
+            event_type="operational_alert_triggered",
             metadata={
                 "alert_type": "operational_alerts_generated",
                 "alert_message": "Operational alerts detected in admin dashboard",
@@ -208,11 +276,18 @@ class AdminDashboardLogServiceLoggingTestCase(
         """Log bulk order action with null performer when omitted."""
         order_ids = [uuid.uuid4()]
 
-        with patch.object(
-            AdminDashboardLogService,
-            "_create_log",
-            return_value=SimpleNamespace(id=uuid.uuid4()),
-        ) as create_log_mock:
+        with (
+            patch.object(
+                AdminDashboardLogService,
+                "_create_log",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_log_mock,
+            patch.object(
+                AdminDashboardLogService,
+                "_create_event",
+                return_value=SimpleNamespace(id=uuid.uuid4()),
+            ) as create_event_mock,
+        ):
             AdminDashboardLogService.log_bulk_order_action(
                 action_type="mark_shipped",
                 order_ids=order_ids,
@@ -231,6 +306,14 @@ class AdminDashboardLogServiceLoggingTestCase(
         create_log_mock.assert_called_once_with(
             action_type="mark_shipped",
             target_module="orders",
+            performed_by=None,
+            metadata={
+                "order_ids": order_ids,
+            },
+        )
+
+        create_event_mock.assert_called_once_with(
+            event_type="order_bulk_action_executed",
             performed_by=None,
             metadata={
                 "order_ids": order_ids,
@@ -271,20 +354,22 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
     def test_create_event_persists_admin_dashboard_event(self):
         """Persist admin dashboard event through _create_event helper."""
         event = AdminDashboardLogService._create_event(
-            event_type="admin_dashboard_alert_generated",
+            event_type="operational_alert_triggered",
             performed_by=None,
             metadata={"alert_type": "pending_orders"},
         )
 
         self.assertEqual(AdminDashboardEvent.objects.count(), 1)
-        self.assertEqual(event.event_type, "admin_dashboard_alert_generated")
+        self.assertEqual(event.event_type, "operational_alert_triggered")
         self.assertIsNone(event.performed_by)
         self.assertEqual(
             event.metadata,
             {"alert_type": "pending_orders"},
         )
 
-    @patch("ech.admin_dashboard.services.admin_dashboard_log_service.DomainEventDispatcher.dispatch")
+    @patch(
+        "ech.admin_dashboard.services.admin_dashboard_log_service.DomainEventDispatcher.dispatch"
+    )
     def test_log_dashboard_access_persists_event(self, dispatch_mock):
         """Persist dashboard access event through log_dashboard_access."""
         AdminDashboardLogService.log_dashboard_access(user=self.admin)
@@ -292,15 +377,15 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
         self.assertEqual(AdminDashboardEvent.objects.count(), 1)
 
         event = AdminDashboardEvent.objects.first()
-        self.assertEqual(event.event_type, "admin_dashboard_accessed")
+        self.assertEqual(event.event_type, "dashboard_viewed")
         self.assertEqual(event.performed_by, self.admin)
         self.assertEqual(event.metadata, {})
 
         dispatched_event = dispatch_mock.call_args[0][0]
         self.assertEqual(dispatched_event.user_id, self.admin.id)
 
-    def test_log_bulk_order_action_persists_log(self):
-        """Persist bulk order action log."""
+    def test_log_bulk_order_action_persists_log_and_event(self):
+        """Persist bulk order action log and event."""
         order_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
 
         AdminDashboardLogService.log_bulk_order_action(
@@ -310,14 +395,23 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
         )
 
         self.assertEqual(AdminDashboardLog.objects.count(), 1)
+        self.assertEqual(AdminDashboardEvent.objects.count(), 1)
 
         log = AdminDashboardLog.objects.first()
         self.assertEqual(log.action_type, "cancel_orders")
         self.assertEqual(log.target_module, "orders")
         self.assertEqual(log.metadata, {"order_ids": order_ids})
 
-    def test_log_bulk_review_moderation_persists_log(self):
-        """Persist bulk review moderation log."""
+        event = AdminDashboardEvent.objects.first()
+        self.assertEqual(event.event_type, "order_bulk_action_executed")
+        self.assertIsNone(event.performed_by)
+        self.assertEqual(
+            event.metadata,
+            {"order_ids": order_ids},
+        )
+
+    def test_log_bulk_review_moderation_persists_log_and_event(self):
+        """Persist bulk review moderation log and event."""
         review_ids = [str(uuid.uuid4())]
 
         AdminDashboardLogService.log_bulk_review_moderation(
@@ -327,6 +421,7 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
         )
 
         self.assertEqual(AdminDashboardLog.objects.count(), 1)
+        self.assertEqual(AdminDashboardEvent.objects.count(), 1)
 
         log = AdminDashboardLog.objects.first()
         self.assertEqual(log.action_type, "bulk_review_moderation")
@@ -339,8 +434,19 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
             },
         )
 
-    def test_log_notification_retry_persists_log(self):
-        """Persist notification retry log."""
+        event = AdminDashboardEvent.objects.first()
+        self.assertEqual(event.event_type, "review_bulk_moderation_executed")
+        self.assertIsNone(event.performed_by)
+        self.assertEqual(
+            event.metadata,
+            {
+                "review_ids": review_ids,
+                "moderation_action": "reject",
+            },
+        )
+
+    def test_log_notification_retry_persists_log_and_event(self):
+        """Persist notification retry log and event."""
         notification_ids = [str(uuid.uuid4())]
 
         AdminDashboardLogService.log_notification_retry(
@@ -349,12 +455,21 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
         )
 
         self.assertEqual(AdminDashboardLog.objects.count(), 1)
+        self.assertEqual(AdminDashboardEvent.objects.count(), 1)
 
         log = AdminDashboardLog.objects.first()
         self.assertEqual(log.action_type, "notification_retry")
         self.assertEqual(log.target_module, "notifications")
         self.assertEqual(
             log.metadata,
+            {"notification_ids": notification_ids},
+        )
+
+        event = AdminDashboardEvent.objects.first()
+        self.assertEqual(event.event_type, "notification_retry_executed")
+        self.assertIsNone(event.performed_by)
+        self.assertEqual(
+            event.metadata,
             {"notification_ids": notification_ids},
         )
 
@@ -369,7 +484,7 @@ class AdminDashboardLogServicePersistenceTestCase(TestCase):
         self.assertEqual(AdminDashboardEvent.objects.count(), 1)
 
         event = AdminDashboardEvent.objects.first()
-        self.assertEqual(event.event_type, "admin_dashboard_alert_generated")
+        self.assertEqual(event.event_type, "operational_alert_triggered")
         self.assertEqual(
             event.metadata,
             {
