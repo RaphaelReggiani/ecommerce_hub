@@ -7,7 +7,7 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **2400+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **2480+ automated tests** covering domain logic, services, selectors, and API endpoints.
 
 **This project is under active development.**
 
@@ -263,32 +263,32 @@ Centralizes system messages and configuration values.
 # Architecture Diagram
 
 ```text
-                        Client (Web / Mobile)
-                                  |
-                                  v
-                         Django REST API (DRF)
-                                  |
-                                  v
-                             API Layer
-              (views • serializers • permissions)
-                                  |
-                                  v
-                             Service Layer
-                  (business rules • orchestration)
-                                  |
-          +-------------------------+--------------------------+
-          |                         |                          |
-          v                         v                          v
-   Operational Services      Admin Dashboard Services    Analytics Services
-(users • products • orders • (summary • operational     (snapshots • dashboards •
- payments • shipping •        metrics • activity feed •   business intelligence metrics)
- reviews • notifications)     alerts • bulk actions)
-          |                         |                          |
-          v                         v                          v
-      Selectors              Dashboard Selectors        Analytics Selectors
- (query optimization)      (cross-module aggregation) (aggregated analytical queries)
-          |                         |                          |
-          +-------------------------+------------+-------------+
+                                  Client (Web / Mobile)
+                                            |
+                                            v
+                                  Django REST API (DRF)
+                                            |
+                                            v
+                                      API Layer
+                        (views • serializers • permissions)
+                                            |
+                                            v
+                                      Service Layer
+                            (business rules • orchestration)
+                                            |
+                  +-------------------------+--------------------------+
+                  |                         |                          |
+                  v                         v                          v
+          Operational Services      Admin Dashboard Services    Analytics Services
+        (users • products • orders • (summary • operational     (snapshots • dashboards •
+        payments • shipping •        metrics • activity feed •   business intelligence metrics)
+        reviews • notifications)     alerts • bulk actions)
+                  |                         |                          |
+                  v                         v                          v
+              Selectors              Dashboard Selectors        Analytics Selectors
+        (query optimization)      (cross-module aggregation) (aggregated analytical queries)
+                  |                         |                          |
+                  +-------------------------+------------+-------------+
                                             |
                                             v
                                         Django ORM
@@ -437,6 +437,7 @@ ecommerce_hub/
 │   │   │   └── user_log_service.py
 │   │   │
 │   │   ├── utils/
+│   │   │   ├── urls.py
 │   │   │   └── request_metadata.py
 │   │   │
 │   │   ├── domain_events/

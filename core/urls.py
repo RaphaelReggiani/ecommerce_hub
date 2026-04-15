@@ -12,10 +12,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # =========================
-    # WEB
+    # USERS EMAIL URLS
     # =========================
 
-    path("", include("ech_web.urls")),
+    path("users/", include(("ech.users.utils.urls", "users"), namespace="users")),
 
     # =========================
     # PUBLIC API
