@@ -369,7 +369,42 @@ This architecture allows the platform to evolve toward more advanced event-drive
 
 ---
 
+# Frontend Architecture
+
+Although the primary focus of this project is the backend platform, the repository also includes a **modern frontend application** built with **Next.js and TypeScript**.
+
+The frontend is designed to interact with the backend through the REST API and follows a **feature-driven architecture** aligned with the backend modular structure.
+
+Key frontend principles include:
+
+* Feature-based module organization
+* Separation between shared UI components and domain features
+* Dedicated API integration layer
+* Typed data models aligned with backend serializers
+* React Query for server-state management
+* Modular component composition
+* Reusable UI primitives
+* Scalable folder organization
+
+The frontend structure mirrors the backend domains, allowing consistent development across:
+
+* users
+* products
+* orders
+* payments
+* shipping
+* reviews
+* notifications
+* analytics
+* admin dashboard
+
+This alignment simplifies development, improves maintainability, and makes the system easier to scale as additional features are introduced.
+ 
+---
+
 # Development Roadmap
+
+## Backend
 
 Planned modules:
 
@@ -383,14 +418,32 @@ Planned modules:
 * Analytics module ✔
 * Admin dashboard ✔
 
+## Frontend
+
+**Current Step** (project structure and architectural setup in progress)
+
+Planned modules:
+
+* Users module
+* Products module
+* Orders module
+* Payments module
+* Shipping module
+* Reviews module
+* Notifications module
+* Analytics module
+* Admin dashboard
+
 ---
 
 # Project Structure
 
 The backend is organized using a **modular architecture**, where each domain (users, products, orders, payments, shipping, reviews, notifications, and analytics) is implemented as an independent Django app.
 
+The frontend is built with **Next.js and TypeScript**, using a feature-driven architecture that mirrors the backend domains, enabling consistent development across the platform.
+
 <details>
-<summary><strong>Structure</strong></summary>
+<summary><strong>Backend Structure</strong></summary>
 
 ```text
 ecommerce_hub/
@@ -1008,6 +1061,78 @@ ecommerce_hub/
 │
 ├── ech_web/
 │   └── ...
+│
+└── manage.py
+```
+
+</details>
+
+---
+
+<details>
+<summary><strong>Frontend Structure</strong></summary>
+
+```text
+ecommerce_hub/
+│
+├── core/
+│   ├── exceptions/
+│   │   └── handlers.py
+│   └── settings.py
+│
+├── ech/
+│   ├── users/
+│   ├── products/
+│   ├── orders/
+│   ├── payments/
+│   ├── shipping/
+│   ├── reviews/
+│   ├── notifications/
+│   ├── analytics/
+│   └── admin_dashboard/
+│
+├── ech_web/
+│   │
+│   ├── public/
+│   │   ├── images/
+│   │   └── icons/
+│   │
+│   ├── src/
+│   │   │
+│   │   ├── app/
+│   │   │   ├── (public)/
+│   │   │   ├── (protected)/
+│   │   │   └── (dashboard)/
+│   │   │
+│   │   ├── features/
+│   │   │   ├── users/
+│   │   │   ├── products/
+│   │   │   ├── orders/
+│   │   │   ├── payments/
+│   │   │   ├── shipping/
+│   │   │   ├── reviews/
+│   │   │   ├── notifications/
+│   │   │   ├── analytics/
+│   │   │   └── admin-dashboard/
+│   │   │
+│   │   ├── components/
+│   │   │   ├── ui/
+│   │   │   ├── layout/
+│   │   │   ├── feedback/
+│   │   │   └── shared/
+│   │   │
+│   │   ├── config/
+│   │   ├── lib/
+│   │   ├── providers/
+│   │   ├── hooks/
+│   │   ├── types/
+│   │   └── styles/
+│   │
+│   ├── middleware.ts
+│   ├── next.config.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── package.json
 │
 └── manage.py
 ```
