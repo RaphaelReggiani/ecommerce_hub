@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     ConfirmEmailApi,
+    CurrentUserApi,
     PasswordResetConfirmApi,
     PasswordResetRequestApi,
     UserLoginApi,
@@ -41,5 +42,10 @@ urlpatterns = [
         "profile/",
         UserProfileApi.as_view(),
         name="api-profile",
+    ),
+    path(
+        "me/",
+        CurrentUserApi.as_view(),
+        name="api-me",
     ),
 ]

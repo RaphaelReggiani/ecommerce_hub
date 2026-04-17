@@ -470,6 +470,7 @@ ecommerce_hub/
 │   │   │   │   ├── test_user_password_reset_request_api.py
 │   │   │   │   ├── test_user_register_api.py
 │   │   │   │   ├── test_user_profile_update_api.py
+│   │   │   │   ├── test_user_me_api.py
 │   │   │   │   └── test_user_token_refresh_api.py
 │   │   │   │
 │   │   │   ├── serializers.py
@@ -2984,6 +2985,7 @@ Endpoints that support idempotency are explicitly marked in the API tables below
 | POST | `/api/v1/users/token/refresh/` | Refresh access token |
 | POST | `/api/v1/users/logout/` | Logout and invalidate refresh token |
 | POST | `/api/v1/users/confirm-email/{token}/` | Email confirmation |
+| GET | `/api/v1/users/me/` | Retrieve authenticated user session information |
 | GET | `/api/v1/users/profile/` | Retrieve authenticated user profile |
 | PATCH | `/api/v1/users/profile/` | Partially update authenticated user profile |
 | POST | `/api/v1/users/password-reset/` | Request password reset |
@@ -3218,7 +3220,7 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 
 | Module | Domain Tests | API Tests | Total Tests | Focus Area | Status |
 | :--- | :---: | :---: | :---: | :--- | :--- |
-| **Users** | 149 | 50 | 199 | Authentication, JWT, Permissions, Logging, Idempotency | ✔ Stable |
+| **Users** | 149 | 54 | 203 | Authentication, JWT, Permissions, Logging, Idempotency | ✔ Stable |
 | **Products** | 169 | 27 | 196 | Inventory Management, Audit Logs, Caching, Logging, Idempotency | ✔ Stable |
 | **Orders** | 261 | 87 | 348 | Order Lifecycle, Concurrency, Caching, Logging, Idempotency | ✔ Stable |
 | **Payments** | 240 | 57 | 297 | Payment Lifecycle, Refund Logic, Transactions, Caching, Logging, Idempotency | ✔ Stable |
@@ -3227,7 +3229,7 @@ The testing approach follows a **Domain-First strategy**, ensuring that business
 | **Notifications** | 210 | 62 | 272 | Notification lifecycle, delivery providers, logging, caching, idempotency | ✔ Stable |
 | **Analytics** | 262 | 95 | 357 | Analytical snapshots, aggregated business metrics, dashboard queries, caching, event-driven analytics | ✔ Stable |
 | **Admin Dashboard** | 215 | 66 | 281 | Operational monitoring, administrative actions, alerting system, caching, event-driven operations | ✔ Stable |
-| **TOTAL** | **1882** | **601** | **2483** | Core Business Logic | ✔ Stable |
+| **TOTAL** | **1882** | **601** | **2487** | Core Business Logic | ✔ Stable |
 
 > Tests are executed using **pytest**.  
 > Domain tests validate business rules and services, while API tests ensure endpoint correctness, security permissions, and response contracts.
@@ -3396,7 +3398,7 @@ Tests validate security event logging behavior:
 * invalid token handling
 * expired token handling
 
-### Password Reset APIs
+### Password Reset API
 
 #### Request Password Reset
 
@@ -3411,11 +3413,14 @@ Tests validate security event logging behavior:
 * expired token handling
 * payload validation
 
-#### Email Protection Tests
+### Session API
 
-* access restrictions for unconfirmed users
-* validation of protected endpoints
-* enforcement of authentication and confirmation rules
+#### Current Authenticated User (`/users/me/`)
+
+* authenticated session retrieval
+* rejection of unauthenticated access
+* rejection of inactive users
+* rejection of users with unconfirmed email
 
 ### Profile API
 
@@ -3433,6 +3438,12 @@ Tests validate security event logging behavior:
 * rejection of unconfirmed users
 * invalid payload validation
 * no-op update behavior with empty payload
+
+#### Email Protection Tests
+
+* access restrictions for unconfirmed users
+* validation of protected endpoints
+* enforcement of authentication and confirmation rules
 
 </details>
 

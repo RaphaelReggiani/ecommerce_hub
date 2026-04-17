@@ -239,3 +239,14 @@ class PasswordResetConfirmApi(APIView):
             {"detail": MSG_RESPONSE_SUCCESFULL_PASSWORD_RESET},
             status=status.HTTP_200_OK,
         )
+    
+class CurrentUserApi(APIView):
+    permission_classes = [IsAuthenticatedActiveAndEmailConfirmed]
+
+    def get(self, request):
+        output = UserOutputSerializer(request.user)
+
+        return Response(
+            output.data,
+            status=status.HTTP_200_OK,
+        )
