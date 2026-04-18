@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -13,6 +14,7 @@ import {
 
 export function RegisterForm() {
   const registerMutation = useRegister();
+  const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
@@ -33,6 +35,7 @@ export function RegisterForm() {
 
     try {
       await registerMutation.mutateAsync(values);
+      router.push("/login?registered=1");
     } catch (error) {
       if (error instanceof ApiClientError) {
         setFormError(error.message);
