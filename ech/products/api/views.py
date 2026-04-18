@@ -67,7 +67,7 @@ class ProductCreateAPIView(APIView):
 
 class ProductListAPIView(ListAPIView):
     serializer_class = ProductListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsPublicOrProductManager]
     pagination_class = DefaultPagination
 
     filter_backends = [

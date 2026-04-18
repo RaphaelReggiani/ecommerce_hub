@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
 import "./globals.css";
 
-import { env } from "@/config/env";
+import type { Metadata } from "next";
+
 import { AppProvider } from "@/providers/app-provider";
 
 export const metadata: Metadata = {
-  title: env.APP_NAME,
-  description: "ECH Web Interface",
+  title: "E-Commerce Hub",
+  description: "Modern E-Commerce platform",
 };
 
-type RootLayoutProps = {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode;
-};
-
-export default function RootLayout({ children }: RootLayoutProps) {
+}) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen bg-black text-white antialiased">
         <AppProvider>{children}</AppProvider>
       </body>
     </html>

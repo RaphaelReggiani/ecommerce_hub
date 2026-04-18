@@ -254,3 +254,29 @@ class UserRegisterApiTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("password", response.data)
         self.assertIn("user_name", response.data)
+
+    def test_register_user_with_existing_email_returns_400(self):
+        """
+        Registering with an existing email must return 400 response.
+        """
+
+        User.objects.create_user(
+            email="existing@test.com",
+            password="StrongPassword123",
+            user_name="Existing User",
+        )
+
+        data = {
+            "email": "existing@test.com",
+            "password": "StrongPassword123",
+            "user_name": "Another User",
+        }
+
+        response = self.client.post(
+            self.url,
+            data,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)

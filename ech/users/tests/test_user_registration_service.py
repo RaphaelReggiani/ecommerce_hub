@@ -8,7 +8,9 @@ from django.utils import timezone
 from ech.users.constants.constants import EMAIL_CONFIRMATION_EXPIRATION_HOURS
 from ech.users.exceptions import (
     IdempotencyConflictError,
+    UserAlreadyExistsError,
 )
+
 from ech.users.models import CustomUser, UserToken
 from ech.users.services.user_registration_service import UserRegistrationService
 
@@ -362,3 +364,18 @@ class UserRegistrationServiceTestCase(TestCase):
         self.assertEqual(kwargs["from_email"], "noreply@example.com")
         self.assertEqual(kwargs["recipient_list"], ["mailtarget@test.com"])
         self.assertFalse(kwargs["fail_silently"])
+
+    def test_register_user_with_existing_email_raises_user_already_exists_error(self):
+        """Ensure duplicate email validation is converted to UserAlreadyExistsError."""
+        CustomUser.objects.create_user(
+            email="existing@test.com",
+            password="StrongPassword123",
+            user_name="Existing User",
+        )
+
+        with self.assertRaises(UserAlreadyExistsError):
+            UserRegistrationService.register_user(
+                email="existing@test.com",
+                password="StrongPassword123",
+                user_name="Another User",
+            )

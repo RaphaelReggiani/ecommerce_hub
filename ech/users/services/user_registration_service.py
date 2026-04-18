@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from ech.users.constants.constants import EMAIL_CONFIRMATION_EXPIRATION_HOURS
 from ech.users.exceptions import (
@@ -66,6 +67,13 @@ class UserRegistrationService:
                 idempotency_request_hash=request_hash,
                 **extra_fields,
             )
+        except DjangoValidationError as exc:
+            message_dict = getattr(exc, "message_dict", {})
+
+            if "user_email" in message_dict:
+                raise UserAlreadyExistsError()
+
+            raise
         except IntegrityError:
             existing_user = UserRegistrationService._get_replayable_user(
                 idempotency_key=normalized_idempotency_key,

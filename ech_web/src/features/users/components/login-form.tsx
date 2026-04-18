@@ -1,13 +1,19 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { ApiClientError } from "@/lib/api/error-handler";
 import { useLogin } from "@/features/users/hooks/use-login";
-import { loginSchema, type LoginSchemaValues } from "@/features/users/schemas/login-schema";
+import {
+  loginSchema,
+  type LoginSchemaValues,
+} from "@/features/users/schemas/login-schema";
 
 export function LoginForm() {
   const loginMutation = useLogin();
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -22,7 +28,18 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: LoginSchemaValues) {
-    await loginMutation.mutateAsync(values);
+    setFormError(null);
+
+    try {
+      await loginMutation.mutateAsync(values);
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        setFormError(error.message);
+        return;
+      }
+
+      setFormError("Unable to sign in right now.");
+    }
   }
 
   return (
@@ -36,6 +53,12 @@ export function LoginForm() {
           Access your E-commerce Hub account.
         </p>
       </div>
+
+      {formError && (
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
 
       <div className="mb-4">
         <label className="mb-2 block text-sm font-medium text-slate-300">

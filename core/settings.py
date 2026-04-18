@@ -1,8 +1,11 @@
 
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 import sys
 
+
+RUNNING_TESTS = "pytest" in sys.modules
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,7 +14,10 @@ SECRET_KEY = 'django-insecure-_5+fg7ntryz!+3td7uw9xt806#m%_n1#$!t8++4s22wy!afwhu
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+]
 
 
 INSTALLED_APPS = [
@@ -36,16 +42,32 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "idempotency-key",
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -107,10 +129,14 @@ STATIC_ROOT = os.path.join("static")
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
-SITE_URL = "http://127.0.0.1:8000"
+SITE_URL = "http://localhost:8000"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 DEFAULT_FROM_EMAIL = "no-reply@ecommercehub.com"
+
+if DEBUG and not RUNNING_TESTS:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
@@ -197,7 +223,6 @@ if "pytest" in sys.modules:
         }
     }
 
-RUNNING_TESTS = "pytest" in sys.modules
 
 # CACHES = {
 #     "default": {
@@ -230,4 +255,4 @@ RUNNING_TESTS = "pytest" in sys.modules
 # EMAIL_HOST_PASSWORD = "APP_PASSWORD"
 
 
-FRONTEND_URL = "http://127.0.0.1:8000/"
+FRONTEND_URL = "http://localhost:3000"

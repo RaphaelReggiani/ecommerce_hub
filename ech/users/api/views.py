@@ -6,6 +6,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from ech.users.exceptions import (
+    IdempotencyConflictError,
+    UserAlreadyExistsError,
+)
+
 from ech.users.api.permissions import (
     IsAuthenticatedActiveAndEmailConfirmed,
     IsAuthenticatedAndActive,
@@ -57,12 +62,15 @@ class UserRegisterApi(APIView):
 
         idempotency_key = request.headers.get("Idempotency-Key")
 
-        user = UserRegistrationService.register_user(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-            user_name=serializer.validated_data["user_name"],
-            idempotency_key=idempotency_key,
-        )
+        try:
+            user = UserRegistrationService.register_user(
+                email=serializer.validated_data["email"],
+                password=serializer.validated_data["password"],
+                user_name=serializer.validated_data["user_name"],
+                idempotency_key=idempotency_key,
+            )
+        except UserAlreadyExistsError as exc:
+            raise ValidationError({"email": [str(exc)]})
 
         UserLogService.log_user_registered(user=user)
 

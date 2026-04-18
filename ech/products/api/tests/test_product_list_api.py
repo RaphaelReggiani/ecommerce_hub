@@ -56,10 +56,8 @@ class ProductListAPITestCase(APITestCase):
             is_active=False,
         )
 
-    def test_list_products_public(self):
-        """Ensure only active products are listed for authenticated users."""
-        self.client.force_authenticate(self.user)
-
+    def test_list_products_is_public_and_returns_only_active_products(self):
+        """Ensure public product listing returns only active products."""
         response = self.client.get(self.product_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -67,17 +65,16 @@ class ProductListAPITestCase(APITestCase):
         products = response.data["results"]
 
         self.assertEqual(len(products), 1)
+        self.assertEqual(products[0]["name"], "Keyboard")
 
-    def test_product_list_requires_authentication(self):
-        """API should require authentication to access the product list."""
+    def test_product_list_allows_unauthenticated_access(self):
+        """API should allow unauthenticated access to the public product list."""
         response = self.client.get(self.product_list_url)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_product_list_pagination_consistency(self):
         """Pagination should not duplicate products across pages."""
-        self.client.force_authenticate(self.user)
-
         for i in range(30):
             Product.objects.create(
                 name=f"Product {i}",
@@ -92,6 +89,9 @@ class ProductListAPITestCase(APITestCase):
 
         page1 = self.client.get(f"{self.product_list_url}?page=1")
         page2 = self.client.get(f"{self.product_list_url}?page=2")
+
+        self.assertEqual(page1.status_code, status.HTTP_200_OK)
+        self.assertEqual(page2.status_code, status.HTTP_200_OK)
 
         ids_page1 = {p["id"] for p in page1.data["results"]}
         ids_page2 = {p["id"] for p in page2.data["results"]}

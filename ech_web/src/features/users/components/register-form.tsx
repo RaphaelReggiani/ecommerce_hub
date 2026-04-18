@@ -1,8 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { ApiClientError } from "@/lib/api/error-handler";
 import { useRegister } from "@/features/users/hooks/use-register";
 import {
   registerSchema,
@@ -11,6 +13,7 @@ import {
 
 export function RegisterForm() {
   const registerMutation = useRegister();
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -26,7 +29,18 @@ export function RegisterForm() {
   });
 
   async function onSubmit(values: RegisterSchemaValues) {
-    await registerMutation.mutateAsync(values);
+    setFormError(null);
+
+    try {
+      await registerMutation.mutateAsync(values);
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        setFormError(error.message);
+        return;
+      }
+
+      setFormError("Unable to create the account right now.");
+    }
   }
 
   return (
@@ -40,6 +54,12 @@ export function RegisterForm() {
           Register to access the platform.
         </p>
       </div>
+
+      {formError && (
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {formError}
+        </div>
+      )}
 
       <div className="mb-4">
         <label className="mb-2 block text-sm font-medium text-slate-300">
