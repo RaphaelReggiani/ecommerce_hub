@@ -17,6 +17,52 @@ The project focuses on demonstrating **backend engineering best practices**, inc
 
 ---
 
+## Platform Preview
+
+### Home Page
+
+![Home](docs/images/home.png)
+
+### Products Catalog
+
+![Products](docs/images/products_list.png)
+
+### Product Details
+
+![Product Details](docs/images/product_detail.png)
+
+### Authentication
+
+![Login](docs/images/login.png)
+
+![Register](docs/images/register.png)
+
+---
+
+## Architecture Overview
+
+The platform follows a modular architecture with a clear separation between API, service, and domain layers.
+
+```mermaid
+flowchart LR
+
+Client[Next.js Frontend]
+
+Client --> API[Django REST API]
+
+API --> Services[Service Layer]
+
+Services --> Domain[Domain Logic]
+
+Domain --> DB[(PostgreSQL)]
+
+API --> Cache[(Redis Cache)]
+
+Domain --> Events[Domain Events]
+```
+
+---
+
 # Tech Stack
 
 * Python 3.13
@@ -420,13 +466,11 @@ Planned modules:
 
 ## Frontend
 
-**Current Step** (project structure and architectural setup in progress)
-
 Planned modules:
 
-* Users module
-* Products module
-* Orders module
+* Users module ✔
+* Products module ✔
+* Orders module **Current Step** 
 * Payments module
 * Shipping module
 * Reviews module

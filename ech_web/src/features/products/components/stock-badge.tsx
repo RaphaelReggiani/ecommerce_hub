@@ -3,17 +3,28 @@ type Props = {
 };
 
 export function StockBadge({ inventory }: Props) {
-  const isOut = inventory <= 0;
+  let label = "";
+  let styles = "";
+
+  if (inventory <= 0) {
+    label = "Out of stock";
+    styles =
+      "border-red-500/30 bg-red-500/10 text-red-400";
+  } else if (inventory <= 5) {
+    label = `Low stock (${inventory})`;
+    styles =
+      "border-yellow-500/30 bg-yellow-500/10 text-yellow-400";
+  } else {
+    label = `${inventory} in stock`;
+    styles =
+      "border-blue-500/30 bg-blue-500/10 text-blue-400";
+  }
 
   return (
     <span
-      className={`px-2 py-1 text-xs rounded ${
-        isOut
-          ? "bg-red-500/20 text-red-400"
-          : "bg-blue-500/20 text-blue-400"
-      }`}
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium tracking-wide ${styles}`}
     >
-      {isOut ? "Out of stock" : `${inventory} in stock`}
+      {label}
     </span>
   );
 }

@@ -6,6 +6,33 @@ import type {
 
 import type { ProductSchemaValues } from "@/features/products/schemas/product-schema";
 
+/*
+|--------------------------------------------------------------------------
+| API / MEDIA URL RESOLUTION
+|--------------------------------------------------------------------------
+*/
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+function toAbsoluteMediaUrl(url?: string | null): string {
+  if (!url) return "";
+
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+
+  return `${API_ORIGIN}${url}`;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Product Form Mapper
+|--------------------------------------------------------------------------
+*/
+
 export function mapProductFormToCreatePayload(
   values: ProductSchemaValues,
 ): ProductCreateInput {
@@ -23,6 +50,40 @@ export function mapProductFormToCreatePayload(
     inventory: values.inventory,
   };
 }
+
+/*
+|--------------------------------------------------------------------------
+| Product Image Normalization
+|--------------------------------------------------------------------------
+*/
+
+export function normalizeProductListItem(
+  product: ProductListItem,
+): ProductListItem {
+  return {
+    ...product,
+    main_image: toAbsoluteMediaUrl(product.main_image),
+  };
+}
+
+export function normalizeProductDetail(
+  product: ProductDetail,
+): ProductDetail {
+  return {
+    ...product,
+    main_image: toAbsoluteMediaUrl(product.main_image),
+    images: product.images?.map((img) => ({
+      ...img,
+      image: toAbsoluteMediaUrl(img.image),
+    })),
+  };
+}
+
+/*
+|--------------------------------------------------------------------------
+| Price helpers
+|--------------------------------------------------------------------------
+*/
 
 export function getDisplayPrice(product: ProductListItem | ProductDetail) {
   return product.discount_price ?? product.price;

@@ -17,35 +17,52 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group block rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-lg transition hover:border-blue-500/50 hover:bg-slate-900/80"
+      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/80 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-blue-500/40 hover:bg-slate-900 hover:shadow-2xl"
     >
-      <div className="mb-4 aspect-square overflow-hidden rounded-xl bg-slate-950">
-        {product.main_image ? (
-          <img
-            src={product.main_image}
-            alt={product.name}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            No image
+      <div className="relative overflow-hidden border-b border-slate-800 bg-slate-950">
+        {hasDiscount && (
+          <div className="absolute left-4 top-4 z-10 rounded-full border border-blue-400/20 bg-blue-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-300">
+            On sale
           </div>
         )}
+
+        <div className="aspect-[4/3] w-full overflow-hidden">
+          {product.main_image ? (
+            <img
+              src={product.main_image}
+              alt={product.name}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 text-center">
+              <div className="space-y-2">
+                <div className="mx-auto h-12 w-12 rounded-2xl border border-slate-700 bg-slate-900/80" />
+                <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                  No image
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
-          {product.brand}
-        </p>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-400">
+            {product.brand}
+          </p>
+        </div>
 
-        <h3 className="line-clamp-2 text-lg font-semibold text-white">
-          {product.name}
-        </h3>
+        <div className="min-h-[56px]">
+          <h3 className="line-clamp-2 text-base font-semibold leading-7 text-white transition group-hover:text-blue-300">
+            {product.name}
+          </h3>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="mt-4 flex items-end gap-2">
           {hasDiscount ? (
             <>
-              <span className="text-lg font-semibold text-blue-400">
+              <span className="text-xl font-semibold text-blue-400">
                 {formatCurrency(product.discount_price)}
               </span>
               <span className="text-sm text-slate-500 line-through">
@@ -53,14 +70,16 @@ export function ProductCard({ product }: ProductCardProps) {
               </span>
             </>
           ) : (
-            <span className="text-lg font-semibold text-blue-400">
+            <span className="text-xl font-semibold text-blue-400">
               {formatCurrency(product.price)}
             </span>
           )}
         </div>
 
-        <div className="pt-2">
-          <span className="inline-flex rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 transition group-hover:border-blue-500 group-hover:text-white">
+        <div className="mt-5 flex-1" />
+
+        <div className="pt-4">
+          <span className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-medium text-slate-200 transition group-hover:border-blue-500/50 group-hover:bg-blue-500/10 group-hover:text-white">
             View details
           </span>
         </div>
