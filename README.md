@@ -470,7 +470,7 @@ Planned modules:
 
 * Users module ✔
 * Products module ✔
-* Orders module **Current Step** 
+* Orders module (**Current Step**)
 * Payments module
 * Shipping module
 * Reviews module
