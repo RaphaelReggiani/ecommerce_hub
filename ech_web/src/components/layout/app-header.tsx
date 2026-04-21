@@ -4,8 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useAppCart } from "@/providers/cart-provider";
+
 export function Header() {
   const pathname = usePathname();
+  const { itemCount, openCart } = useAppCart();
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -48,6 +51,19 @@ export function Header() {
           >
             Products
           </Link>
+
+          <button
+            type="button"
+            onClick={openCart}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-blue-500 hover:text-white"
+          >
+            Cart
+            {itemCount > 0 && (
+              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                {itemCount}
+              </span>
+            )}
+          </button>
 
           <Link
             href="/login"

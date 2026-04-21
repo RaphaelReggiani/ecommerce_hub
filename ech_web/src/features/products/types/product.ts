@@ -25,9 +25,15 @@ export type ProductDetail = {
   has_discount: boolean;
   inventory: number;
   main_image: string | null;
-  images: ProductImage[];
+  images: readonly ProductImage[];
   created_at: string;
 };
+
+/*
+|--------------------------------------------------------------------------
+| Product inputs (API)
+|--------------------------------------------------------------------------
+*/
 
 export type ProductCreateInput = {
   name: string;
@@ -48,3 +54,25 @@ export type ProductUpdateInput = Partial<{
   price: string;
   discount_price: string | null;
 }>;
+
+/*
+|--------------------------------------------------------------------------
+| Derived types used by other modules
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Minimal product information required
+ * to create a cart item.
+ */
+export type ProductForCart = Pick<
+  ProductDetail,
+  | "id"
+  | "name"
+  | "brand"
+  | "product_type"
+  | "price"
+  | "discount_price"
+  | "main_image"
+  | "inventory"
+>;

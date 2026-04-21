@@ -1,27 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 
 import { StockBadge } from "@/features/products/components/stock-badge";
 import { useProduct } from "@/features/products/hooks/use-product";
-import { useAppCart } from "@/providers/cart-provider";
 import { formatCurrency } from "@/lib/utils/format-currency";
 import { formatDateTime } from "@/lib/utils/format-date";
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const productId =
     typeof params.productId === "string" ? params.productId : "";
 
   const { data: product, isLoading, isError } = useProduct(productId);
-  const { addItem, openCart } = useAppCart();
-
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
-  const [isZooming, setIsZooming] = useState(false);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const galleryImages = useMemo(() => {
     if (!product) return [];
@@ -50,6 +42,10 @@ export default function ProductDetailPage() {
     return [];
   }, [product]);
 
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
+  const [isZooming, setIsZooming] = useState(false);
+
   const selectedImage = galleryImages[selectedImageIndex] ?? null;
 
   function handleMouseMove(
@@ -72,51 +68,6 @@ export default function ProductDetailPage() {
       transformOrigin: "center center",
       transform: "scale(1)",
     });
-  }
-
-  function buildCartItem() {
-    if (!product) return null;
-
-    return {
-      product_id: product.id,
-      name: product.name,
-      brand: product.brand,
-      product_type: product.product_type,
-      main_image: product.main_image,
-      unit_price: product.price,
-      discount_price: product.discount_price,
-      quantity: 1,
-      max_quantity: product.inventory,
-    };
-  }
-
-  function handleAddToCart() {
-    if (!product || product.inventory <= 0) {
-      setActionMessage("This product is currently out of stock.");
-      return;
-    }
-
-    const cartItem = buildCartItem();
-
-    if (!cartItem) return;
-
-    addItem(cartItem);
-    setActionMessage("Product added to cart.");
-    openCart();
-  }
-
-  function handleBuyNow() {
-    if (!product || product.inventory <= 0) {
-      setActionMessage("This product is currently out of stock.");
-      return;
-    }
-
-    const cartItem = buildCartItem();
-
-    if (!cartItem) return;
-
-    addItem(cartItem);
-    router.push("/checkout");
   }
 
   if (isLoading) {
@@ -255,27 +206,17 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {actionMessage && (
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">
-                {actionMessage}
-              </div>
-            )}
-
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={handleBuyNow}
-                disabled={product.inventory <= 0}
-                className="cursor-pointer rounded-2xl bg-blue-600 px-5 py-4 font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-blue-600 px-5 py-4 font-medium cursor-pointer text-white transition hover:bg-blue-500"
               >
                 Buy now
               </button>
 
               <button
                 type="button"
-                onClick={handleAddToCart}
-                disabled={product.inventory <= 0}
-                className="cursor-pointer rounded-2xl border border-slate-700 bg-slate-950 px-5 py-4 font-medium text-slate-200 transition hover:border-blue-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl border border-slate-700 bg-slate-950 px-5 py-4 font-medium text-slate-200 cursor-pointer transition hover:border-blue-500 hover:text-white"
               >
                 Add to cart
               </button>
