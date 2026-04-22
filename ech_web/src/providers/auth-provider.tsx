@@ -4,7 +4,6 @@ import {
   createContext,
   ReactNode,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -42,22 +41,24 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+type InitialAuthState = {
+  user: SessionUser | null;
+  profile: UserProfile | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+};
+
+function getInitialAuthState(): InitialAuthState {
+  return {
+    user: getStoredUser(),
+    profile: getStoredProfile(),
+    isAuthenticated: hasStoredSession(),
+    isLoading: false,
+  };
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const storedUser = getStoredUser();
-    const storedProfile = getStoredProfile();
-    const authenticated = hasStoredSession();
-
-    setUser(storedUser);
-    setProfile(storedProfile);
-    setIsAuthenticated(authenticated);
-    setIsLoading(false);
-  }, []);
+  const [state, setState] = useState<InitialAuthState>(() => getInitialAuthState());
 
   function setSession(
     tokens: AuthTokens,
@@ -65,40 +66,56 @@ export function AuthProvider({ children }: AuthProviderProps) {
     nextProfile?: UserProfile | null,
   ): void {
     setStoredSession(tokens, nextUser ?? null, nextProfile ?? null);
-    setUser(nextUser ?? null);
-    setProfile(nextProfile ?? null);
-    setIsAuthenticated(true);
+
+    setState({
+      user: nextUser ?? null,
+      profile: nextProfile ?? null,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   }
 
   function logout(): void {
     clearStoredSession();
-    setUser(null);
-    setProfile(null);
-    setIsAuthenticated(false);
+
+    setState({
+      user: null,
+      profile: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
   }
 
   function refreshUser(nextUser: SessionUser | null): void {
     updateStoredUser(nextUser);
-    setUser(nextUser);
+
+    setState((current) => ({
+      ...current,
+      user: nextUser,
+    }));
   }
 
   function refreshProfile(nextProfile: UserProfile | null): void {
     updateStoredProfile(nextProfile);
-    setProfile(nextProfile);
+
+    setState((current) => ({
+      ...current,
+      profile: nextProfile,
+    }));
   }
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user,
-      profile,
-      isAuthenticated,
-      isLoading,
+      user: state.user,
+      profile: state.profile,
+      isAuthenticated: state.isAuthenticated,
+      isLoading: state.isLoading,
       setSession,
       logout,
       refreshUser,
       refreshProfile,
     }),
-    [user, profile, isAuthenticated, isLoading],
+    [state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

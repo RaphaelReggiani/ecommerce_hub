@@ -12,11 +12,9 @@ import {
 import type { CartItem, CartState } from "@/features/orders/types/cart";
 
 export function useCart() {
-  const [cart, setCart] = useState<CartState>({ items: [] });
+  const [cart, setCart] = useState<CartState>(() => getCartState());
 
   useEffect(() => {
-    setCart(getCartState());
-
     function handleCartUpdated() {
       setCart(getCartState());
     }

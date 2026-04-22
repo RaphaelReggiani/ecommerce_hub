@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useMemo, useState, type CSSProperties, type MouseEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { StockBadge } from "@/features/products/components/stock-badge";
@@ -19,7 +20,7 @@ export default function ProductDetailPage() {
   const { addItem, openCart } = useAppCart();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
+  const [zoomStyle, setZoomStyle] = useState<CSSProperties>({});
   const [isZooming, setIsZooming] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
@@ -52,9 +53,7 @@ export default function ProductDetailPage() {
 
   const selectedImage = galleryImages[selectedImageIndex] ?? null;
 
-  function handleMouseMove(
-    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
-  ) {
+  function handleMouseMove(event: MouseEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
@@ -154,14 +153,17 @@ export default function ProductDetailPage() {
               onMouseLeave={selectedImage ? handleMouseLeave : undefined}
             >
               {selectedImage ? (
-                <div className="aspect-[4/3] w-full overflow-hidden">
-                  <img
+                <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <Image
                     src={selectedImage.src}
                     alt={selectedImage.alt}
-                    className={`h-full w-full object-contain transition duration-200 ${
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 60vw"
+                    className={`object-contain transition duration-200 ${
                       isZooming ? "cursor-zoom-in" : "cursor-default"
                     }`}
                     style={zoomStyle}
+                    unoptimized
                   />
                 </div>
               ) : (
@@ -187,11 +189,16 @@ export default function ProductDetailPage() {
                           : "border-slate-800 hover:border-slate-600"
                       }`}
                     >
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="aspect-square h-full w-full object-cover"
-                      />
+                      <div className="relative aspect-square h-full w-full">
+                        <Image
+                          src={image.src}
+                          alt={image.alt}
+                          fill
+                          sizes="(max-width: 640px) 50vw, 25vw"
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
                     </button>
                   );
                 })}

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { formatCurrency } from "@/lib/utils/format-currency";
 import type { CartItem as CartItemType } from "@/features/orders/types/cart";
 
@@ -21,12 +23,15 @@ export function CartItem({
 
   return (
     <div className="flex gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
         {item.main_image ? (
-          <img
+          <Image
             src={item.main_image}
             alt={item.name}
-            className="h-full w-full object-cover"
+            fill
+            sizes="96px"
+            className="object-cover"
+            unoptimized
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">

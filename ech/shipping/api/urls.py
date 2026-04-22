@@ -26,11 +26,6 @@ urlpatterns = [
         name="shipment-list",
     ),
     path(
-        "create/",
-        ShipmentCreateAPIView.as_view(),
-        name="shipment-create",
-    ),
-    path(
         "<uuid:shipment_id>/",
         ShipmentDetailAPIView.as_view(),
         name="shipment-detail",
@@ -39,6 +34,12 @@ urlpatterns = [
     # =========================
     # OPERATIONAL ACTIONS
     # =========================
+    
+    path(
+        "create/",
+        ShipmentCreateAPIView.as_view(),
+        name="shipment-create",
+    ),
 
     path(
         "<uuid:shipment_id>/update/",
