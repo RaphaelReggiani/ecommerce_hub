@@ -474,7 +474,7 @@ Planned modules:
 * Payments module ✔
 * Shipping module ✔
 * Reviews module ✔
-* Notifications module
+* Notifications module ✔
 * Analytics module (**Current Step**)
 * Admin dashboard
 
