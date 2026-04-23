@@ -3,18 +3,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
+import { NotificationsBell } from "@/features/notifications/components/notifications-bell";
 import { useAppCart } from "@/providers/cart-provider";
+import { useAuth } from "@/providers/auth-provider";
+
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
   const { itemCount, openCart } = useAppCart();
+  const { user, isAuthenticated, logout } = useAuth();
+  const isClient = useIsClient();
 
   const isActive = (href: string) => {
-    if (href === "/") {
-      return pathname === "/";
-    }
-
+    if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
@@ -65,23 +75,48 @@ export function Header() {
             )}
           </button>
 
-          <Link
-            href="/login"
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-              isActive("/login")
-                ? "bg-slate-900 text-white"
-                : "text-slate-300 hover:bg-slate-900 hover:text-white"
-            }`}
-          >
-            Login
-          </Link>
+          {isClient && isAuthenticated ? (
+            <>
+              <NotificationsBell />
 
-          <Link
-            href="/register"
-            className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500 hover:text-white"
-          >
-            Create account
-          </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/account"
+                  className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500 hover:text-white"
+                >
+                  Welcome, {user?.user_name ?? user?.email}
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-xl px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                >
+                  Logout
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  isActive("/login")
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                }`}
+              >
+                Login
+              </Link>
+
+              <Link
+                href="/register"
+                className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500 hover:text-white"
+              >
+                Create account
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
     </header>

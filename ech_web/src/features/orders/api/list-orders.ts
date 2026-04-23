@@ -22,5 +22,6 @@ export async function listOrders(
 
   return apiClient.get<PaginatedApiResponse<OrderListItem>>(
     `/orders/${queryString}`,
+    { auth: true },
   );
 }

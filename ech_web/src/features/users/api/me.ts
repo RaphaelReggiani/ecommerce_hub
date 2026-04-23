@@ -1,8 +1,10 @@
 import { apiClient } from "@/lib/api/client";
-import type { UserOutputResponse } from "@/types/api";
+import type { SessionUser } from "@/types/common";
 
-export async function getCurrentUser(accessToken?: string): Promise<UserOutputResponse> {
-  return apiClient.get<UserOutputResponse>("/users/me/", {
+export async function getCurrentUser(
+  accessToken?: string,
+): Promise<SessionUser> {
+  return apiClient.get<SessionUser>("/users/me/", {
     auth: !accessToken,
     accessToken,
   });

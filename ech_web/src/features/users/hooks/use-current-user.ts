@@ -12,5 +12,6 @@ export function useCurrentUser() {
     queryKey: ["users", "current-user"],
     queryFn: () => getCurrentUser(),
     enabled: isAuthenticated,
+    staleTime: 1000 * 60 * 5,
   });
 }

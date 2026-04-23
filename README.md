@@ -472,10 +472,10 @@ Planned modules:
 * Products module ✔
 * Orders module ✔
 * Payments module ✔
-* Shipping module (**Current Step**)
-* Reviews module
+* Shipping module ✔
+* Reviews module ✔
 * Notifications module
-* Analytics module
+* Analytics module (**Current Step**)
 * Admin dashboard
 
 ---

@@ -22,6 +22,7 @@ export const routes = {
     shipmentDetail: (id: string | number) => `/account/shipping/${id}`,
     notifications: "/account/notifications",
     reviews: "/account/reviews",
+    reviewDetail: (id: string | number) => `/account/reviews/${id}`,
   },
 
   admin: {
@@ -59,12 +60,6 @@ export const publicRoutePrefixes = [
   routes.public.products,
 ] as const;
 
-export const protectedRoutePrefixes = [
-  "/cart",
-  "/checkout",
-  "/account",
-] as const;
+export const protectedRoutePrefixes = ["/cart", "/checkout", "/account"] as const;
 
-export const adminRoutePrefixes = [
-  "/admin",
-] as const;
+export const adminRoutePrefixes = ["/admin"] as const;
