@@ -75,15 +75,21 @@ export function canAccessAdmin(userRole: UserRole | null | undefined): boolean {
   return hasRequiredRole(userRole, PERMISSIONS.adminAccess);
 }
 
-export function canAccessAnalytics(userRole: UserRole | null | undefined): boolean {
+export function canAccessAnalytics(
+  userRole: UserRole | null | undefined,
+): boolean {
   return hasRequiredRole(userRole, PERMISSIONS.analyticsAccess);
 }
 
-export function canAccessPayments(userRole: UserRole | null | undefined): boolean {
+export function canAccessPayments(
+  userRole: UserRole | null | undefined,
+): boolean {
   return hasRequiredRole(userRole, PERMISSIONS.paymentAccess);
 }
 
-export function canAccessOperations(userRole: UserRole | null | undefined): boolean {
+export function canAccessOperations(
+  userRole: UserRole | null | undefined,
+): boolean {
   return hasRequiredRole(userRole, PERMISSIONS.operationsAccess);
 }
 
@@ -124,7 +130,6 @@ export function canAccessPath(
     if (
       matchesPrefix(normalized, routes.admin.analytics) ||
       matchesPrefix(normalized, routes.admin.analyticsSales) ||
-      matchesPrefix(normalized, routes.admin.analyticsRevenue) ||
       matchesPrefix(normalized, routes.admin.analyticsOrders) ||
       matchesPrefix(normalized, routes.admin.analyticsPayments) ||
       matchesPrefix(normalized, routes.admin.analyticsShipping) ||
@@ -132,14 +137,10 @@ export function canAccessPath(
       matchesPrefix(normalized, routes.admin.analyticsCustomers) ||
       matchesPrefix(normalized, routes.admin.analyticsSnapshots)
     ) {
-      return canAccessAnalytics(userRole);
+      return canAccessAnalytics(userRole) || canAccessAdmin(userRole);
     }
 
-    if (
-      matchesPrefix(normalized, routes.admin.payments) ||
-      (typeof routes.admin.paymentDetail === "function" &&
-        matchesPrefix(normalized, "/admin/payments"))
-    ) {
+    if (matchesPrefix(normalized, routes.admin.payments)) {
       return canAccessPayments(userRole) || canAccessAdmin(userRole);
     }
 
@@ -177,12 +178,12 @@ export function getDefaultProtectedRouteForUser(
     return routes.public.login;
   }
 
-  if (canAccessAnalytics(userRole)) {
-    return routes.admin.analytics;
-  }
-
   if (canAccessAdmin(userRole)) {
     return routes.admin.home;
+  }
+
+  if (canAccessAnalytics(userRole)) {
+    return routes.admin.analytics;
   }
 
   return routes.protected.account;

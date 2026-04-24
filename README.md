@@ -475,8 +475,8 @@ Planned modules:
 * Shipping module ✔
 * Reviews module ✔
 * Notifications module ✔
-* Analytics module (**Current Step**)
-* Admin dashboard
+* Analytics module ✔
+* Admin dashboard ✔
 
 ---
 

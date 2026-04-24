@@ -33,40 +33,38 @@ export const SHIPPING_STATUS = {
   shipped: "shipped",
   in_transit: "in_transit",
   delivered: "delivered",
+  failed: "failed",
+  returned: "returned",
+  cancelled: "cancelled",
 } as const;
 
 export const REVIEW_STATUS = {
   pending: "pending",
   approved: "approved",
   rejected: "rejected",
-  flagged: "flagged",
-  archived: "archived",
+  hidden: "hidden",
+  cancelled: "cancelled",
 } as const;
 
 export const NOTIFICATION_STATUS = {
   pending: "pending",
-  queued: "queued",
-  dispatching: "dispatching",
-  dispatched: "dispatched",
-  delivered: "delivered",
+  unread: "unread",
   read: "read",
   archived: "archived",
-  failed: "failed",
   cancelled: "cancelled",
+  failed: "failed",
 } as const;
 
-export const SNAPSHOT_STATUS = {
-  pending: "pending",
-  running: "running",
-  completed: "completed",
-  failed: "failed",
-  cancelled: "cancelled",
+export const SNAPSHOT_PERIOD = {
+  daily: "daily",
+  weekly: "weekly",
+  monthly: "monthly",
 } as const;
 
-export const ADMIN_ALERT_STATUS = {
-  open: "open",
-  acknowledged: "acknowledged",
-  resolved: "resolved",
+export const ADMIN_ALERT_SEVERITY = {
+  critical: "critical",
+  warning: "warning",
+  info: "info",
 } as const;
 
 export const ORDER_STATUS_LABELS = {
@@ -96,40 +94,38 @@ export const SHIPPING_STATUS_LABELS = {
   [SHIPPING_STATUS.shipped]: "Shipped",
   [SHIPPING_STATUS.in_transit]: "In transit",
   [SHIPPING_STATUS.delivered]: "Delivered",
+  [SHIPPING_STATUS.failed]: "Failed",
+  [SHIPPING_STATUS.returned]: "Returned",
+  [SHIPPING_STATUS.cancelled]: "Cancelled",
 } as const;
 
 export const REVIEW_STATUS_LABELS = {
   [REVIEW_STATUS.pending]: "Pending",
   [REVIEW_STATUS.approved]: "Approved",
   [REVIEW_STATUS.rejected]: "Rejected",
-  [REVIEW_STATUS.flagged]: "Flagged",
-  [REVIEW_STATUS.archived]: "Archived",
+  [REVIEW_STATUS.hidden]: "Hidden",
+  [REVIEW_STATUS.cancelled]: "Cancelled",
 } as const;
 
 export const NOTIFICATION_STATUS_LABELS = {
   [NOTIFICATION_STATUS.pending]: "Pending",
-  [NOTIFICATION_STATUS.queued]: "Queued",
-  [NOTIFICATION_STATUS.dispatching]: "Dispatching",
-  [NOTIFICATION_STATUS.dispatched]: "Dispatched",
-  [NOTIFICATION_STATUS.delivered]: "Delivered",
+  [NOTIFICATION_STATUS.unread]: "Unread",
   [NOTIFICATION_STATUS.read]: "Read",
   [NOTIFICATION_STATUS.archived]: "Archived",
-  [NOTIFICATION_STATUS.failed]: "Failed",
   [NOTIFICATION_STATUS.cancelled]: "Cancelled",
+  [NOTIFICATION_STATUS.failed]: "Failed",
 } as const;
 
-export const SNAPSHOT_STATUS_LABELS = {
-  [SNAPSHOT_STATUS.pending]: "Pending",
-  [SNAPSHOT_STATUS.running]: "Running",
-  [SNAPSHOT_STATUS.completed]: "Completed",
-  [SNAPSHOT_STATUS.failed]: "Failed",
-  [SNAPSHOT_STATUS.cancelled]: "Cancelled",
+export const SNAPSHOT_PERIOD_LABELS = {
+  [SNAPSHOT_PERIOD.daily]: "Daily",
+  [SNAPSHOT_PERIOD.weekly]: "Weekly",
+  [SNAPSHOT_PERIOD.monthly]: "Monthly",
 } as const;
 
-export const ADMIN_ALERT_STATUS_LABELS = {
-  [ADMIN_ALERT_STATUS.open]: "Open",
-  [ADMIN_ALERT_STATUS.acknowledged]: "Acknowledged",
-  [ADMIN_ALERT_STATUS.resolved]: "Resolved",
+export const ADMIN_ALERT_SEVERITY_LABELS = {
+  [ADMIN_ALERT_SEVERITY.critical]: "Critical",
+  [ADMIN_ALERT_SEVERITY.warning]: "Warning",
+  [ADMIN_ALERT_SEVERITY.info]: "Info",
 } as const;
 
 export const ORDER_STATUS_TONES = {
@@ -159,118 +155,113 @@ export const SHIPPING_STATUS_TONES = {
   [SHIPPING_STATUS.shipped]: "info",
   [SHIPPING_STATUS.in_transit]: "info",
   [SHIPPING_STATUS.delivered]: "success",
+  [SHIPPING_STATUS.failed]: "danger",
+  [SHIPPING_STATUS.returned]: "warning",
+  [SHIPPING_STATUS.cancelled]: "muted",
 } as const satisfies Record<keyof typeof SHIPPING_STATUS_LABELS, StatusTone>;
 
 export const REVIEW_STATUS_TONES = {
   [REVIEW_STATUS.pending]: "warning",
   [REVIEW_STATUS.approved]: "success",
   [REVIEW_STATUS.rejected]: "danger",
-  [REVIEW_STATUS.flagged]: "warning",
-  [REVIEW_STATUS.archived]: "muted",
+  [REVIEW_STATUS.hidden]: "muted",
+  [REVIEW_STATUS.cancelled]: "muted",
 } as const satisfies Record<keyof typeof REVIEW_STATUS_LABELS, StatusTone>;
 
 export const NOTIFICATION_STATUS_TONES = {
   [NOTIFICATION_STATUS.pending]: "warning",
-  [NOTIFICATION_STATUS.queued]: "info",
-  [NOTIFICATION_STATUS.dispatching]: "info",
-  [NOTIFICATION_STATUS.dispatched]: "info",
-  [NOTIFICATION_STATUS.delivered]: "success",
+  [NOTIFICATION_STATUS.unread]: "info",
   [NOTIFICATION_STATUS.read]: "success",
   [NOTIFICATION_STATUS.archived]: "muted",
-  [NOTIFICATION_STATUS.failed]: "danger",
   [NOTIFICATION_STATUS.cancelled]: "muted",
+  [NOTIFICATION_STATUS.failed]: "danger",
 } as const satisfies Record<keyof typeof NOTIFICATION_STATUS_LABELS, StatusTone>;
 
-export const SNAPSHOT_STATUS_TONES = {
-  [SNAPSHOT_STATUS.pending]: "warning",
-  [SNAPSHOT_STATUS.running]: "info",
-  [SNAPSHOT_STATUS.completed]: "success",
-  [SNAPSHOT_STATUS.failed]: "danger",
-  [SNAPSHOT_STATUS.cancelled]: "muted",
-} as const satisfies Record<keyof typeof SNAPSHOT_STATUS_LABELS, StatusTone>;
+export const SNAPSHOT_PERIOD_TONES = {
+  [SNAPSHOT_PERIOD.daily]: "info",
+  [SNAPSHOT_PERIOD.weekly]: "warning",
+  [SNAPSHOT_PERIOD.monthly]: "success",
+} as const satisfies Record<keyof typeof SNAPSHOT_PERIOD_LABELS, StatusTone>;
 
-export const ADMIN_ALERT_STATUS_TONES = {
-  [ADMIN_ALERT_STATUS.open]: "danger",
-  [ADMIN_ALERT_STATUS.acknowledged]: "warning",
-  [ADMIN_ALERT_STATUS.resolved]: "success",
-} as const satisfies Record<keyof typeof ADMIN_ALERT_STATUS_LABELS, StatusTone>;
+export const ADMIN_ALERT_SEVERITY_TONES = {
+  [ADMIN_ALERT_SEVERITY.critical]: "danger",
+  [ADMIN_ALERT_SEVERITY.warning]: "warning",
+  [ADMIN_ALERT_SEVERITY.info]: "info",
+} as const satisfies Record<keyof typeof ADMIN_ALERT_SEVERITY_LABELS, StatusTone>;
 
-export function getOrderStatusLabel(status: keyof typeof ORDER_STATUS_LABELS): string {
-  return ORDER_STATUS_LABELS[status];
+function humanizeStatus(value: string): string {
+  return value
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export function getPaymentStatusLabel(
-  status: keyof typeof PAYMENT_STATUS_LABELS,
+function getMappedLabel<T extends Record<string, string>>(
+  labels: T,
+  status: string,
 ): string {
-  return PAYMENT_STATUS_LABELS[status];
+  return labels[status as keyof T] ?? humanizeStatus(status);
 }
 
-export function getShippingStatusLabel(
-  status: keyof typeof SHIPPING_STATUS_LABELS,
-): string {
-  return SHIPPING_STATUS_LABELS[status];
-}
-
-export function getReviewStatusLabel(status: keyof typeof REVIEW_STATUS_LABELS): string {
-  return REVIEW_STATUS_LABELS[status];
-}
-
-export function getNotificationStatusLabel(
-  status: keyof typeof NOTIFICATION_STATUS_LABELS,
-): string {
-  return NOTIFICATION_STATUS_LABELS[status];
-}
-
-export function getSnapshotStatusLabel(
-  status: keyof typeof SNAPSHOT_STATUS_LABELS,
-): string {
-  return SNAPSHOT_STATUS_LABELS[status];
-}
-
-export function getAdminAlertStatusLabel(
-  status: keyof typeof ADMIN_ALERT_STATUS_LABELS,
-): string {
-  return ADMIN_ALERT_STATUS_LABELS[status];
-}
-
-export function getOrderStatusTone(
-  status: keyof typeof ORDER_STATUS_TONES,
+function getMappedTone<T extends Record<string, StatusTone>>(
+  tones: T,
+  status: string,
 ): StatusTone {
-  return ORDER_STATUS_TONES[status];
+  return tones[status as keyof T] ?? "default";
 }
 
-export function getPaymentStatusTone(
-  status: keyof typeof PAYMENT_STATUS_TONES,
-): StatusTone {
-  return PAYMENT_STATUS_TONES[status];
+export function getOrderStatusLabel(status: string): string {
+  return getMappedLabel(ORDER_STATUS_LABELS, status);
 }
 
-export function getShippingStatusTone(
-  status: keyof typeof SHIPPING_STATUS_TONES,
-): StatusTone {
-  return SHIPPING_STATUS_TONES[status];
+export function getPaymentStatusLabel(status: string): string {
+  return getMappedLabel(PAYMENT_STATUS_LABELS, status);
 }
 
-export function getReviewStatusTone(
-  status: keyof typeof REVIEW_STATUS_TONES,
-): StatusTone {
-  return REVIEW_STATUS_TONES[status];
+export function getShippingStatusLabel(status: string): string {
+  return getMappedLabel(SHIPPING_STATUS_LABELS, status);
 }
 
-export function getNotificationStatusTone(
-  status: keyof typeof NOTIFICATION_STATUS_TONES,
-): StatusTone {
-  return NOTIFICATION_STATUS_TONES[status];
+export function getReviewStatusLabel(status: string): string {
+  return getMappedLabel(REVIEW_STATUS_LABELS, status);
 }
 
-export function getSnapshotStatusTone(
-  status: keyof typeof SNAPSHOT_STATUS_TONES,
-): StatusTone {
-  return SNAPSHOT_STATUS_TONES[status];
+export function getNotificationStatusLabel(status: string): string {
+  return getMappedLabel(NOTIFICATION_STATUS_LABELS, status);
 }
 
-export function getAdminAlertStatusTone(
-  status: keyof typeof ADMIN_ALERT_STATUS_TONES,
-): StatusTone {
-  return ADMIN_ALERT_STATUS_TONES[status];
+export function getSnapshotPeriodLabel(period: string): string {
+  return getMappedLabel(SNAPSHOT_PERIOD_LABELS, period);
+}
+
+export function getAdminAlertSeverityLabel(severity: string): string {
+  return getMappedLabel(ADMIN_ALERT_SEVERITY_LABELS, severity);
+}
+
+export function getOrderStatusTone(status: string): StatusTone {
+  return getMappedTone(ORDER_STATUS_TONES, status);
+}
+
+export function getPaymentStatusTone(status: string): StatusTone {
+  return getMappedTone(PAYMENT_STATUS_TONES, status);
+}
+
+export function getShippingStatusTone(status: string): StatusTone {
+  return getMappedTone(SHIPPING_STATUS_TONES, status);
+}
+
+export function getReviewStatusTone(status: string): StatusTone {
+  return getMappedTone(REVIEW_STATUS_TONES, status);
+}
+
+export function getNotificationStatusTone(status: string): StatusTone {
+  return getMappedTone(NOTIFICATION_STATUS_TONES, status);
+}
+
+export function getSnapshotPeriodTone(period: string): StatusTone {
+  return getMappedTone(SNAPSHOT_PERIOD_TONES, period);
+}
+
+export function getAdminAlertSeverityTone(severity: string): StatusTone {
+  return getMappedTone(ADMIN_ALERT_SEVERITY_TONES, severity);
 }

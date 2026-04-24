@@ -3,11 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
+import { routes } from "@/config/routes";
 import { NotificationsBell } from "@/features/notifications/components/notifications-bell";
-import { useAppCart } from "@/providers/cart-provider";
+import { canAccessAdmin, canAccessAnalytics } from "@/lib/auth/route-guards";
 import { useAuth } from "@/providers/auth-provider";
+import { useAppCart } from "@/providers/cart-provider";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -23,10 +25,20 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const isClient = useIsClient();
 
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const userRole = user?.role ?? null;
+  const canSeeAdmin = canAccessAdmin(userRole) || canAccessAnalytics(userRole);
+
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  function handleLogout() {
+    setIsUserMenuOpen(false);
+    logout();
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-black/85 backdrop-blur">
@@ -52,9 +64,9 @@ export function Header() {
 
         <nav className="flex items-center gap-2 sm:gap-3">
           <Link
-            href="/products"
+            href={routes.public.products}
             className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-              isActive("/products")
+              isActive(routes.public.products)
                 ? "bg-slate-900 text-white"
                 : "text-slate-300 hover:bg-slate-900 hover:text-white"
             }`}
@@ -79,29 +91,111 @@ export function Header() {
             <>
               <NotificationsBell />
 
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/account"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsUserMenuOpen((current) => !current)}
                   className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500 hover:text-white"
                 >
                   Welcome, {user?.user_name ?? user?.email}
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="rounded-xl px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-900 hover:text-white"
-                >
-                  Logout
                 </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-3 w-64 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl">
+                    <div className="border-b border-slate-800 px-4 py-3">
+                      <p className="text-sm font-medium text-white">
+                        {user?.user_name ?? "Account"}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">
+                        {user?.email}
+                      </p>
+                    </div>
+
+                    <div className="p-2">
+                      <Link
+                        href={routes.protected.account}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Account
+                      </Link>
+
+                      <Link
+                        href={routes.protected.profile}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Profile
+                      </Link>
+
+                      <Link
+                        href={routes.protected.orders}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Orders
+                      </Link>
+
+                      <Link
+                        href={routes.protected.payments}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Payments
+                      </Link>
+
+                      <Link
+                        href={routes.protected.shipping}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Shipping
+                      </Link>
+
+                      <Link
+                        href={routes.protected.notifications}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Notifications
+                      </Link>
+
+                      <Link
+                        href={routes.protected.reviews}
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-900 hover:text-white"
+                      >
+                        Reviews
+                      </Link>
+
+                      {canSeeAdmin && (
+                        <Link
+                          href={routes.admin.home}
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="mt-2 block rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition hover:bg-blue-500 hover:text-white"
+                        >
+                          Admin dashboard
+                        </Link>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="mt-2 w-full rounded-xl px-3 py-2 text-left text-sm text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/login"
+                href={routes.public.login}
                 className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                  isActive("/login")
+                  isActive(routes.public.login)
                     ? "bg-slate-900 text-white"
                     : "text-slate-300 hover:bg-slate-900 hover:text-white"
                 }`}
@@ -110,7 +204,7 @@ export function Header() {
               </Link>
 
               <Link
-                href="/register"
+                href={routes.public.register}
                 className="rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition hover:bg-blue-500 hover:text-white"
               >
                 Create account

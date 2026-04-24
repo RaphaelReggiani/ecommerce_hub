@@ -137,12 +137,6 @@ export const adminNavigation = [
         requiredRoles: PERMISSIONS.analyticsAccess,
       },
       {
-        label: "Revenue",
-        href: routes.admin.analyticsRevenue,
-        exact: true,
-        requiredRoles: PERMISSIONS.analyticsAccess,
-      },
-      {
         label: "Orders",
         href: routes.admin.analyticsOrders,
         exact: true,
@@ -184,10 +178,7 @@ export const adminNavigation = [
 
 export const headerNavigation = {
   public: publicNavigation,
-  authenticated: [
-    ...accountNavigation,
-    ...cartNavigation,
-  ] as const,
+  authenticated: [...accountNavigation, ...cartNavigation] as const,
   admin: adminNavigation,
 } as const;
 
