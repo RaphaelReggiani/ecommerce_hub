@@ -7,13 +7,63 @@
 ![DRF](https://img.shields.io/badge/DRF-3.16-red?style=flat)
 
 > **Note:** The name used is fictional and intended only for demonstration purposes.  
-> This project contains **2485+ automated tests** covering domain logic, services, selectors, and API endpoints.
+> This project contains **2489 automated tests** covering domain logic, services, selectors, and API endpoints.
 
-**This project is under active development.**
+> **Status:** The backend and frontend are implemented. Final UX validation is in progress.
 
-ECH (E-commerce Hub) is a backend-focused fullstack e-commerce system built using **Python, Django, and Django REST Framework**, designed with an **API-First architecture**.
+ECH (E-commerce Hub) is a **production-oriented fullstack e-commerce platform with a strong backend engineering focus** built with **Python, Django, Django REST Framework, Typescript and Next.js**.
 
-The project focuses on demonstrating **backend engineering best practices**, including authentication, modular architecture, service-layer business logic, REST API design, and automated testing.
+The project was designed to demonstrate real-world backend engineering practices, including modular architecture, service-layer business logic, idempotent APIs, concurrency protection, cache consistency, operational observability, analytics systems, administrative workflows, and automated testing.
+
+This is not a tutorial-style project. It simulates a scalable backend platform composed of multiple independent domains with production-oriented architectural decisions.
+
+---
+
+## Executive Overview
+
+ECH was built to demonstrate backend engineering maturity through a realistic e-commerce platform.
+
+Key highlights:
+
+* **9 independent backend modules**
+* **2489 automated tests**
+* **Domain-driven service architecture**
+* **API-first design with Django REST Framework**
+* **Idempotent write operations with replay protection**
+* **Concurrency-safe order and inventory workflows**
+* **Versioned cache invalidation strategy**
+* **Structured logging and operational event tracking**
+* **Analytics and administrative dashboard modules**
+* **Modern frontend built with Next.js and TypeScript**
+
+Each module follows the same layered architecture:
+
+Domain → Services → Selectors → API → Tests (Domain-First strategy)
+
+This structure allows the platform to scale while keeping business logic isolated, testable, and maintainable.
+
+> The system is designed to reflect real-world backend complexity, not simplified tutorial patterns.
+
+---
+
+## Table of Contents
+
+* 📦 [Platform Preview](#platform-preview)
+* 🏗️ [Architecture Overview](#architecture-overview)
+* ⚙️ [Tech Stack](#tech-stack)
+* 🧠 [Key Backend Concepts Demonstrated](#key-backend-concepts-demonstrated)
+* 💡 [Engineering Highlights](#engineering-highlights)
+* 🧩 [Backend Architecture](#backend-architecture)
+* 🎨 [Frontend Architecture](#frontend-architecture)
+* 📊 [Architecture Diagram](#architecture-diagram)
+* 🔄 [Cross-Module Event Flow](#cross-module-event-flow)
+* 🛣️ [Development Roadmap](#development-roadmap)
+* 📁 [Project Structure](#project-structure)
+* 🚀 [Implemented Features](#implemented-features)
+* 🔌 [API Endpoints](#api-endpoints)
+* 🧪 [Automated Tests](#automated-tests)
+* ▶️ [Running the Project](#running-the-project)
+* 🎯 [Purpose of the Project](#purpose-of-the-project)
 
 ---
 
@@ -39,40 +89,37 @@ The project focuses on demonstrating **backend engineering best practices**, inc
 
 ---
 
-## Architecture Overview
-
-The platform follows a modular architecture with a clear separation between API, service, and domain layers.
-
-```mermaid
-flowchart LR
-
-Client[Next.js Frontend]
-
-Client --> API[Django REST API]
-
-API --> Services[Service Layer]
-
-Services --> Domain[Domain Logic]
-
-Domain --> DB[(PostgreSQL)]
-
-API --> Cache[(Redis Cache)]
-
-Domain --> Events[Domain Events]
-```
-
----
-
 # Tech Stack
+
+## Backend
 
 * Python 3.13
 * Django 6.0
-* Django REST Framework (DRF) 3.16
+* Django REST Framework 3.16
 * Django-filter
+* JWT Authentication with SimpleJWT
+* Pytest
 * MySQL
-* HTML5 + CSS3
-* JWT Authentication (SimpleJWT)
-* Pytest for automated testing
+* Redis-ready caching strategy
+
+## Frontend
+
+* Next.js
+* TypeScript
+* React
+* Tailwind CSS
+* React Query
+
+## Architecture & Practices
+
+* API-first architecture
+* Service-layer pattern
+* Domain-driven design principles
+* Domain events
+* Idempotent write operations
+* Versioned cache invalidation
+* Structured logging
+* Layered automated testing
 
 ---
 
@@ -93,31 +140,42 @@ This project demonstrates several backend engineering concepts used in productio
 
 ---
 
-# Platform Scope
+# Engineering Highlights
 
-The E-Commerce Hub simulates a production-grade backend platform composed of multiple interconnected domains.
+This project includes several backend engineering decisions commonly found in production systems:
 
-The system currently includes:
-
-* **9 independent modules**
-* **2488 automated tests**
-* **Domain-driven service architecture**
-* **Event-driven cross-module communication**
-* **Versioned cache invalidation strategies**
-* **Idempotent API operations**
-* **Role-based permission system**
-* **Operational admin dashboard**
-* **Analytical reporting module**
-
-Each module follows the same layered architecture:
-
-Domain → Services → Selectors → API → Tests
-
-This structure allows the platform to scale while keeping business logic isolated, testable, and maintainable.
+* **Idempotent API design** using request fingerprinting and conflict detection
+* **Transactional service orchestration** using `transaction.atomic`
+* **Concurrency protection** using row-level locking with `select_for_update`
+* **Inventory consistency** to prevent overselling scenarios
+* **Versioned cache invalidation** to avoid unsafe wildcard cache deletion
+* **Domain events** for decoupled lifecycle tracking and operational side effects
+* **Structured logging** for traceability and observability
+* **Snapshot-based analytics** to avoid repeated heavy aggregation queries
+* **Role-based access control** across customer, staff, analytics, and admin workflows
+* **Layered automated testing** across domain logic, services, selectors, cache, filters, and APIs
 
 ---
 
-# Architectural Patterns Used
+# Why This Project Matters
+
+ECH was designed to simulate real backend challenges found in scalable platforms.
+
+The project demonstrates how to:
+
+* keep business rules isolated from the HTTP layer
+* protect critical write operations from duplicate execution
+* preserve data consistency during concurrent workflows
+* maintain cache correctness after domain mutations
+* structure a modular Django project for long-term maintainability
+* expose operational and analytical data through dedicated modules
+* validate system behavior through a large automated test suite
+
+The goal is to show not only that the application works, but that it was designed with maintainability, reliability, and operational visibility in mind.
+
+---
+
+# Backend Architecture
 
 The system applies several architectural patterns commonly used in production-grade backend systems.
 
@@ -266,9 +324,60 @@ Idempotency is implemented across multiple modules including:
 
 ---
 
+# Frontend Architecture
+
+Although the primary focus of this project is the backend platform, the repository also includes a **modern frontend application** built with **Next.js and TypeScript**.
+
+The frontend is designed to interact with the backend through the REST API and follows a **feature-driven architecture** aligned with the backend modular structure.
+
+Key frontend principles include:
+
+* Feature-based module organization
+* Separation between shared UI components and domain features
+* Dedicated API integration layer
+* Typed data models aligned with backend serializers
+* React Query for server-state management
+* Modular component composition
+* Reusable UI primitives
+* Scalable folder organization
+
+The frontend structure mirrors the backend domains, allowing consistent development across:
+
+* users
+* products
+* orders
+* payments
+* shipping
+* reviews
+* notifications
+* analytics
+* admin dashboard
+
+This alignment simplifies development, improves maintainability, and makes the system easier to scale as additional features are introduced.
+
+---
+
 # Architecture Overview
 
-The backend follows a modular and layered architecture designed to improve **maintainability, scalability, and testability**.
+The platform follows a modular architecture with a clear separation between API, service, and domain layers designed to improve **maintainability, scalability, and testability**.
+
+```mermaid
+flowchart LR
+
+Client[Next.js Frontend]
+
+Client --> API[Django REST API]
+
+API --> Services[Service Layer]
+
+Services --> Domain[Domain Logic]
+
+Domain --> DB[(PostgreSQL)]
+
+API --> Cache[(Redis Cache)]
+
+Domain --> Events[Domain Events]
+```
 
 Core architectural layers include:
 
@@ -356,7 +465,7 @@ Centralizes system messages and configuration values.
 
 ---
 
-## Cross-Module Event Flow
+# Cross-Module Event Flow
 
 The platform uses domain events to propagate important state transitions between modules in a decoupled way.
 
@@ -370,7 +479,7 @@ This mechanism supports:
 - future integrations
 - analytics pipelines
 
-### Example Event Flow
+## Example Event Flow
 
 ```mermaid
 flowchart TD
@@ -396,7 +505,7 @@ flowchart TD
     AdminDashboard --> OperationalMonitoring[Operational Monitoring]
 ```
 
-### Event-Driven Architecture
+## Event-Driven Architecture
 
 The system uses domain events to decouple modules and allow asynchronous or cross-module reactions to important business operations.
 
@@ -413,39 +522,6 @@ Domain events are implemented through a lightweight in-memory dispatcher and a r
 
 This architecture allows the platform to evolve toward more advanced event-driven or message-based systems in the future, including integration with message brokers or distributed event pipelines.
 
----
-
-# Frontend Architecture
-
-Although the primary focus of this project is the backend platform, the repository also includes a **modern frontend application** built with **Next.js and TypeScript**.
-
-The frontend is designed to interact with the backend through the REST API and follows a **feature-driven architecture** aligned with the backend modular structure.
-
-Key frontend principles include:
-
-* Feature-based module organization
-* Separation between shared UI components and domain features
-* Dedicated API integration layer
-* Typed data models aligned with backend serializers
-* React Query for server-state management
-* Modular component composition
-* Reusable UI primitives
-* Scalable folder organization
-
-The frontend structure mirrors the backend domains, allowing consistent development across:
-
-* users
-* products
-* orders
-* payments
-* shipping
-* reviews
-* notifications
-* analytics
-* admin dashboard
-
-This alignment simplifies development, improves maintainability, and makes the system easier to scale as additional features are introduced.
- 
 ---
 
 # Development Roadmap
@@ -6052,15 +6128,24 @@ python manage.py runserver
 
 # Purpose of the Project
 
-This project is part of my backend development portfolio and aims to demonstrate:
+This project is part of my software engineering portfolio and was built to demonstrate backend development skills through a realistic, production-oriented system.
+
+The main goal is to show practical experience with:
 
 * REST API design
-* authentication and security practices
-* scalable Django architecture
-* separation of concerns
-* service-layer design
-* automated testing
-* production-oriented backend development
+* authentication and authorization
+* modular Django architecture
+* service-layer business logic
+* domain-driven design principles
+* transactional consistency
+* concurrency-safe operations
+* idempotent API workflows
+* cache invalidation strategies
+* structured logging and operational observability
+* analytics and administrative reporting
+* automated testing at domain and API levels
+
+ECH represents the kind of backend architecture I aim to work with professionally: modular, testable, maintainable, and designed around real business workflows.
 
 ---
 

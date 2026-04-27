@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCart } from "@/features/orders/hooks/use-cart";
 import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import type { CreateOrderInput } from "@/features/orders/types/checkout";
 
-type CheckoutFormValues = {
+export type CheckoutFormValues = {
   full_name: string;
   address_line: string;
   city: string;
@@ -17,37 +16,24 @@ type CheckoutFormValues = {
   phone: string;
 };
 
-const initialValues: CheckoutFormValues = {
-  full_name: "",
-  address_line: "",
-  city: "",
-  state: "",
-  country: "",
-  postal_code: "",
-  phone: "",
+type CheckoutFormProps = {
+  values: CheckoutFormValues;
+  onChange: (values: CheckoutFormValues) => void;
 };
 
-export function CheckoutForm() {
+export function CheckoutForm({ values, onChange }: CheckoutFormProps) {
   const router = useRouter();
   const { items, clear } = useCart();
   const createOrderMutation = useCreateOrder();
 
-  const [values, setValues] = useState<CheckoutFormValues>(initialValues);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  function handleChange(
-    field: keyof CheckoutFormValues,
-    value: string,
-  ) {
-    setValues((current) => ({ ...current, [field]: value }));
+  function handleChange(field: keyof CheckoutFormValues, value: string) {
+    onChange({ ...values, [field]: value });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage(null);
 
     if (!items.length) {
-      setErrorMessage("Your cart is empty.");
       return;
     }
 
@@ -67,18 +53,9 @@ export function CheckoutForm() {
       },
     };
 
-    try {
-      const order = await createOrderMutation.mutateAsync(payload);
-      clear();
-      router.push(`/account/orders/${order.id}`);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to place the order right now.";
-
-      setErrorMessage(message);
-    }
+    const order = await createOrderMutation.mutateAsync(payload);
+    clear();
+    router.push(`/account/orders/${order.id}`);
   }
 
   return (
@@ -93,9 +70,9 @@ export function CheckoutForm() {
           </h2>
         </div>
 
-        {errorMessage && (
+        {createOrderMutation.isError && (
           <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-            {errorMessage}
+            Unable to place the order right now.
           </div>
         )}
 
@@ -118,7 +95,7 @@ export function CheckoutForm() {
             value={values.address_line}
             onChange={(e) => handleChange("address_line", e.target.value)}
             placeholder="Address line"
-            className="md:col-span-2 rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-blue-500"
+            className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-blue-500 md:col-span-2"
           />
 
           <input

@@ -1,11 +1,86 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { CartSummary } from "@/features/orders/components/cart-summary";
-import { CheckoutForm } from "@/features/orders/components/checkout-form";
+import {
+  CheckoutForm,
+  type CheckoutFormValues,
+} from "@/features/orders/components/checkout-form";
 import { useCart } from "@/features/orders/hooks/use-cart";
+
+const initialAddress: CheckoutFormValues = {
+  full_name: "",
+  address_line: "",
+  city: "",
+  state: "",
+  country: "",
+  postal_code: "",
+  phone: "",
+};
+
+function calculateShippingCost(params: {
+  country: string;
+  state: string;
+  itemCount: number;
+  subtotal: number;
+}) {
+  const { country, state, itemCount, subtotal } = params;
+
+  if (itemCount <= 0 || subtotal <= 0) {
+    return 0;
+  }
+
+  const normalizedCountry = country.trim().toLowerCase();
+  const normalizedState = state.trim().toLowerCase();
+
+  if (!normalizedCountry) {
+    return 20;
+  }
+
+  if (
+    normalizedCountry === "united states" ||
+    normalizedCountry === "usa" ||
+    normalizedCountry === "us"
+  ) {
+    const base = normalizedState === "new york" ? 18 : 22;
+    return base + itemCount * 5;
+  }
+
+  if (
+    normalizedCountry === "brazil" ||
+    normalizedCountry === "brasil" ||
+    normalizedCountry === "br"
+  ) {
+    const base =
+      normalizedState === "são paulo" ||
+      normalizedState === "sao paulo" ||
+      normalizedState === "sp"
+        ? 28
+        : 35;
+
+    return base + itemCount * 7;
+  }
+
+  return 50 + itemCount * 10;
+}
 
 export default function CheckoutPage() {
   const { items, subtotal } = useCart();
+  const [address, setAddress] = useState<CheckoutFormValues>(initialAddress);
+
+  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+
+  const shippingCost = useMemo(
+    () =>
+      calculateShippingCost({
+        country: address.country,
+        state: address.state,
+        itemCount,
+        subtotal,
+      }),
+    [address.country, address.state, itemCount, subtotal],
+  );
 
   return (
     <div className="space-y-8">
@@ -24,10 +99,15 @@ export default function CheckoutPage() {
       </section>
 
       <section className="grid gap-8 lg:grid-cols-[1fr_380px]">
-        <CheckoutForm />
+        <CheckoutForm values={address} onChange={setAddress} />
 
         <div>
-          <CartSummary items={items} subtotal={subtotal} showCheckoutButton={false} />
+          <CartSummary
+            items={items}
+            subtotal={subtotal}
+            shippingCost={shippingCost}
+            showCheckoutButton={false}
+          />
         </div>
       </section>
     </div>
